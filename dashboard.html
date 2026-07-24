@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 BPFCoBrain Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            height: 90vh;
+        }
+
+        /* Left Sidebar - Info Panel */
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stat-box {
+            background: #f5f7fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .top-concepts {
+            margin-top: 15px;
+        }
+
+        .concept-tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin: 4px 4px 4px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .concept-tag:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        /* Center - Graph Visualization */
+        .graph-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #graph {
+            width: 100%;
+            height: 100%;
+        }
+
+        .graph-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            pointer-events: none;
+        }
+
+        /* Right Sidebar - Details Panel */
+        .details-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .details-panel h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .detail-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #f5f7fa;
+            border-radius: 6px;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: #333;
+            word-break: break-all;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .sidebar,
+            .details-panel {
+                max-height: 300px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <h2>🧠 Brain Stats</h2>
+            
+            <div class="stat-box">
+                <div class="stat-label">Total Notes</div>
+                <div class="stat-value" id="noteCount">793</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label">Total Words</div>
+                <div class="stat-value" id="wordCount">841K</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label">Connections</div>
+                <div class="stat-value" id="connCount">217</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label">Files</div>
+                <div class="stat-value">762 Python<br>12 Markdown<br>34 Text</div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label">Token Pool</div>
+                <div class="stat-value">600K</div>
+            </div>
+
+            <input type="text" class="search-box" placeholder="Search concepts..." id="searchInput">
+            
+            <div class="top-concepts">
+                <strong style="font-size: 12px; color: #666; text-transform: uppercase;">Top Concepts</strong>
+                <div style="margin-top: 8px;">
+                    <span class="concept-tag">graph (765)</span>
+                    <span class="concept-tag">cluster (10)</span>
+                    <span class="concept-tag">analyze (6)</span>
+                    <span class="concept-tag">llm (5)</span>
+                </div>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                <button class="btn-primary" onclick="exportData()" style="width: 100%; margin-bottom: 8px;">
+                    📥 Export
+                </button>
+                <button class="btn-secondary" onclick="refreshGraph()" style="width: 100%;">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Center - Graph -->
+        <div class="graph-container">
+            <div class="graph-info">
+                📊 Brain Knowledge Graph | Drag to move • Scroll to zoom • Click to details
+            </div>
+            <div id="graph"></div>
+        </div>
+
+        <!-- Right Sidebar - Details -->
+        <div class="details-panel">
+            <h2>ℹ️ Details</h2>
+            
+            <div id="detailsContent" class="empty-state">
+                <div>
+                    <div style="font-size: 48px; margin-bottom: 10px;">👈</div>
+                    <div>Click a node in the graph to see details</div>
+                </div>
+            </div>
+
+            <div class="btn-group" style="margin-top: auto;">
+                <button class="btn-primary" onclick="copyToClipboard()">📋 Copy</button>
+                <button class="btn-secondary" onclick="closeDetails()">✕ Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - replace with actual vault data
+        const sampleData = {
+            nodes: [
+                { id: "graph", type: "concept", count: 765 },
+                { id: "cluster", type: "concept", count: 10 },
+                { id: "analyze", type: "concept", count: 6 },
+                { id: "llm", type: "concept", count: 5 },
+                { id: "optimization", type: "concept", count: 8 },
+                { id: "algorithms", type: "concept", count: 12 },
+            ],
+            links: [
+                { source: "graph", target: "cluster", strength: 0.7 },
+                { source: "graph", target: "analyze", strength: 0.6 },
+                { source: "cluster", target: "algorithms", strength: 0.8 },
+                { source: "analyze", target: "optimization", strength: 0.5 },
+                { source: "llm", target: "graph", strength: 0.4 },
+            ]
+        };
+
+        let currentNode = null;
+
+        // Initialize D3 Graph
+        function initGraph() {
+            const width = document.getElementById("graph").clientWidth;
+            const height = document.getElementById("graph").clientHeight;
+
+            const svg = d3.select("#graph")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            const simulation = d3.forceSimulation(sampleData.nodes)
+                .force("link", d3.forceLink(sampleData.links).id(d => d.id).distance(100))
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(width / 2, height / 2));
+
+            const link = svg.selectAll("line")
+                .data(sampleData.links)
+                .enter()
+                .append("line")
+                .attr("stroke", "#ddd")
+                .attr("stroke-width", d => Math.sqrt(d.strength) * 2);
+
+            const node = svg.selectAll("circle")
+                .data(sampleData.nodes)
+                .enter()
+                .append("circle")
+                .attr("r", d => 8 + d.count / 30)
+                .attr("fill", "#667eea")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2)
+                .style("cursor", "pointer")
+                .on("click", showDetails)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+
+            const label = svg.selectAll("text")
+                .data(sampleData.nodes)
+                .enter()
+                .append("text")
+                .attr("text-anchor", "middle")
+                .attr("dy", ".3em")
+                .attr("fill", "white")
+                .attr("font-size", "12px")
+                .attr("font-weight", "bold")
+                .text(d => d.id);
+
+            simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node.attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                label.attr("x", d => d.x)
+                    .attr("y", d => d.y);
+            });
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+
+        function showDetails(event, d) {
+            currentNode = d;
+            const html = `
+                <div class="detail-item">
+                    <div class="detail-label">Concept</div>
+                    <div class="detail-value">${d.id.toUpperCase()}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Matches Found</div>
+                    <div class="detail-value">${d.count}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Type</div>
+                    <div class="detail-value">${d.type}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Connected To</div>
+                    <div class="detail-value">
+                        ${sampleData.links
+                            .filter(l => l.source.id === d.id || l.target.id === d.id)
+                            .map(l => l.source.id === d.id ? l.target.id : l.source.id)
+                            .join(", ")}
+                    </div>
+                </div>
+            `;
+            document.getElementById("detailsContent").innerHTML = html;
+        }
+
+        function closeDetails() {
+            currentNode = null;
+            document.getElementById("detailsContent").innerHTML = `
+                <div class="empty-state">
+                    <div>
+                        <div style="font-size: 48px; margin-bottom: 10px;">👈</div>
+                        <div>Click a node to see details</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function copyToClipboard() {
+            if (currentNode) {
+                const text = `Concept: ${currentNode.id}\nMatches: ${currentNode.count}`;
+                navigator.clipboard.writeText(text);
+                alert("Copied to clipboard!");
+            }
+        }
+
+        function exportData() {
+            const data = JSON.stringify(sampleData, null, 2);
+            const blob = new Blob([data], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "brain-graph.json";
+            a.click();
+        }
+
+        function refreshGraph() {
+            document.getElementById("graph").innerHTML = "";
+            initGraph();
+        }
+
+        // Initialize on load
+        window.addEventListener("load", initGraph);
+    </script>
+</body>
+</html>
