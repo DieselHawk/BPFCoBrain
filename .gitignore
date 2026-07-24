@@ -1,0 +1,24 @@
+# Obsidian
+.obsidian/plugins/
+.obsidian/community-plugins.json
+.obsidian/workspaces.json
+.obsidian/graph.json
+
+# Cache and temp files
+.DS_Store
+Thumbs.db
+*.tmp
+*~
+
+# Local settings (don't sync personal config)
+.obsidian/appearance.json
+.obsidian/core-plugins.json
+.obsidian/hotkeys.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+*.swp
+*.swo
