@@ -1,0 +1,36 @@
+---
+type: imported
+source: C:\Users\Jaques\Documents\kimi\workspace\.graphify-venv\Lib\site-packages\numpy\f2py\tests\test_f2cmap.py
+imported: 2026-07-24T11:12:44.498748
+file_type: .py
+---
+
+# test_f2cmap.py
+
+**Original:** `C:\Users\Jaques\Documents\kimi\workspace\.graphify-venv\Lib\site-packages\numpy\f2py\tests\test_f2cmap.py`
+
+## Content
+
+```py
+import pytest
+
+import numpy as np
+
+from . import util
+
+
+@pytest.mark.slow
+class TestF2Cmap(util.F2PyTest):
+    sources = [
+        util.getpath("tests", "src", "f2cmap", "isoFortranEnvMap.f90"),
+        util.getpath("tests", "src", "f2cmap", ".f2py_f2cmap")
+    ]
+
+    # gh-15095
+    def test_gh15095(self):
+        inp = np.ones(3)
+        out = self.module.func1(inp)
+        exp_out = 3
+        assert out == exp_out
+
+```
