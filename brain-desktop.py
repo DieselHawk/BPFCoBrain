@@ -26,12 +26,53 @@ except ImportError:
 sg.theme('DarkBlue3')
 
 # Vault path
-VAULT_PATH = Path(__file__).parent
+APP_PATH = Path(__file__).parent
+VAULT_PATH = APP_PATH
 INDEX_FILE = VAULT_PATH / '.vault-index.json'
 IMPORT_FILE = VAULT_PATH / '.imports.json'
 
+
+def resolve_credentials_path():
+    """Return a local credentials file if it exists, otherwise prompt the user to create one."""
+    candidates = [APP_PATH / 'credentials.json', VAULT_PATH / 'credentials.json']
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    if not sg.popup_yes_no(
+        'No credentials.json was found. Create one now with your Google OAuth JSON so Gmail/Drive sync works without committing secrets?',
+        title='Credentials Required',
+        default_button='Yes',
+        cancel_button='No',
+    ):
+        return None
+
+    sample = '{\n  "web": {\n    "client_id": "...",\n    "project_id": "...",\n    "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n    "token_uri": "https://oauth2.googleapis.com/token",\n    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n    "client_secret": "..."\n  },\n  "anthropic_api_key": "sk-..."\n}'
+    raw = sg.popup_get_text(
+        'Paste your local credentials JSON. This stays on your machine and is ignored by git.',
+        default_text=sample,
+        multiline=True,
+        size=(80, 18),
+        title='Add Local Credentials',
+    )
+    if raw is None or not raw.strip():
+        return None
+
+    try:
+        payload = json.loads(raw)
+        if not isinstance(payload, dict):
+            raise ValueError('Expected a JSON object.')
+        target = APP_PATH / 'credentials.json'
+        target.write_text(json.dumps(payload, indent=2), encoding='utf-8')
+        return target
+    except Exception as exc:
+        sg.popup(f'Invalid JSON: {exc}\n\nPlease paste a valid credentials object.', title='Credentials Error')
+        return None
+
+
 class BrainDesktop:
     def __init__(self):
+        self.credentials_path = resolve_credentials_path()
         self.index = self._load_index()
         self.window = None
         self.search_results = []

@@ -4,6 +4,11 @@
 .obsidian/workspaces.json
 .obsidian/graph.json
 
+# Local credentials and auth data
+credentials.json
+token.json
+token*.json
+
 # Cache and temp files
 .DS_Store
 Thumbs.db
