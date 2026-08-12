@@ -72,22 +72,38 @@ def resolve_credentials_path():
             except Exception:
                 continue
 
-    if not sg.popup_yes_no(
-        'No local credentials.json was found. Do you want the app to keep the secret on this machine and create it manually now?',
-        title='Credentials Required',
-        default_button='Yes',
-        cancel_button='No',
-    ):
+    try:
+        prompt_result = sg.popup_yes_no(
+            'No local credentials.json was found. Do you want the app to keep the secret on this machine and create it manually now?',
+            title='Credentials Required',
+            default_button='Yes',
+            cancel_button='No',
+        )
+    except TypeError:
+        prompt_result = sg.popup_yes_no(
+            'No local credentials.json was found. Do you want the app to keep the secret on this machine and create it manually now?',
+            title='Credentials Required',
+        )
+
+    if not prompt_result:
         return None
 
     sample = '{\n  "web": {\n    "client_id": "...",\n    "project_id": "...",\n    "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n    "token_uri": "https://oauth2.googleapis.com/token",\n    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n    "client_secret": "..."\n  },\n  "anthropic_api_key": "sk-..."\n}'
-    raw = sg.popup_get_text(
-        'Paste your local credentials JSON. It will be saved next to the app and ignored by git.',
-        default_text=sample,
-        multiline=True,
-        size=(80, 18),
-        title='Install Local Credentials',
-    )
+    try:
+        raw = sg.popup_get_text(
+            'Paste your local credentials JSON. It will be saved next to the app and ignored by git.',
+            default_text=sample,
+            multiline=True,
+            size=(80, 18),
+            title='Install Local Credentials',
+        )
+    except TypeError:
+        raw = sg.popup_get_text(
+            'Paste your local credentials JSON. It will be saved next to the app and ignored by git.',
+            default_text=sample,
+            size=(80, 18),
+            title='Install Local Credentials',
+        )
     if raw is None or not raw.strip():
         return None
 
