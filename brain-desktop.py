@@ -8,6 +8,7 @@ import sys
 import os
 import json
 import re
+import shutil
 from pathlib import Path
 
 # Windows UTF-8 fix
@@ -33,14 +34,46 @@ IMPORT_FILE = VAULT_PATH / '.imports.json'
 
 
 def resolve_credentials_path():
-    """Return a local credentials file if it exists, otherwise prompt the user to create one."""
-    candidates = [APP_PATH / 'credentials.json', VAULT_PATH / 'credentials.json']
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
+    """Ensure a local credentials.json exists, auto-installing it from common secret locations."""
+    target = APP_PATH / 'credentials.json'
+    if target.exists():
+        return target
+
+    # Direct env override: either a path or raw JSON payload.
+    env_path = os.environ.get('BRAIN_CREDENTIALS_PATH') or os.environ.get('CREDENTIALS_PATH')
+    if env_path:
+        src = Path(env_path).expanduser()
+        if src.exists() and src.is_file():
+            shutil.copy2(src, target)
+            return target
+        raw_json = os.environ.get('BRAIN_CREDENTIALS_JSON') or os.environ.get('CREDENTIALS_JSON')
+        if raw_json:
+            try:
+                payload = json.loads(raw_json)
+                if isinstance(payload, dict):
+                    target.write_text(json.dumps(payload, indent=2), encoding='utf-8')
+                    return target
+            except Exception:
+                pass
+
+    candidate_paths = [
+        APP_PATH / 'credentials.json',
+        VAULT_PATH / 'credentials.json',
+        Path.home() / 'credentials.json',
+        Path.home() / 'Documents' / 'credentials.json',
+        Path.home() / 'AppData' / 'Local' / 'BPFCoBrain' / 'credentials.json',
+        Path.home() / 'AppData' / 'Roaming' / 'BPFCoBrain' / 'credentials.json',
+    ]
+    for candidate in candidate_paths:
+        if candidate.exists() and candidate.is_file() and candidate != target:
+            try:
+                shutil.copy2(candidate, target)
+                return target
+            except Exception:
+                continue
 
     if not sg.popup_yes_no(
-        'No credentials.json was found. Create one now with your Google OAuth JSON so Gmail/Drive sync works without committing secrets?',
+        'No local credentials.json was found. Do you want the app to keep the secret on this machine and create it manually now?',
         title='Credentials Required',
         default_button='Yes',
         cancel_button='No',
@@ -49,11 +82,11 @@ def resolve_credentials_path():
 
     sample = '{\n  "web": {\n    "client_id": "...",\n    "project_id": "...",\n    "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n    "token_uri": "https://oauth2.googleapis.com/token",\n    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n    "client_secret": "..."\n  },\n  "anthropic_api_key": "sk-..."\n}'
     raw = sg.popup_get_text(
-        'Paste your local credentials JSON. This stays on your machine and is ignored by git.',
+        'Paste your local credentials JSON. It will be saved next to the app and ignored by git.',
         default_text=sample,
         multiline=True,
         size=(80, 18),
-        title='Add Local Credentials',
+        title='Install Local Credentials',
     )
     if raw is None or not raw.strip():
         return None
@@ -62,7 +95,6 @@ def resolve_credentials_path():
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             raise ValueError('Expected a JSON object.')
-        target = APP_PATH / 'credentials.json'
         target.write_text(json.dumps(payload, indent=2), encoding='utf-8')
         return target
     except Exception as exc:
