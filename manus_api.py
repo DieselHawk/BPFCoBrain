@@ -12,16 +12,21 @@ from manus_connector import manus_bp
 
 app = Flask(__name__)
 
+BASE_DIR = Path(__file__).resolve().parent
+
 # Register Manus connector blueprint
 app.register_blueprint(manus_bp)
 
 # Initialize BOB
-vault_path = Path(os.getenv("BRAIN_VAULT", Path.cwd() / "Brain"))
+vault_path = Path(os.getenv("BRAIN_VAULT", str(BASE_DIR / "Brain")))
+if not vault_path.is_absolute():
+    vault_path = (BASE_DIR / vault_path).resolve()
+
 bob = BOBManus(
     vault_path=str(vault_path),
-    credentials_file=os.getenv("GOOGLE_CREDENTIALS", "credentials.json"),
-    token_file=os.getenv("GOOGLE_TOKEN", "token.json"),
-    onedrive_token_file=os.getenv("ONEDRIVE_TOKEN", "onedrive_token.json"),
+    credentials_file=os.getenv("GOOGLE_CREDENTIALS", str(BASE_DIR / "credentials.json")),
+    token_file=os.getenv("GOOGLE_TOKEN", str(BASE_DIR / "token.json")),
+    onedrive_token_file=os.getenv("ONEDRIVE_TOKEN", str(BASE_DIR / "onedrive_token.json")),
     onedrive_client_id=os.getenv("AZURE_CLIENT_ID"),
     anthropic_key=os.getenv("ANTHROPIC_API_KEY"),
 )

@@ -42,11 +42,26 @@ class BOBManus:
             onedrive_client_id: Azure client ID (uses env var if not set)
             anthropic_key: Claude API key (uses env var if not set)
         """
-        self.vault_path = Path(vault_path or Path.cwd() / "Brain")
-        self.credentials_file = credentials_file
-        self.token_file = token_file
-        self.onedrive_token_file = onedrive_token_file
+        base_dir = Path(__file__).resolve().parent
+
+        if vault_path is None:
+            self.vault_path = base_dir / "Brain"
+        else:
+            self.vault_path = Path(vault_path)
+            if not self.vault_path.is_absolute():
+                self.vault_path = (base_dir / self.vault_path).resolve()
+
+        self.credentials_file = str(
+            Path(credentials_file) if Path(credentials_file).is_absolute() else (base_dir / credentials_file)
+        )
+        self.token_file = str(
+            Path(token_file) if Path(token_file).is_absolute() else (base_dir / token_file)
+        )
+        self.onedrive_token_file = str(
+            Path(onedrive_token_file) if Path(onedrive_token_file).is_absolute() else (base_dir / onedrive_token_file)
+        )
         self.onedrive_client_id = onedrive_client_id
+        self.anthropic_key = anthropic_key or os.getenv("ANTHROPIC_API_KEY")
         
         # Initialize indexer
         self.indexer = None
@@ -87,7 +102,7 @@ class BOBManus:
         
         # Initialize Claude
         try:
-            api_key = anthropic_key or os.getenv("ANTHROPIC_API_KEY")
+            api_key = self.anthropic_key
             if not api_key:
                 self.errors.append("ANTHROPIC_API_KEY not set")
             else:
