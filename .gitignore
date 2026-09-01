@@ -29,3 +29,8 @@ token.json
 .env
 .env.*
 !.env.example
+
+credentials.json
+token.json
+.env
+.env.*
