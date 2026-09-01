@@ -1,14 +1,19 @@
 """Manus API - RESTful interface for BOB contextual answerer.
 
 Provides HTTP endpoints for the Manus platform to query BOB.
+Includes Manus-specific webhook endpoints for case-aware queries.
 """
 
 from flask import Flask, request, jsonify
 from pathlib import Path
 import os
 from manus_bot import BOBManus
+from manus_connector import manus_bp
 
 app = Flask(__name__)
+
+# Register Manus connector blueprint
+app.register_blueprint(manus_bp)
 
 # Initialize BOB
 vault_path = Path(os.getenv("BRAIN_VAULT", Path.cwd() / "Brain"))
@@ -17,6 +22,7 @@ bob = BOBManus(
     credentials_file=os.getenv("GOOGLE_CREDENTIALS", "credentials.json"),
     token_file=os.getenv("GOOGLE_TOKEN", "token.json"),
     onedrive_token_file=os.getenv("ONEDRIVE_TOKEN", "onedrive_token.json"),
+    onedrive_client_id=os.getenv("AZURE_CLIENT_ID"),
     anthropic_key=os.getenv("ANTHROPIC_API_KEY"),
 )
 
