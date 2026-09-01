@@ -84,6 +84,36 @@ class BrainDesktop:
                 results.append(note)
         return sorted(results, key=lambda n: (-n["_score"], n.get("title", "").lower()))[:20]
 
+    def ask_copilot(self, question):
+        """Answer from local notes; never call the model without retrieved context."""
+        matches = self.search_vault(question)
+        if not matches:
+            return "No matching local context was found. I will not guess."
+        context_parts = []
+        sources = []
+        for note in matches[:5]:
+            source = note.get("path", note.get("key", "unknown"))
+            sources.append(source)
+            context_parts.append(f"SOURCE: {source}\nTITLE: {note.get('title', note.get('key', ''))}\n{note.get('content', '')[:5000]}")
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return "Local context found, but OPENAI_API_KEY is not configured. Sources:\n- " + "\n- ".join(sources)
+        try:
+            from openai import OpenAI
+            base_url = os.environ.get("OPENAI_API_BASE")
+            client = OpenAI(api_key=api_key, **({"base_url": base_url} if base_url else {}))
+            response = client.chat.completions.create(
+                model=os.environ.get("BPFCOBRAIN_MODEL", "gpt-5-mini"),
+                messages=[
+                    {"role": "system", "content": "You are BPFCoBrain Copilot. Answer only from the supplied sources. If they do not establish an answer, say so. End with a Sources section listing the exact paths."},
+                    {"role": "user", "content": f"Question: {question}\n\nLocal context:\n\n" + "\n\n---\n\n".join(context_parts)},
+                ],
+                max_completion_tokens=1200,
+            )
+            return response.choices[0].message.content or "The model returned no answer.\nSources:\n- " + "\n- ".join(sources)
+        except Exception as exc:
+            return f"Copilot request failed safely: {exc}\n\nSources:\n- " + "\n- ".join(sources)
+
     def format_note_preview(self, note):
         title = note.get("title", note.get("key", "Untitled"))
         links = self.connections(note.get("key", title))
@@ -107,9 +137,14 @@ class BrainDesktop:
             [sg.HorizontalSeparator()], [sg.Text("Preview", font=("Arial", 14, "bold"))],
             [sg.Multiline(size=(55, 24), key="PREVIEW", disabled=True, font=("Courier", 9))],
         ]
-        return sg.Window("BPFCoBrain", [[sg.Column(left), sg.Column(right)],
+        copilot = [
+            [sg.Text("Copilot", font=("Arial", 14, "bold"))],
+            [sg.Multiline(size=(108, 8), key="COPILOT_LOG", disabled=True, autoscroll=True)],
+            [sg.Input(key="COPILOT_QUESTION", expand_x=True), sg.Button("Ask Copilot")],
+        ]
+        return sg.Window("BPFCoBrain", [[sg.Column(left), sg.Column(right)], copilot,
             [sg.Button("Open Folder"), sg.Button("Web Dashboard"), sg.Button("Settings"), sg.Button("Exit")]],
-            size=(1050, 720), finalize=True)
+            size=(1100, 900), finalize=True)
 
     def refresh(self):
         self.index = self._load_index()
@@ -142,6 +177,12 @@ class BrainDesktop:
                     lines.append(f"{i}. {note.get('title', key)} | {note.get('word_count', 0):,} words | {len(self.connections(key))} links")
                 self.window["RESULTS"].update("\n".join(lines))
                 self.window["PREVIEW"].update(self.format_note_preview(self.search_results[0]))
+            elif event == "Ask Copilot":
+                question = values.get("COPILOT_QUESTION", "").strip()
+                if question:
+                    answer = self.ask_copilot(question)
+                    self.window["COPILOT_LOG"].update(f"You: {question}\n\n{answer}\n\n{'=' * 80}\n", append=True)
+                    self.window["COPILOT_QUESTION"].update("")
             elif event == "Refresh":
                 self.refresh()
                 sg.popup("Vault index refreshed.", title="BPFCoBrain")

@@ -228,7 +228,11 @@ class VaultIndexer:
         print(f"  Avg connections per note: {total_links / max(len(self.notes), 1):.1f}")
 
 def main():
-    vault_path = os.path.expanduser("~/Documents/Obsidian Vault")
+    import argparse
+    parser = argparse.ArgumentParser(description="Index a BPFCoBrain Markdown vault")
+    parser.add_argument("--vault", default=os.path.dirname(os.path.abspath(__file__)))
+    args = parser.parse_args()
+    vault_path = os.path.abspath(os.path.expanduser(args.vault))
     
     indexer = VaultIndexer(vault_path)
     indexer.index_vault()
