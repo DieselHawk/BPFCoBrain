@@ -7,8 +7,40 @@ Includes Manus-specific webhook endpoints for case-aware queries.
 from flask import Flask, request, jsonify
 from pathlib import Path
 import os
+from dotenv import dotenv_values
 from manus_bot import BOBManus
 from manus_connector import manus_bp
+
+
+def _normalize_env_file():
+    """Ensure .env is UTF-8 so Flask does not crash while reading it."""
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+
+    try:
+        raw = env_path.read_bytes()
+        raw.decode("utf-8")
+        return
+    except UnicodeDecodeError:
+        pass
+
+    for encoding in ("utf-16", "utf-16-le", "utf-16-be"):
+        try:
+            text = env_path.read_bytes().decode(encoding)
+            env_path.write_text(text, encoding="utf-8")
+            return
+        except UnicodeDecodeError:
+            continue
+
+
+_normalize_env_file()
+os.environ.setdefault("FLASK_SKIP_DOTENV", "1")
+
+# Load env ourselves so invalid encoding is handled gracefully.
+for key, value in dotenv_values(Path(__file__).resolve().parent / ".env").items():
+    if key and value is not None:
+        os.environ.setdefault(key, value)
 
 app = Flask(__name__)
 
