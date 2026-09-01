@@ -22,3 +22,10 @@ Thumbs.db
 # OS
 *.swp
 *.swo
+
+# OAuth credentials and local secrets
+credentials.json
+token.json
+.env
+.env.*
+!.env.example

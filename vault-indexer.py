@@ -37,6 +37,7 @@ class VaultIndexer:
         self.notes: Dict[str, Note] = {}
         self.index: Dict[str, List[str]] = {}  # keyword -> [note_titles]
         self.graph: Dict[str, Set[str]] = {}   # note -> connected_notes
+        self.unresolved_links: Dict[str, List[str]] = {}
         
     def index_vault(self) -> None:
         """Scan and index all markdown files in vault"""
@@ -109,10 +110,11 @@ class VaultIndexer:
         """Build bidirectional graph of note connections"""
         for title, note in self.notes.items():
             self.graph[title] = set()
+            self.unresolved_links[title] = []
             
             for link in note.links:
                 # Normalize link (remove .md, case-insensitive match)
-                link_clean = link.strip()
+                link_clean = link.strip().split("#", 1)[0].strip().removesuffix(".md")
                 
                 # Try exact match first
                 if link_clean in self.notes:
@@ -123,6 +125,8 @@ class VaultIndexer:
                         if note_title.lower() == link_clean.lower():
                             self.graph[title].add(note_title)
                             break
+                    else:
+                        self.unresolved_links[title].append(link.strip())
     
     def query(self, keyword: str, depth: int = 1) -> Dict:
         """
@@ -197,7 +201,14 @@ class VaultIndexer:
                 }
                 for title, note in self.notes.items()
             },
-            "graph": {k: list(v) for k, v in self.graph.items()}
+            "graph": {k: sorted(v) for k, v in self.graph.items()},
+            "unresolved_links": self.unresolved_links,
+            "stats": {
+                "total_notes": len(self.notes),
+                "total_words": sum(note.word_count for note in self.notes.values()),
+                "connections": sum(len(links) for links in self.graph.values()),
+                "unresolved_links": sum(len(links) for links in self.unresolved_links.values())
+            }
         }
         
         Path(output_path).write_text(json.dumps(index_data, indent=2))
@@ -206,12 +217,14 @@ class VaultIndexer:
     def print_stats(self) -> None:
         """Print vault statistics"""
         total_words = sum(note.word_count for note in self.notes.values())
-        total_links = sum(len(note.links) for note in self.notes.values())
+        total_links = sum(len(links) for links in self.graph.values())
+        unresolved = sum(len(links) for links in self.unresolved_links.values())
         
         print("\n📊 Vault Statistics:")
         print(f"  Notes: {len(self.notes)}")
         print(f"  Total words: {total_words:,}")
         print(f"  Total links: {total_links}")
+        print(f"  Unresolved references: {unresolved}")
         print(f"  Avg connections per note: {total_links / max(len(self.notes), 1):.1f}")
 
 def main():

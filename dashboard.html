@@ -332,171 +332,105 @@
     </div>
 
     <script>
-        // Sample data - replace with actual vault data
-        const sampleData = {
-            nodes: [
-                { id: "graph", type: "concept", count: 765 },
-                { id: "cluster", type: "concept", count: 10 },
-                { id: "analyze", type: "concept", count: 6 },
-                { id: "llm", type: "concept", count: 5 },
-                { id: "optimization", type: "concept", count: 8 },
-                { id: "algorithms", type: "concept", count: 12 },
-            ],
-            links: [
-                { source: "graph", target: "cluster", strength: 0.7 },
-                { source: "graph", target: "analyze", strength: 0.6 },
-                { source: "cluster", target: "algorithms", strength: 0.8 },
-                { source: "analyze", target: "optimization", strength: 0.5 },
-                { source: "llm", target: "graph", strength: 0.4 },
-            ]
-        };
-
+        const INDEX_URL = ".vault-index.json";
+        let brainIndex = null;
+        let graphData = { nodes: [], links: [] };
         let currentNode = null;
+        let simulation = null;
 
-        // Initialize D3 Graph
-        function initGraph() {
-            const width = document.getElementById("graph").clientWidth;
-            const height = document.getElementById("graph").clientHeight;
+        const escapeHtml = value => String(value ?? "")
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
 
-            const svg = d3.select("#graph")
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height);
-
-            const simulation = d3.forceSimulation(sampleData.nodes)
-                .force("link", d3.forceLink(sampleData.links).id(d => d.id).distance(100))
-                .force("charge", d3.forceManyBody().strength(-300))
-                .force("center", d3.forceCenter(width / 2, height / 2));
-
-            const link = svg.selectAll("line")
-                .data(sampleData.links)
-                .enter()
-                .append("line")
-                .attr("stroke", "#ddd")
-                .attr("stroke-width", d => Math.sqrt(d.strength) * 2);
-
-            const node = svg.selectAll("circle")
-                .data(sampleData.nodes)
-                .enter()
-                .append("circle")
-                .attr("r", d => 8 + d.count / 30)
-                .attr("fill", "#667eea")
-                .attr("stroke", "white")
-                .attr("stroke-width", 2)
-                .style("cursor", "pointer")
-                .on("click", showDetails)
-                .call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended));
-
-            const label = svg.selectAll("text")
-                .data(sampleData.nodes)
-                .enter()
-                .append("text")
-                .attr("text-anchor", "middle")
-                .attr("dy", ".3em")
-                .attr("fill", "white")
-                .attr("font-size", "12px")
-                .attr("font-weight", "bold")
-                .text(d => d.id);
-
-            simulation.on("tick", () => {
-                link.attr("x1", d => d.source.x)
-                    .attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x)
-                    .attr("y2", d => d.target.y);
-
-                node.attr("cx", d => d.x)
-                    .attr("cy", d => d.y);
-
-                label.attr("x", d => d.x)
-                    .attr("y", d => d.y);
-            });
-
-            function dragstarted(event, d) {
-                if (!event.active) simulation.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            }
-
-            function dragged(event, d) {
-                d.fx = event.x;
-                d.fy = event.y;
-            }
-
-            function dragended(event, d) {
-                if (!event.active) simulation.alphaTarget(0);
-                d.fx = null;
-                d.fy = null;
-            }
+        function setStatus(message, isError = false) {
+            document.querySelector(".graph-info").textContent = message;
+            document.querySelector(".graph-info").style.color = isError ? "#b42318" : "#666";
         }
 
-        function showDetails(event, d) {
-            currentNode = d;
-            const html = `
-                <div class="detail-item">
-                    <div class="detail-label">Concept</div>
-                    <div class="detail-value">${d.id.toUpperCase()}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Matches Found</div>
-                    <div class="detail-value">${d.count}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Type</div>
-                    <div class="detail-value">${d.type}</div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Connected To</div>
-                    <div class="detail-value">
-                        ${sampleData.links
-                            .filter(l => l.source.id === d.id || l.target.id === d.id)
-                            .map(l => l.source.id === d.id ? l.target.id : l.source.id)
-                            .join(", ")}
-                    </div>
-                </div>
-            `;
-            document.getElementById("detailsContent").innerHTML = html;
+        function normalizeIndex(index) {
+            const notes = index.notes && !Array.isArray(index.notes) ? index.notes : {};
+            const nodes = Object.entries(notes).map(([id, note]) => ({
+                id, title: note.title || id, path: note.path || "", folder: note.folder || "",
+                word_count: note.word_count || 0, content: note.content || "",
+                links: Array.isArray(note.links) ? note.links : [], frontmatter: note.frontmatter || {}
+            }));
+            const known = new Set(nodes.map(node => node.id.toLowerCase()));
+            const links = [];
+            const seen = new Set();
+            nodes.forEach(node => (index.graph?.[node.id] || node.links || []).forEach(target => {
+                const match = nodes.find(candidate => candidate.id.toLowerCase() === String(target).toLowerCase());
+                if (!match) return;
+                const key = [node.id, match.id].sort().join("\0");
+                if (!seen.has(key)) { seen.add(key); links.push({ source: node.id, target: match.id, strength: 1 }); }
+            }));
+            return { nodes, links };
         }
 
-        function closeDetails() {
-            currentNode = null;
-            document.getElementById("detailsContent").innerHTML = `
-                <div class="empty-state">
-                    <div>
-                        <div style="font-size: 48px; margin-bottom: 10px;">👈</div>
-                        <div>Click a node to see details</div>
-                    </div>
-                </div>
-            `;
+        function updateStats(index, data) {
+            const stats = index.stats || {};
+            const words = stats.total_words ?? (index.notes && Object.values(index.notes).reduce((sum, n) => sum + (n.word_count || 0), 0));
+            document.getElementById("noteCount").textContent = (stats.total_notes ?? index.note_count ?? data.nodes.length).toLocaleString();
+            document.getElementById("wordCount").textContent = Number(words || 0).toLocaleString();
+            document.getElementById("connCount").textContent = (stats.connections ?? data.links.length).toLocaleString();
+            document.querySelector(".sidebar .stat-box:nth-of-type(4) .stat-value").textContent = `${data.nodes.length.toLocaleString()} indexed notes`;
+            document.querySelector(".sidebar .stat-box:nth-of-type(5) .stat-value").textContent = "Local index";
         }
 
-        function copyToClipboard() {
-            if (currentNode) {
-                const text = `Concept: ${currentNode.id}\nMatches: ${currentNode.count}`;
-                navigator.clipboard.writeText(text);
-                alert("Copied to clipboard!");
+        function renderGraph(data) {
+            const container = document.getElementById("graph");
+            container.innerHTML = "";
+            const width = container.clientWidth || 800, height = container.clientHeight || 600;
+            const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+            const links = svg.append("g").selectAll("line").data(data.links).enter().append("line")
+                .attr("stroke", "#c7cbd6").attr("stroke-width", 1.5);
+            const nodes = svg.append("g").selectAll("circle").data(data.nodes).enter().append("circle")
+                .attr("r", d => Math.max(5, Math.min(16, 5 + Math.sqrt(d.links.length + 1))))
+                .attr("fill", "#667eea").attr("stroke", "white").attr("stroke-width", 1.5)
+                .style("cursor", "pointer").on("click", showDetails);
+            const labels = svg.append("g").selectAll("text").data(data.nodes).enter().append("text")
+                .attr("text-anchor", "middle").attr("dy", "-9").attr("fill", "#333")
+                .attr("font-size", "10px").text(d => d.title.length > 24 ? `${d.title.slice(0, 21)}...` : d.title);
+            simulation = d3.forceSimulation(data.nodes)
+                .force("link", d3.forceLink(data.links).id(d => d.id).distance(70))
+                .force("charge", d3.forceManyBody().strength(-45)).force("center", d3.forceCenter(width / 2, height / 2))
+                .on("tick", () => {
+                    links.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+                    nodes.attr("cx", d => d.x).attr("cy", d => d.y); labels.attr("x", d => d.x).attr("y", d => d.y);
+                });
+            nodes.call(d3.drag().on("start", (event, d) => { if (!event.active) simulation.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
+                .on("drag", (event, d) => { d.fx = event.x; d.fy = event.y; })
+                .on("end", (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+        }
+
+        function showDetails(event, node) {
+            currentNode = node;
+            const connected = graphData.links.filter(link => link.source.id === node.id || link.target.id === node.id)
+                .map(link => link.source.id === node.id ? link.target.id : link.source.id);
+            document.getElementById("detailsContent").innerHTML = `<div class="detail-item"><div class="detail-label">Note</div><div class="detail-value">${escapeHtml(node.title)}</div></div><div class="detail-item"><div class="detail-label">Path</div><div class="detail-value">${escapeHtml(node.path)}</div></div><div class="detail-item"><div class="detail-label">Words / Connections</div><div class="detail-value">${node.word_count.toLocaleString()} / ${connected.length}</div></div><div class="detail-item"><div class="detail-label">Connected To</div><div class="detail-value">${escapeHtml(connected.join(", ") || "No explicit links")}</div></div>`;
+        }
+
+        function closeDetails() { currentNode = null; document.getElementById("detailsContent").innerHTML = `<div class="empty-state"><div>Click a node to see details</div></div>`; }
+        function copyToClipboard() { if (currentNode) navigator.clipboard.writeText(`${currentNode.title}\n${currentNode.path}`).then(() => alert("Copied to clipboard!")); }
+        function exportData() { const blob = new Blob([JSON.stringify(brainIndex, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "brain-index.json"; a.click(); URL.revokeObjectURL(a.href); }
+        function refreshGraph() { loadIndex(); }
+        function searchGraph(event) { const query = event.target.value.trim().toLowerCase(); d3.selectAll("#graph circle").attr("opacity", d => !query || `${d.title} ${d.path} ${d.content}`.toLowerCase().includes(query) ? 1 : .15); }
+
+        async function loadIndex() {
+            try {
+                setStatus("Loading live vault index...");
+                const response = await fetch(`${INDEX_URL}?t=${Date.now()}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                brainIndex = await response.json(); graphData = normalizeIndex(brainIndex); updateStats(brainIndex, graphData); renderGraph(graphData);
+                setStatus(`Live vault index | ${graphData.nodes.length.toLocaleString()} notes • ${graphData.links.length.toLocaleString()} links`);
+            } catch (error) {
+                setStatus(`Unable to load ${INDEX_URL}. Open this folder through a local web server, not file:// (${error.message})`, true);
+                document.getElementById("graph").innerHTML = `<div class="empty-state">The live index could not be loaded.<br><small>Run <code>python -m http.server</code> in the vault folder, then open http://localhost:8000/dashboard.html.</small></div>`;
             }
         }
 
-        function exportData() {
-            const data = JSON.stringify(sampleData, null, 2);
-            const blob = new Blob([data], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "brain-graph.json";
-            a.click();
-        }
-
-        function refreshGraph() {
-            document.getElementById("graph").innerHTML = "";
-            initGraph();
-        }
-
-        // Initialize on load
-        window.addEventListener("load", initGraph);
+        document.getElementById("searchInput").addEventListener("input", searchGraph);
+        window.addEventListener("resize", () => { if (brainIndex) renderGraph(graphData); });
+        window.addEventListener("load", loadIndex);
     </script>
 </body>
 </html>

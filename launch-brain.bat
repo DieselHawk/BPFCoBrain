@@ -4,9 +4,9 @@ REM This script finds the vault even if moved, and ensures everything is ready
 
 setlocal enabledelayedexpansion
 
-REM Check if we're already in the vault folder
-if exist ".vault-index.json" (
-    set "VAULT_PATH=%cd%"
+REM Check the folder containing this launcher first.
+if exist "%~dp0brain-desktop.py" (
+    set "VAULT_PATH=%~dp0"
     goto :found_vault
 )
 
@@ -83,10 +83,15 @@ if errorlevel 1 (
     echo.
 )
 
-REM Check if index exists and is recent
+REM Create an index when it is missing.
 if not exist ".vault-index.json" (
     echo ⚠️  Creating vault index...
     python vault-indexer.py >nul 2>&1
+    if errorlevel 1 (
+        echo ❌ Failed to create vault index
+        pause
+        exit /b 1
+    )
     echo ✅ Index created
     echo.
 )
