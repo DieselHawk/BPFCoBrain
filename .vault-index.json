@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-09-01T13:23:24.726711",
+  "timestamp": "2026-09-02T11:33:27.209565",
   "vault_path": "C:\\BPFCo\\BPFCoBrain",
-  "note_count": 834,
+  "note_count": 836,
   "notes": {
     "BRAIN-CONTEXT": {
       "path": "BRAIN-CONTEXT.md",
@@ -57,6 +57,20 @@
       "path": "ICON-SETUP.md",
       "folder": "BPFCoBrain",
       "word_count": 387,
+      "links": [],
+      "frontmatter": {}
+    },
+    "MANUS-BOB-SETUP": {
+      "path": "MANUS-BOB-SETUP.md",
+      "folder": "BPFCoBrain",
+      "word_count": 1046,
+      "links": [],
+      "frontmatter": {}
+    },
+    "MANUS-HOOKUP-GUIDE": {
+      "path": "MANUS-HOOKUP-GUIDE.md",
+      "folder": "BPFCoBrain",
+      "word_count": 1183,
       "links": [],
       "frontmatter": {}
     },
@@ -10012,6 +10026,8 @@
     "GRAPHFY-GUIDE": [],
     "HOW-TO-ADD-FOLDER": [],
     "ICON-SETUP": [],
+    "MANUS-BOB-SETUP": [],
+    "MANUS-HOOKUP-GUIDE": [],
     "OMNIROUTE-GUIDE": [],
     "PERMANENCE": [],
     "PREVIEW-GUIDE": [],
@@ -10856,6 +10872,8 @@
     ],
     "HOW-TO-ADD-FOLDER": [],
     "ICON-SETUP": [],
+    "MANUS-BOB-SETUP": [],
+    "MANUS-HOOKUP-GUIDE": [],
     "OMNIROUTE-GUIDE": [
       "links"
     ],
@@ -11953,8 +11971,8 @@
     "update": []
   },
   "stats": {
-    "total_notes": 834,
-    "total_words": 940192,
+    "total_notes": 836,
+    "total_words": 942421,
     "connections": 0,
     "unresolved_links": 221
   }
