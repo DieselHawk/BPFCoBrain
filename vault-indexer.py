@@ -38,17 +38,26 @@ class VaultIndexer:
         self.index: Dict[str, List[str]] = {}  # keyword -> [note_titles]
         self.graph: Dict[str, Set[str]] = {}   # note -> connected_notes
         self.unresolved_links: Dict[str, List[str]] = {}
+        self._path_lookup: Dict[str, str] = {}
+        self._title_lookup: Dict[str, str] = {}
         
-    def index_vault(self) -> None:
+    def index_vault(self, source_paths: List[str] = None) -> None:
         """Scan and index all markdown files in vault"""
         print(f"📚 Indexing vault: {self.vault_path}")
-        
-        for md_file in self.vault_path.rglob("*.md"):
-            # Skip .obsidian and hidden folders
-            if "/.obsidian" in str(md_file) or md_file.name.startswith("."):
+        roots = [self.vault_path] + [Path(path).expanduser().resolve() for path in (source_paths or [])]
+        seen_files = set()
+        for root in roots:
+            if not root.exists():
+                print(f"⚠ Source path not found: {root}")
                 continue
-                
-            self._index_file(md_file)
+            for md_file in root.rglob("*.md"):
+                if md_file in seen_files:
+                    continue
+                seen_files.add(md_file)
+            # Skip .obsidian and hidden folders
+                if "/.obsidian" in str(md_file).replace("\\", "/") or md_file.name.startswith("."):
+                    continue
+                self._index_file(md_file)
         
         self._build_graph()
         print(f"✓ Indexed {len(self.notes)} notes")
@@ -67,7 +76,7 @@ class VaultIndexer:
             links = self._extract_links(content)
             
             note = Note(
-                path=str(file_path.relative_to(self.vault_path)),
+                path=os.path.relpath(file_path, self.vault_path),
                 title=title,
                 content=content,
                 frontmatter=frontmatter,
@@ -77,6 +86,10 @@ class VaultIndexer:
             )
             
             self.notes[title] = note
+            relative = os.path.relpath(file_path, self.vault_path).replace("\\", "/")
+            relative_stem = os.path.splitext(relative)[0].lstrip("./").casefold()
+            self._path_lookup[relative_stem] = title
+            self._title_lookup[title.casefold()] = title
             
         except Exception as e:
             print(f"⚠ Error indexing {file_path}: {e}")
@@ -113,20 +126,19 @@ class VaultIndexer:
             self.unresolved_links[title] = []
             
             for link in note.links:
-                # Normalize link (remove .md, case-insensitive match)
-                link_clean = link.strip().split("#", 1)[0].strip().removesuffix(".md")
-                
-                # Try exact match first
-                if link_clean in self.notes:
-                    self.graph[title].add(link_clean)
+                link_clean = link.strip().split("#", 1)[0].strip().replace("\\", "/")
+                link_clean = link_clean.removesuffix(".md").lstrip("./").casefold()
+                target = self._title_lookup.get(link_clean)
+                if target is None:
+                    target = self._path_lookup.get(link_clean)
+                if target is None:
+                    # Obsidian also permits a path-qualified link whose final
+                    # component is the note title.
+                    target = self._title_lookup.get(link_clean.rsplit("/", 1)[-1])
+                if target is not None:
+                    self.graph[title].add(target)
                 else:
-                    # Try case-insensitive
-                    for note_title in self.notes:
-                        if note_title.lower() == link_clean.lower():
-                            self.graph[title].add(note_title)
-                            break
-                    else:
-                        self.unresolved_links[title].append(link.strip())
+                    self.unresolved_links[title].append(link.strip())
     
     def query(self, keyword: str, depth: int = 1) -> Dict:
         """
@@ -231,11 +243,12 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Index a BPFCoBrain Markdown vault")
     parser.add_argument("--vault", default=os.path.dirname(os.path.abspath(__file__)))
+    parser.add_argument("--source", action="append", default=[], help="Additional Markdown source folder (repeatable)")
     args = parser.parse_args()
     vault_path = os.path.abspath(os.path.expanduser(args.vault))
     
     indexer = VaultIndexer(vault_path)
-    indexer.index_vault()
+    indexer.index_vault(args.source)
     indexer.print_stats()
     
     # Export index

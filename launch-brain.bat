@@ -86,7 +86,12 @@ if errorlevel 1 (
 REM Create an index when it is missing.
 if not exist ".vault-index.json" (
     echo ⚠️  Creating vault index...
-    python vault-indexer.py >nul 2>&1
+    set "SOURCE_PATH=%USERPROFILE%\OneDrive\Documents\New All Docs"
+    if exist "!SOURCE_PATH!" (
+        python vault-indexer.py --vault "!VAULT_PATH!" --source "!SOURCE_PATH!" >nul 2>&1
+    ) else (
+        python vault-indexer.py --vault "!VAULT_PATH!" >nul 2>&1
+    )
     if errorlevel 1 (
         echo ❌ Failed to create vault index
         pause

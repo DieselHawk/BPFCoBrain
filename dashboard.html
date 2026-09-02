@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧠 BPFCoBrain Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🧠 BPFCoBrain Dashboard</title>
+    <link rel="icon" href="brain-icon.ico">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * {
@@ -260,39 +261,34 @@
             
             <div class="stat-box">
                 <div class="stat-label">Total Notes</div>
-                <div class="stat-value" id="noteCount">793</div>
+                <div class="stat-value" id="noteCount">—</div>
             </div>
 
             <div class="stat-box">
                 <div class="stat-label">Total Words</div>
-                <div class="stat-value" id="wordCount">841K</div>
+                <div class="stat-value" id="wordCount">—</div>
             </div>
 
             <div class="stat-box">
                 <div class="stat-label">Connections</div>
-                <div class="stat-value" id="connCount">217</div>
+                <div class="stat-value" id="connCount">—</div>
             </div>
 
             <div class="stat-box">
                 <div class="stat-label">Files</div>
-                <div class="stat-value">762 Python<br>12 Markdown<br>34 Text</div>
+                <div class="stat-value" id="fileCount">—</div>
             </div>
 
             <div class="stat-box">
                 <div class="stat-label">Token Pool</div>
-                <div class="stat-value">600K</div>
+                <div class="stat-value" id="tokenPool">Not configured</div>
             </div>
 
             <input type="text" class="search-box" placeholder="Search concepts..." id="searchInput">
             
             <div class="top-concepts">
                 <strong style="font-size: 12px; color: #666; text-transform: uppercase;">Top Concepts</strong>
-                <div style="margin-top: 8px;">
-                    <span class="concept-tag">graph (765)</span>
-                    <span class="concept-tag">cluster (10)</span>
-                    <span class="concept-tag">analyze (6)</span>
-                    <span class="concept-tag">llm (5)</span>
-                </div>
+                <div style="margin-top: 8px;" id="topConcepts">Loading...</div>
             </div>
 
             <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #e0e0e0;">
@@ -357,12 +353,19 @@
             const known = new Set(nodes.map(node => node.id.toLowerCase()));
             const links = [];
             const seen = new Set();
-            nodes.forEach(node => (index.graph?.[node.id] || node.links || []).forEach(target => {
+            const external = new Map();
+            nodes.forEach(node => {
+                const indexedLinks = index.graph?.[node.id];
+                const targets = Array.isArray(indexedLinks) && indexedLinks.length ? indexedLinks : node.links;
+                (targets || []).forEach(target => {
                 const match = nodes.find(candidate => candidate.id.toLowerCase() === String(target).toLowerCase());
-                if (!match) return;
-                const key = [node.id, match.id].sort().join("\0");
-                if (!seen.has(key)) { seen.add(key); links.push({ source: node.id, target: match.id, strength: 1 }); }
-            }));
+                const targetId = match ? match.id : `external:${target}`;
+                if (!match) external.set(targetId, { id: targetId, title: `[unresolved] ${target}`, path: "", folder: "unresolved", links: [], unresolved: true });
+                const key = [node.id, targetId].sort().join("\0");
+                if (!seen.has(key)) { seen.add(key); links.push({ source: node.id, target: targetId, strength: 1, unresolved: !match }); }
+                });
+            });
+            nodes.push(...external.values());
             return { nodes, links };
         }
 
@@ -371,9 +374,15 @@
             const words = stats.total_words ?? (index.notes && Object.values(index.notes).reduce((sum, n) => sum + (n.word_count || 0), 0));
             document.getElementById("noteCount").textContent = (stats.total_notes ?? index.note_count ?? data.nodes.length).toLocaleString();
             document.getElementById("wordCount").textContent = Number(words || 0).toLocaleString();
-            document.getElementById("connCount").textContent = (stats.connections ?? data.links.length).toLocaleString();
-            document.querySelector(".sidebar .stat-box:nth-of-type(4) .stat-value").textContent = `${data.nodes.length.toLocaleString()} indexed notes`;
-            document.querySelector(".sidebar .stat-box:nth-of-type(5) .stat-value").textContent = "Local index";
+            const verified = stats.connections ?? data.links.filter(link => !link.unresolved).length;
+            const unresolved = stats.unresolved_links ?? data.links.filter(link => link.unresolved).length;
+            document.getElementById("connCount").textContent = `${verified.toLocaleString()} verified / ${unresolved.toLocaleString()} unresolved`;
+            const types = {};
+            data.nodes.forEach(node => { const ext = (node.path.match(/\.([^.\\/]+)$/) || ["", "note"])[1].toLowerCase(); types[ext] = (types[ext] || 0) + 1; });
+            document.getElementById("fileCount").innerHTML = Object.entries(types).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([type, count]) => `${count.toLocaleString()} ${escapeHtml(type)}`).join("<br>") || "No files";
+            const folders = {};
+            data.nodes.forEach(node => { if (node.folder) folders[node.folder] = (folders[node.folder] || 0) + 1; });
+            document.getElementById("topConcepts").innerHTML = Object.entries(folders).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([folder, count]) => `<span class="concept-tag">${escapeHtml(folder)} (${count})</span>`).join("") || "No folders";
         }
 
         function renderGraph(data) {
@@ -385,7 +394,7 @@
                 .attr("stroke", "#c7cbd6").attr("stroke-width", 1.5);
             const nodes = svg.append("g").selectAll("circle").data(data.nodes).enter().append("circle")
                 .attr("r", d => Math.max(5, Math.min(16, 5 + Math.sqrt(d.links.length + 1))))
-                .attr("fill", "#667eea").attr("stroke", "white").attr("stroke-width", 1.5)
+                .attr("fill", d => d.unresolved ? "#f59e0b" : "#667eea").attr("stroke", "white").attr("stroke-width", 1.5)
                 .style("cursor", "pointer").on("click", showDetails);
             const labels = svg.append("g").selectAll("text").data(data.nodes).enter().append("text")
                 .attr("text-anchor", "middle").attr("dy", "-9").attr("fill", "#333")

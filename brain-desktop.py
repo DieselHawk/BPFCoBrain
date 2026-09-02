@@ -84,35 +84,36 @@ class BrainDesktop:
                 results.append(note)
         return sorted(results, key=lambda n: (-n["_score"], n.get("title", "").lower()))[:20]
 
-    def ask_copilot(self, question):
-        """Answer from local notes; never call the model without retrieved context."""
+    def prepare_for_manus(self, question):
+        """Copy a source-cited prompt to the clipboard and open Manus."""
         matches = self.search_vault(question)
         if not matches:
-            return "No matching local context was found. I will not guess."
+            return "No matching local context was found. I will not prepare a guess."
         context_parts = []
         sources = []
         for note in matches[:5]:
             source = note.get("path", note.get("key", "unknown"))
             sources.append(source)
             context_parts.append(f"SOURCE: {source}\nTITLE: {note.get('title', note.get('key', ''))}\n{note.get('content', '')[:5000]}")
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            return "Local context found, but OPENAI_API_KEY is not configured. Sources:\n- " + "\n- ".join(sources)
+        prompt = ("You are helping me work with my BPFCoBrain context. Answer the question only "
+                  "from the sources below. If the sources do not establish an answer, say so. "
+                  "Cite the exact source paths in your answer.\n\n"
+                  f"QUESTION:\n{question}\n\nCONTEXT:\n\n" + "\n\n---\n\n".join(context_parts))
         try:
-            from openai import OpenAI
-            base_url = os.environ.get("OPENAI_API_BASE")
-            client = OpenAI(api_key=api_key, **({"base_url": base_url} if base_url else {}))
-            response = client.chat.completions.create(
-                model=os.environ.get("BPFCOBRAIN_MODEL", "gpt-5-mini"),
-                messages=[
-                    {"role": "system", "content": "You are BPFCoBrain Copilot. Answer only from the supplied sources. If they do not establish an answer, say so. End with a Sources section listing the exact paths."},
-                    {"role": "user", "content": f"Question: {question}\n\nLocal context:\n\n" + "\n\n---\n\n".join(context_parts)},
-                ],
-                max_completion_tokens=1200,
-            )
-            return response.choices[0].message.content or "The model returned no answer.\nSources:\n- " + "\n- ".join(sources)
+            from manus_api import ManusApiError, create_task
+            if os.environ.get("MANUS_API_KEY"):
+                try:
+                    result = create_task(prompt, title=f"BPFCoBrain: {question[:60]}")
+                    webbrowser.open(result.get("task_url") or "https://manus.im")
+                    return "Submitted to Manus automatically.\n\nSources:\n- " + "\n- ".join(sources)
+                except ManusApiError as exc:
+                    return f"Manus API request failed: {exc}"
+            self.window.TKroot.clipboard_clear()
+            self.window.TKroot.clipboard_append(prompt)
+            webbrowser.open("https://manus.im")
+            return "Prompt copied to clipboard and Manus opened. Paste with Ctrl+V.\n\nSources:\n- " + "\n- ".join(sources)
         except Exception as exc:
-            return f"Copilot request failed safely: {exc}\n\nSources:\n- " + "\n- ".join(sources)
+            return f"Could not copy the Manus prompt: {exc}\n\nSources:\n- " + "\n- ".join(sources)
 
     def format_note_preview(self, note):
         title = note.get("title", note.get("key", "Untitled"))
@@ -124,6 +125,10 @@ class BrainDesktop:
 
     def create_window(self):
         stats = self.index.get("stats", {})
+        screen_width, screen_height = sg.Window.get_screen_size()
+        window_width = min(1100, max(720, screen_width - 40))
+        window_height = min(900, max(600, screen_height - 100))
+        window_location = (max(0, (screen_width - window_width) // 2), max(0, (screen_height - window_height) // 2))
         left = [
             [sg.Text("Brain Search", font=("Arial", 16, "bold"))],
             [sg.Input(key="SEARCH", size=(30, 1)), sg.Button("Search"), sg.Button("Refresh")],
@@ -138,13 +143,14 @@ class BrainDesktop:
             [sg.Multiline(size=(55, 24), key="PREVIEW", disabled=True, font=("Courier", 9))],
         ]
         copilot = [
-            [sg.Text("Copilot", font=("Arial", 14, "bold"))],
+            [sg.Text("Prepare for Manus", font=("Arial", 14, "bold"))],
             [sg.Multiline(size=(108, 8), key="COPILOT_LOG", disabled=True, autoscroll=True)],
-            [sg.Input(key="COPILOT_QUESTION", expand_x=True), sg.Button("Ask Copilot")],
+            [sg.Input(key="COPILOT_QUESTION", expand_x=True), sg.Button("Prepare for Manus")],
         ]
         return sg.Window("BPFCoBrain", [[sg.Column(left), sg.Column(right)], copilot,
             [sg.Button("Open Folder"), sg.Button("Web Dashboard"), sg.Button("Settings"), sg.Button("Exit")]],
-            size=(1100, 900), finalize=True)
+            size=(window_width, window_height), location=window_location,
+            icon=str(VAULT_PATH / "brain-icon.ico"), finalize=True)
 
     def refresh(self):
         self.index = self._load_index()
@@ -177,10 +183,10 @@ class BrainDesktop:
                     lines.append(f"{i}. {note.get('title', key)} | {note.get('word_count', 0):,} words | {len(self.connections(key))} links")
                 self.window["RESULTS"].update("\n".join(lines))
                 self.window["PREVIEW"].update(self.format_note_preview(self.search_results[0]))
-            elif event == "Ask Copilot":
+            elif event == "Prepare for Manus":
                 question = values.get("COPILOT_QUESTION", "").strip()
                 if question:
-                    answer = self.ask_copilot(question)
+                    answer = self.prepare_for_manus(question)
                     self.window["COPILOT_LOG"].update(f"You: {question}\n\n{answer}\n\n{'=' * 80}\n", append=True)
                     self.window["COPILOT_QUESTION"].update("")
             elif event == "Refresh":
