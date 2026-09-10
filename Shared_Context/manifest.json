@@ -1,0 +1,10 @@
+{
+    "agents": {
+        "CEO": true,
+        "Bob_Finance": true,
+        "Cindy_Secretary": true,
+        "Kai_Legal": true,
+        "Neo_Sales": true
+    },
+    "persistent_memory": true
+}
