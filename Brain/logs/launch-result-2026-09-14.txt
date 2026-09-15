@@ -1,0 +1,31 @@
+BPFCoBrain launch record
+Timestamp: 2026-09-14 12:10:09
+Launcher: python -u launch_app.py (C:\BPFCo\BPFCoBrain)
+Working directory: C:\BPFCo\BPFCoBrain
+
+Steps
+1. Vault sync (Shared_Context\integrate_vault.py): SUCCESS
+   manifest.json agents: CEO, Bob_Finance, Cindy_Secretary, Kai_Legal, Neo_Sales = true
+   persistent_memory: true
+2. Flask dashboard (brain-dashboard.py): SUCCESS
+   PID 6896 (reloader child PID 1996)
+   Listening 0.0.0.0:5000
+   http://127.0.0.1:5000/ -> HTTP 200, title BPFCoBrain Dashboard
+3. TheBrain 15 desktop: FAILED
+   Missing shortcut C:\Users\Jaques\Desktop\TheBrain 15.lnk
+4. Chrome dashboard tab: launcher issued start of chrome.exe http://localhost:5000
+   No chrome.exe command line still showing localhost:5000 after launch (Chrome may reuse an existing process)
+
+HTTP checks
+GET /              -> 200, dashboard HTML
+GET /search        -> 200, {"error": "No query provided"}
+GET /search?q=capitec -> 200, {"status": "no_matches"}
+GET /search?q=graph   -> 200, {"status": "no_matches"}
+
+Note
+query_cli.py indexes Path.home()/Documents/Obsidian Vault, not C:\BPFCo\BPFCoBrain.
+Dashboard search therefore returns no_matches even though the Flask app is up.
+
+Overall
+Dashboard is running. Full launch_app.py sequence did not complete because TheBrain 15.lnk is missing.
+Launcher still printed: [BPFCoBrain] TheBrain 15 and Chrome Dashboard launched successfully!
