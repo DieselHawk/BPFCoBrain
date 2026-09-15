@@ -1,0 +1,13 @@
+{
+  "task_id": "20260915T142801646754Z-Neo_Sales",
+  "created_at": "2026-09-15T14:28:01.646839+00:00",
+  "created_by": "CEO",
+  "agent": "Neo_Sales",
+  "objective": "SELF-TEST: verify CEO-to-agent task dispatch.",
+  "priority": "test",
+  "status": "complete",
+  "approval_required_before_external_execution": true,
+  "execution_mode": "internal_only",
+  "claimed_at": "2026-09-15T14:28:01.664386+00:00",
+  "completed_at": "2026-09-15T14:28:01.675084+00:00"
+}

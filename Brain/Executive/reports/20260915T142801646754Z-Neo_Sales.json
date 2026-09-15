@@ -1,0 +1,9 @@
+{
+  "task_id": "20260915T142801646754Z-Neo_Sales",
+  "agent": "Neo_Sales",
+  "reported_at": "2026-09-15T14:28:01.675660+00:00",
+  "status": "complete",
+  "summary": "Bridge task received and report returned to CEO.",
+  "returned_to": "CEO",
+  "external_execution": "blocked_pending_user_approval"
+}
