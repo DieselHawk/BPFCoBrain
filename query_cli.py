@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Claude Query CLI - Query your brain"""
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("--format", default="claude", choices=["json", "claude"])
     args = parser.parse_args()
     
-    indexer = VaultIndexer(str(Path.home() / "Documents" / "Obsidian Vault"))
+    indexer = VaultIndexer(str(Path(r"C:\BPFCo\BPFCoBrain")))
     indexer.index_vault()
     result = indexer.query(args.query, depth=min(args.depth, 3))
     
@@ -96,3 +96,4 @@ if __name__ == "__main__":
         for nt in result["context"]:
             note = indexer.notes[nt]
             print(f"# {nt}\n{note.content}\n\n---\n")
+
