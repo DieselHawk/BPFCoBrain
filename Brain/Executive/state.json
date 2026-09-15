@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-09-15T14:23:55.994769+00:00",
+  "controller": "CEO",
+  "agents": {
+    "CEO": {
+      "registered": true,
+      "directory_exists": true,
+      "role": "Executive control, planning, coordination and reporting"
+    },
+    "Bob_Finance": {
+      "registered": true,
+      "directory_exists": true,
+      "role": "Finance, accounting and billing"
+    },
+    "Cindy_Secretary": {
+      "registered": true,
+      "directory_exists": true,
+      "role": "Secretary and administration"
+    },
+    "Kai_Legal": {
+      "registered": true,
+      "directory_exists": true,
+      "role": "Legal research, case management and drafting"
+    },
+    "Neo_Sales": {
+      "registered": true,
+      "directory_exists": true,
+      "role": "Marketing, sales, lead generation and campaigns"
+    }
+  },
+  "persistent_memory": true,
+  "human_approval_file": true
+}
