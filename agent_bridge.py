@@ -7,6 +7,7 @@ EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
 TASK_DIR = EXECUTIVE_DIR / "tasks"
 REPORT_DIR = EXECUTIVE_DIR / "reports"
 QUEUE_FILE = EXECUTIVE_DIR / "queue.json"
+SHARED_CONTEXT_FILE = EXECUTIVE_DIR / "shared_context.json"
 
 AGENTS = {
     "Bob_Finance",
@@ -24,6 +25,14 @@ class AgentBridge:
     def __init__(self):
         TASK_DIR.mkdir(parents=True, exist_ok=True)
         REPORT_DIR.mkdir(parents=True, exist_ok=True)
+
+    def _load_shared_context(self):
+        if not SHARED_CONTEXT_FILE.exists():
+            return {}
+        try:
+            return json.loads(SHARED_CONTEXT_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
 
     def _load_queue(self):
         if not QUEUE_FILE.exists():
@@ -53,6 +62,7 @@ class AgentBridge:
             "status": "queued",
             "approval_required_before_external_execution": bool(approval_required),
             "execution_mode": "internal_only",
+            "shared_context": self._load_shared_context(),
         }
 
         (TASK_DIR / f"{task_id}.json").write_text(
@@ -122,6 +132,7 @@ class AgentBridge:
             "summary": summary,
             "returned_to": "CEO",
             "external_execution": "blocked_pending_user_approval",
+            "shared_context_attached": bool(task.get("shared_context")),
         }
 
         (REPORT_DIR / f"{task_id}.json").write_text(
