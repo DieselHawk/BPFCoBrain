@@ -16,6 +16,8 @@ BRAIN_ROOT = REPO_ROOT / "Brain"
 EXECUTIVE_ROOT = BRAIN_ROOT / "Executive"
 
 
+from runtime_adapter import lifecycle
+
 def load_json(path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -129,17 +131,11 @@ def send_approved_email(approval_id):
 
 
 def run(task_id):
-    bridge = AgentBridge()
-    task = bridge.claim(task_id, AGENT)
+    def processor(task):
+        return build_secretary_review(task)
 
-    review = build_secretary_review(task)
-
-    report = bridge.complete(
-        task_id,
-        AGENT,
-        review,
-        status="complete",
-    )
+    result = lifecycle(task_id, processor)
+    report = result.get("report", {})
 
     print(f"{AGENT} WORKER COMPLETE")
     print(f"Task: {task_id}")
@@ -147,7 +143,6 @@ def run(task_id):
     print("Returned to CEO: YES")
     print("Gmail send: APPROVAL REQUIRED")
     print("GitHub write: APPROVAL REQUIRED")
-
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
@@ -176,3 +171,4 @@ if __name__ == "__main__":
             "  python worker.py --prepare-send <to> <subject> <body_file>\n"
             "  python worker.py --send-approved <approval_id>"
         )
+

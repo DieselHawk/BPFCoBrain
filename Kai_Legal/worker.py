@@ -41,6 +41,8 @@ LEGAL_TERMS = (
 )
 
 
+from runtime_adapter import lifecycle
+
 def load_json(path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -140,18 +142,11 @@ def build_legal_review(task):
 
 
 def run(task_id):
-    bridge = AgentBridge()
+    def processor(task):
+        return build_legal_review(task)
 
-    task = bridge.claim(task_id, AGENT)
-
-    review = build_legal_review(task)
-
-    report = bridge.complete(
-        task_id,
-        AGENT,
-        review,
-        status="complete",
-    )
+    result = lifecycle(task_id, processor)
+    report = result.get("report", {})
 
     print(f"{AGENT} WORKER COMPLETE")
     print(f"Task: {task_id}")
@@ -160,9 +155,9 @@ def run(task_id):
     print("Legal conclusions fabricated: NO")
     print("External execution: BLOCKED pending user approval")
 
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise SystemExit("Usage: python worker.py <task_id>")
 
     run(sys.argv[1])
+

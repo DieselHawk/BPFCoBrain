@@ -16,6 +16,8 @@ BRAIN_ROOT = REPO_ROOT / "Brain"
 EXECUTIVE_ROOT = BRAIN_ROOT / "Executive"
 
 
+from runtime_adapter import lifecycle
+
 def load_json(path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -108,16 +110,11 @@ def build_finance_review(task):
 
 
 def run(task_id):
-    bridge = AgentBridge()
-    task = bridge.claim(task_id, AGENT)
-    review = build_finance_review(task)
+    def processor(task):
+        return build_finance_review(task)
 
-    report = bridge.complete(
-        task_id,
-        AGENT,
-        review,
-        status="complete",
-    )
+    result = lifecycle(task_id, processor)
+    report = result.get("report", {})
 
     print(f"{AGENT} WORKER COMPLETE")
     print(f"Task: {task_id}")
@@ -126,7 +123,6 @@ def run(task_id):
     print("Finance evidence fabricated: NO")
     print("External execution: BLOCKED pending user approval")
 
-
 if __name__ == "__main__":
     import sys
 
@@ -134,3 +130,4 @@ if __name__ == "__main__":
         raise SystemExit("Usage: python worker.py <task_id>")
 
     run(sys.argv[1])
+

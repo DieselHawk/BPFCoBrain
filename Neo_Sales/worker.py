@@ -129,18 +129,12 @@ def build_summary(task, findings):
 
 
 def run(task_id):
-    bridge = AgentBridge()
-    task = bridge.claim(task_id, AGENT)
+    def processor(task):
+        findings = inspect_sales_sources()
+        return build_summary(task, findings)
 
-    findings = inspect_sales_sources()
-    summary = build_summary(task, findings)
-
-    report = bridge.complete(
-        task_id,
-        AGENT,
-        summary,
-        status="complete",
-    )
+    result = lifecycle(task_id, processor)
+    report = result.get("report", {})
 
     print(f"{AGENT} WORKER COMPLETE")
     print(f"Task: {task_id}")
@@ -148,9 +142,9 @@ def run(task_id):
     print("Verified sales source: YES")
     print("External execution: BLOCKED pending user approval")
 
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise SystemExit("Usage: python worker.py <task_id>")
 
     run(sys.argv[1])
+
