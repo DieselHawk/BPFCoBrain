@@ -13,5 +13,10 @@
     "task_id": "20260916T074544673992Z-Neo_Sales",
     "agent": "Neo_Sales",
     "status": "queued"
+  },
+  {
+    "task_id": "20260916T080749472755Z-Bob_Finance",
+    "agent": "Bob_Finance",
+    "status": "queued"
   }
 ]

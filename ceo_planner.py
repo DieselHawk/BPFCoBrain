@@ -109,11 +109,24 @@ def run():
     dispatched = []
 
     for agent, actions in AGENT_PLANS.items():
-        for action in actions[:1]:
+        # CEO advances an agent one step at a time.
+        # The next objective is only dispatched when the previous
+        # objective has been completed and no later objective is active.
+        for index, action in enumerate(actions):
             key = (agent, action)
 
-            if key in active_objectives or key in completed_objectives:
+            if key in active_objectives:
+                break
+
+            if key in completed_objectives:
                 continue
+
+            # Do not skip ahead. The first incomplete objective is
+            # the only objective the CEO may dispatch for this agent.
+            if index > 0:
+                previous_key = (agent, actions[index - 1])
+                if previous_key not in completed_objectives:
+                    break
 
             bridge.dispatch(
                 agent,
@@ -122,6 +135,7 @@ def run():
                 approval_required=True,
             )
             dispatched.append((agent, action))
+            break
 
     queue = load_json(QUEUE_FILE, [])
 

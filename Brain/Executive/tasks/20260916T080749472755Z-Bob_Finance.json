@@ -1,0 +1,65 @@
+{
+  "task_id": "20260916T080749472755Z-Bob_Finance",
+  "created_at": "2026-09-16T08:07:49.472799+00:00",
+  "created_by": "CEO",
+  "agent": "Bob_Finance",
+  "objective": "Identify payments, invoices, or financial commitments requiring CEO attention.",
+  "priority": "normal",
+  "status": "queued",
+  "approval_required_before_external_execution": true,
+  "execution_mode": "internal_only",
+  "shared_context": {
+    "generated_at": "2026-09-15T14:39:35.721292+00:00",
+    "source_of_truth": "C:\\BPFCo\\BPFCoBrain",
+    "persistent_memory_declared": true,
+    "agents": {
+      "CEO": {
+        "registered": true,
+        "workspace": "CEO",
+        "files": []
+      },
+      "Bob_Finance": {
+        "registered": true,
+        "workspace": "Bob_Finance",
+        "files": []
+      },
+      "Cindy_Secretary": {
+        "registered": true,
+        "workspace": "Cindy_Secretary",
+        "files": []
+      },
+      "Kai_Legal": {
+        "registered": true,
+        "workspace": "Kai_Legal",
+        "files": []
+      },
+      "Neo_Sales": {
+        "registered": true,
+        "workspace": "Neo_Sales",
+        "files": [
+          {
+            "name": "Leads_Pipeline_Test.md",
+            "path": "Neo_Sales\\Leads_Pipeline_Test.md",
+            "size": 237
+          },
+          {
+            "name": "neo_config.md",
+            "path": "Neo_Sales\\neo_config.md",
+            "size": 452
+          }
+        ]
+      }
+    },
+    "shared_context_files": [
+      {
+        "name": "manifest.json",
+        "path": "Shared_Context\\manifest.json",
+        "size": 201
+      }
+    ],
+    "human_approval_file": {
+      "path": "Human_In_The_Loop.md",
+      "exists": true
+    }
+  }
+}

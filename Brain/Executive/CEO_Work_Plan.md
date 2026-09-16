@@ -1,6 +1,6 @@
 # CEO Work Plan
 
-**Generated:** 2026-09-16T08:04:36.954472+00:00
+**Generated:** 2026-09-16T08:08:42.011497+00:00
 
 ## Executive Direction
 
@@ -42,6 +42,7 @@ Role status: registered=True; directory=True
 - **Cindy_Secretary** — `20260916T074544651891Z-Cindy_Secretary` (queued)
 - **Kai_Legal** — `20260916T074544664241Z-Kai_Legal` (queued)
 - **Neo_Sales** — `20260916T074544673992Z-Neo_Sales` (queued)
+- **Bob_Finance** — `20260916T080749472755Z-Bob_Finance` (queued)
 
 ## Agent Reports
 
@@ -60,4 +61,4 @@ Role status: registered=True; directory=True
 
 - New tasks dispatched this cycle: 0
 - Reports assessed this cycle: 2
-- Current queued tasks: 3
+- Current queued tasks: 4
