@@ -5,7 +5,7 @@
   "agent": "Bob_Finance",
   "objective": "Review outstanding financial and billing items.",
   "priority": "normal",
-  "status": "queued",
+  "status": "complete",
   "approval_required_before_external_execution": true,
   "execution_mode": "internal_only",
   "shared_context": {
@@ -61,5 +61,7 @@
       "path": "Human_In_The_Loop.md",
       "exists": true
     }
-  }
+  },
+  "claimed_at": "2026-09-16T07:49:28.520702+00:00",
+  "completed_at": "2026-09-16T07:50:06.335629+00:00"
 }
