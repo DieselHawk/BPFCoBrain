@@ -1,7 +1,6 @@
 ﻿import json
 from datetime import datetime, timezone
 from pathlib import Path
-from agent_bridge import AgentBridge
 
 ROOT = Path(__file__).resolve().parent
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -47,22 +46,6 @@ def run():
     EXECUTIVE_DIR.mkdir(parents=True, exist_ok=True)
 
     state = load_json(STATE_FILE, {})
-    queue = load_json(QUEUE_FILE, [])
-
-    # CEO dispatches internal work to specialists.
-    bridge = AgentBridge()
-    existing = {(item.get("agent"), item.get("objective")) for item in queue}
-
-    for agent, actions in AGENT_PLANS.items():
-        for action in actions[:1]:
-            if (agent, action) not in existing:
-                bridge.dispatch(
-                    agent,
-                    action,
-                    priority="normal",
-                    approval_required=True,
-                )
-
     queue = load_json(QUEUE_FILE, [])
 
     reports = []

@@ -1,6 +1,6 @@
 # CEO Work Plan
 
-**Generated:** 2026-09-15T14:39:36.053909+00:00
+**Generated:** 2026-09-16T07:45:44.695515+00:00
 
 ## Executive Direction
 
@@ -34,10 +34,12 @@ Role status: registered=True; directory=True
 
 ## Existing Work
 
-- No queued CEO tasks.
+- Queued: **Bob_Finance** — `20260916T074544648920Z-Bob_Finance` (queued)
+- Queued: **Cindy_Secretary** — `20260916T074544651891Z-Cindy_Secretary` (queued)
+- Queued: **Kai_Legal** — `20260916T074544664241Z-Kai_Legal` (queued)
+- Queued: **Neo_Sales** — `20260916T074544673992Z-Neo_Sales` (queued)
 
 Recent reports:
-- **Neo_Sales** — complete: Bridge task received and report returned to CEO.
 - **Neo_Sales** — complete: Bridge task received and report returned to CEO.
 
 ## Planning Rule
