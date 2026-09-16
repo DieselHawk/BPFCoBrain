@@ -49,19 +49,40 @@ def run():
     state = load_json(STATE_FILE, {})
     queue = load_json(QUEUE_FILE, [])
 
-    # CEO dispatches internal work to specialists.
+    # CEO dispatches internal work only when the same objective is not
+    # already queued, in progress, or recently completed.
     bridge = AgentBridge()
-    existing = {(item.get("agent"), item.get("objective")) for item in queue}
+
+    active_objectives = set()
+    for item in queue:
+        task_id = item.get("task_id")
+        task_path = EXECUTIVE_DIR / "tasks" / f"{task_id}.json"
+        task = load_json(task_path, {})
+        if task.get("objective"):
+            active_objectives.add(
+                (task.get("agent"), task.get("objective"))
+            )
+
+    completed_objectives = set()
+    for path in (EXECUTIVE_DIR / "tasks").glob("*.json"):
+        task = load_json(path, {})
+        if task.get("status") == "complete":
+            completed_objectives.add(
+                (task.get("agent"), task.get("objective"))
+            )
 
     for agent, actions in AGENT_PLANS.items():
         for action in actions[:1]:
-            if (agent, action) not in existing:
-                bridge.dispatch(
-                    agent,
-                    action,
-                    priority="normal",
-                    approval_required=True,
-                )
+            key = (agent, action)
+            if key in active_objectives or key in completed_objectives:
+                continue
+
+            bridge.dispatch(
+                agent,
+                action,
+                priority="normal",
+                approval_required=True,
+            )
 
     queue = load_json(QUEUE_FILE, [])
 
