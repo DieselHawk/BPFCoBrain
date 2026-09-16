@@ -1,13 +1,13 @@
 # CEO Morning Executive Report
 
-**Generated:** 2026-09-15T14:39:35.898402+00:00
+**Generated:** 2026-09-16T07:42:30.465044+00:00
 
 ## Executive Status
 
 - Registered specialist agents: 4
 - Queued tasks: 0
 - Tasks in progress: 0
-- Returned completed reports: 2
+- Returned completed reports: 1
 - Persistent memory declared: True
 - Human approval gate present: True
 
@@ -24,7 +24,6 @@
 
 ## Recent Agent Reports
 
-- **Neo_Sales** — complete: Bridge task received and report returned to CEO.
 - **Neo_Sales** — complete: Bridge task received and report returned to CEO.
 
 ## CEO Attention / Planning
