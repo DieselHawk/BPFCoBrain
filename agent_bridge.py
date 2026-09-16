@@ -49,6 +49,17 @@ class AgentBridge:
         if agent not in AGENTS:
             raise ValueError(f"Unknown specialist agent: {agent}")
 
+        # Defense-in-depth: never create a second active task for
+        # the same agent and objective. Task records are authoritative.
+        for existing_path in TASK_DIR.glob("*.json"):
+            existing = self._load_json(existing_path, {})
+            if (
+                existing.get("agent") == agent
+                and existing.get("objective") == objective
+                and existing.get("status") in {"queued", "in_progress"}
+            ):
+                return existing
+
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         task_id = f"{stamp}-{agent}"
 

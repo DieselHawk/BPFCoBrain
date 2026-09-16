@@ -1,10 +1,5 @@
 [
   {
-    "task_id": "20260916T074544651891Z-Cindy_Secretary",
-    "agent": "Cindy_Secretary",
-    "status": "queued"
-  },
-  {
     "task_id": "20260916T074544664241Z-Kai_Legal",
     "agent": "Kai_Legal",
     "status": "queued"
@@ -17,6 +12,11 @@
   {
     "task_id": "20260916T080749472755Z-Bob_Finance",
     "agent": "Bob_Finance",
+    "status": "queued"
+  },
+  {
+    "task_id": "20260916T082918526365Z-Cindy_Secretary",
+    "agent": "Cindy_Secretary",
     "status": "queued"
   }
 ]

@@ -63,14 +63,16 @@ def collect_completed_objectives():
 
 
 def collect_active_objectives(queue):
+    # Treat the task records as the source of truth.
+    # queue.json can become stale or be repaired independently.
     active = set()
-    for item in queue:
-        task_id = item.get("task_id")
-        if not task_id:
-            continue
-        task = load_json(TASK_DIR / f"{task_id}.json", {})
-        if task.get("objective"):
-            active.add((task.get("agent"), task.get("objective")))
+
+    for path in TASK_DIR.glob("*.json"):
+        task = load_json(path, {})
+        if task.get("status") in {"queued", "in_progress"}:
+            if task.get("agent") and task.get("objective"):
+                active.add((task.get("agent"), task.get("objective")))
+
     return active
 
 
