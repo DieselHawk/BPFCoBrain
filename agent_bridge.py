@@ -34,6 +34,12 @@ class AgentBridge:
         except Exception:
             return {}
 
+    def _load_json(self, path, default=None):
+        try:
+            return json.loads(Path(path).read_text(encoding="utf-8"))
+        except Exception:
+            return default if default is not None else {}
+
     def _load_queue(self):
         if not QUEUE_FILE.exists():
             return []
