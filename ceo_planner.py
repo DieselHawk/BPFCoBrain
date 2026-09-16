@@ -76,7 +76,7 @@ def collect_active_objectives(queue):
     return active
 
 
-def build_report_assessment(reports):
+def build_report_assessment(reports, active_objectives):
     assessment = []
 
     for report in reports[-10:]:
@@ -84,13 +84,26 @@ def build_report_assessment(reports):
         status = report.get("status", "unknown")
         summary = " ".join(str(report.get("summary", "")).split())
 
+        agent_has_active_work = any(
+            active_agent == agent
+            for active_agent, _objective in active_objectives
+        )
+
         if status in {"complete", "completed"}:
-            assessment.append(
-                f"- {agent}: completed — {summary or 'No summary supplied.'}"
-            )
+            if agent_has_active_work:
+                assessment.append(
+                    f"- {agent}: report completed; next objective is active/queued ? "
+                    f"{summary or 'No summary supplied.'}"
+                )
+            else:
+                assessment.append(
+                    f"- {agent}: report completed; no active objective ? "
+                    f"{summary or 'No summary supplied.'}"
+                )
         else:
             assessment.append(
-                f"- {agent}: requires attention — {summary or 'No summary supplied.'}"
+                f"- {agent}: requires attention ? "
+                f"{summary or 'No summary supplied.'}"
             )
 
     return assessment
@@ -156,7 +169,7 @@ def run():
         "",
     ]
 
-    assessment = build_report_assessment(reports)
+    assessment = build_report_assessment(reports, active_objectives)
 
     if assessment:
         lines.extend(assessment)
