@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """OmniRoute - File ingestion and multi-model token orchestrator"""
 
@@ -89,7 +89,7 @@ file_type: {source.suffix}
         }
         self._save_imports()
         
-        print(f"✓ Imported: {source.name} → {dest_name}")
+        print(f"âœ“ Imported: {source.name} â†’ {dest_name}")
         return True
 
 class TokenManager:
@@ -150,7 +150,7 @@ class TokenManager:
             self.usage[model]["used"] = 0
             self.usage[model]["reset"] = datetime.now().isoformat()
         self._save_usage()
-        print("✓ Daily token limits reset")
+        print("âœ“ Daily token limits reset")
 
 class OmniRouter:
     """Main orchestrator"""
@@ -167,7 +167,7 @@ class OmniRouter:
         for file_path in file_list:
             if self.importer.import_file(file_path, category):
                 success += 1
-        print(f"✓ {success}/{len(file_list)} files imported")
+        print(f"âœ“ {success}/{len(file_list)} files imported")
     
     def query_with_fallback(self, query: str, context: str = "", max_retries: int = 3):
         """Query the configured model gateway. Offline mode uses local Ollama."""
@@ -180,10 +180,24 @@ class OmniRouter:
 
             prompt = f"Context:\n{context}\n\nQuery: {query}"
 
+            url = os.environ.get(
+                "BPFCO_OLLAMA_URL",
+                "http://127.0.0.1:11434/api/chat",
+            )
+
             payload = json.dumps({
                 "model": model,
-                "prompt": prompt,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
                 "stream": False,
+                "options": {
+                    "num_predict": 128,
+                    "temperature": 0.1,
+                },
             }).encode("utf-8")
 
             print(f"\n[*] Offline mode: using local Ollama {model}")
@@ -196,10 +210,12 @@ class OmniRouter:
                     method="POST",
                 )
 
-                with urllib.request.urlopen(request, timeout=120) as response:
+                with urllib.request.urlopen(request, timeout=300) as response:
                     result = json.loads(response.read().decode("utf-8"))
 
-                answer = result.get("response", "").strip()
+                answer = (
+                    result.get("message", {}).get("content", "")
+                ).strip()
 
                 if not answer:
                     print("[!] Ollama returned no response")
@@ -309,3 +325,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

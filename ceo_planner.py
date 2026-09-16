@@ -79,40 +79,52 @@ def collect_active_objectives(queue):
 
 
 def local_ceo_reasoning(reports, active_objectives, queue):
-    """Ask the local model for executive reasoning without giving it dispatch authority."""
+    """Ask local Ollama for a compact executive assessment."""
     import os
+    from omniroute import OmniRouter
 
     if os.environ.get("BPFCO_OFFLINE") != "1":
         return "Local CEO reasoning is only enabled in offline mode."
 
-    report_context = []
-    for report in reports[-10:]:
-        report_context.append({
-            "agent": report.get("agent", "Unknown"),
-            "status": report.get("status", "unknown"),
-            "summary": report.get("summary", ""),
-        })
+    report_lines = []
+    for report in reports[-6:]:
+        agent = str(report.get("agent", "Unknown"))
+        status = str(report.get("status", "unknown"))
+        summary = " ".join(str(report.get("summary", "")).split())[:240]
+        report_lines.append(f"{agent}: {status}: {summary}")
+
+    objective_lines = []
+    for agent, objective in sorted(active_objectives):
+        objective_lines.append(f"{agent}: {objective}")
+
+    queue_lines = []
+    for item in queue:
+        queue_lines.append(
+            f"{item.get('agent', 'Unknown')}: {item.get('status', 'unknown')}"
+        )
 
     prompt = (
-        "You are the local BPFCoBrain CEO reasoning engine. "
-        "Review the current specialist reports and queued work. "
-        "Provide a concise executive assessment of what has happened, "
-        "what needs attention, and what should be watched next. "
-        "Do not invent facts. Do not instruct external action. "
-        "Dispatch and approval rules are controlled by the host system, not by you. "
-        "Return plain text with three short sections: "
-        "SITUATION, ATTENTION, NEXT WATCH.\n\n"
-        f"Reports: {json.dumps(report_context, ensure_ascii=False)}\n"
-        f"Active objectives: {json.dumps(sorted(list(active_objectives)), ensure_ascii=False)}\n"
-        f"Queue: {json.dumps(queue, ensure_ascii=False)}"
+        "Analyze this internal executive status. "
+        "Use only the supplied facts. "
+        "Do not invent facts or propose external actions. "
+        "Return exactly three headings: SITUATION, ATTENTION, NEXT WATCH. "
+        "Write one short sentence under each heading.\n\n"
+        "REPORTS:\n"
+        + ("\n".join(report_lines) or "None")
+        + "\n\nACTIVE OBJECTIVES:\n"
+        + ("\n".join(objective_lines) or "None")
+        + "\n\nQUEUE:\n"
+        + ("\n".join(queue_lines) or "None")
     )
 
     router = OmniRouter(str(ROOT))
+
     result = router.query_with_fallback(prompt)
 
     return result or (
         "Local CEO reasoning unavailable; deterministic planning remains active."
     )
+
 
 
 def build_report_assessment(reports, active_objectives):
