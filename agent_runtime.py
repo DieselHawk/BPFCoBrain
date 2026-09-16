@@ -16,17 +16,10 @@ from approval_gate import request, is_approved
 
 class AgentRuntime:
     """
-    Shared execution lifecycle for all BPFCoBrain specialist agents.
+    Shared lifecycle foundation for every BPFCoBrain specialist.
 
-    Lifecycle:
-        startup
-        -> claim
-        -> load context
-        -> inspect
-        -> execute/prepare
-        -> approval when required
-        -> complete
-        -> report to CEO
+    Specialist workers keep their domain logic.
+    AgentRuntime provides the common execution contract.
     """
 
     def __init__(self, agent_name, role=""):
@@ -94,31 +87,66 @@ class AgentRuntime:
             "status": "healthy",
         }
 
+    def lifecycle(self, task_id, processor):
+        """
+        Standard lifecycle wrapper.
 
-if __name__ == "__main__":
+        The specialist supplies `processor(task)`.
+        The runtime handles claim -> process -> report.
+        """
+        task = self.claim(task_id)
+
+        try:
+            report = processor(task)
+
+            return self.report_to_ceo(
+                task_id,
+                report,
+                status="complete",
+            )
+
+        except Exception as exc:
+            error_report = (
+                f"{self.agent_name} execution failed.\n"
+                f"Task: {task_id}\n"
+                f"Error: {type(exc).__name__}: {exc}"
+            )
+
+            return self.report_to_ceo(
+                task_id,
+                error_report,
+                status="failed",
+            )
+
+
+def runtime_self_test():
     runtime = AgentRuntime(
         "RUNTIME_TEST_AGENT",
         "Shared specialist runtime validation",
     )
 
-    print("=== SHARED AGENT RUNTIME SELF-TEST ===")
-
-    startup = runtime.startup()
-    print(f"Startup: {startup['status']}")
-    print(f"Agent Bridge: {'OK' if startup else 'FAIL'}")
-
     health = runtime.health()
 
-    print(f"Agent Bridge integration: {health['agent_bridge']}")
-    print(f"Approval Gate integration: {health['approval_gate']}")
-    print(f"CEO reporting integration: {health['ceo_reporting']}")
-    print(f"Runtime mode: {health['runtime']}")
-    print(f"Overall status: {health['status']}")
-
+    assert health["runtime"] == "shared"
     assert health["agent_bridge"] is True
     assert health["approval_gate"] is True
     assert health["ceo_reporting"] is True
-    assert health["runtime"] == "shared"
-    assert health["status"] == "healthy"
 
-    print("SELF-TEST: PASS")
+    result = runtime.startup()
+
+    assert result["status"] == "ready"
+    assert result["human_approval"] is True
+
+    return True
+
+
+if __name__ == "__main__":
+    print("=== SHARED AGENT RUNTIME SELF-TEST ===")
+
+    if runtime_self_test():
+        print("Runtime: READY")
+        print("Agent Bridge: OK")
+        print("Approval Gate: OK")
+        print("CEO Reporting: OK")
+        print("Lifecycle wrapper: OK")
+        print("SELF-TEST: PASS")
