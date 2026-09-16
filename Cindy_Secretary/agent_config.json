@@ -1,8 +1,12 @@
-{
+﻿{
   "agent": "Cindy_Secretary",
-  "role": "Administrative coordination, communication preparation, and scheduling support.",
-  "execution_mode": "internal_only",
-  "external_execution": "blocked_pending_user_approval",
+  "role": "Administrative coordination, communication preparation, scheduling, and approved external execution.",
+  "execution_mode": "approval_gated",
+  "external_execution": "human_approval_required",
+  "external_capabilities": [
+    "gmail.send",
+    "github.write"
+  ],
   "reports_to": "CEO",
-  "status": "registered"
+  "status": "active"
 }
