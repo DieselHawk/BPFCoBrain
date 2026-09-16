@@ -6,9 +6,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from agent_bridge import AgentBridge
+from agent_runtime import AgentRuntime
 
 
 AGENT = "Neo_Sales"
+RUNTIME = AgentRuntime(AGENT, role="Sales")
 NEO_DIR = REPO_ROOT / "Neo_Sales"
 PIPELINE_FILE = NEO_DIR / "Leads_Pipeline_Test.md"
 CONFIG_FILE = NEO_DIR / "neo_config.md"
@@ -133,7 +135,7 @@ def run(task_id):
         findings = inspect_sales_sources()
         return build_summary(task, findings)
 
-    result = lifecycle(task_id, processor)
+    result = RUNTIME.lifecycle(task_id, processor)
     report = result.get("report", {})
 
     print(f"{AGENT} WORKER COMPLETE")
@@ -147,4 +149,6 @@ if __name__ == "__main__":
         raise SystemExit("Usage: python worker.py <task_id>")
 
     run(sys.argv[1])
+
+
 
