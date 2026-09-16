@@ -6,7 +6,8 @@ import sys, os, json, re, argparse, hashlib
 from pathlib import Path
 from typing import Dict, List
 from datetime import datetime
-import anthropic
+import urllib.request
+import urllib.error
 
 if sys.platform == 'win32':
     import io
@@ -169,18 +170,63 @@ class OmniRouter:
         print(f"✓ {success}/{len(file_list)} files imported")
     
     def query_with_fallback(self, query: str, context: str = "", max_retries: int = 3):
-        """Query with automatic model fallback"""
+        """Query the configured model gateway. Offline mode uses local Ollama."""
+        if os.environ.get("BPFCO_OFFLINE") == "1":
+            model = os.environ.get("BPFCO_OLLAMA_MODEL", "llama3.2:latest")
+            url = os.environ.get(
+                "BPFCO_OLLAMA_URL",
+                "http://127.0.0.1:11434/api/generate",
+            )
+
+            prompt = f"Context:\n{context}\n\nQuery: {query}"
+
+            payload = json.dumps({
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+            }).encode("utf-8")
+
+            print(f"\n[*] Offline mode: using local Ollama {model}")
+
+            try:
+                request = urllib.request.Request(
+                    url,
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+
+                with urllib.request.urlopen(request, timeout=120) as response:
+                    result = json.loads(response.read().decode("utf-8"))
+
+                answer = result.get("response", "").strip()
+
+                if not answer:
+                    print("[!] Ollama returned no response")
+                    return None
+
+                return answer
+
+            except Exception as exc:
+                print(
+                    f"[!] Local Ollama error: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+                return None
+
+        import anthropic
+
         client = anthropic.Anthropic()
-        
+
         for attempt in range(max_retries):
             model = self.token_manager.get_available_model()
-            
+
             if not model:
                 print("ERROR: No models with available tokens!")
                 return None
-            
+
             print(f"\n[*] Using {model} (attempt {attempt + 1}/{max_retries})")
-            
+
             try:
                 response = client.messages.create(
                     model=model,
@@ -192,22 +238,28 @@ class OmniRouter:
                         }
                     ]
                 )
-                
-                # Log usage
-                tokens_used = response.usage.input_tokens + response.usage.output_tokens
+
+                tokens_used = (
+                    response.usage.input_tokens +
+                    response.usage.output_tokens
+                )
+
                 self.token_manager.log_usage(model, tokens_used)
-                
+
                 return response.content[0].text
-            
+
             except anthropic.RateLimitError:
-                print(f"[!] {model} token limit reached, trying next...")
+                print(
+                    f"[!] {model} token limit reached, trying next..."
+                )
                 continue
+
             except Exception as e:
                 print(f"[!] Error with {model}: {e}")
                 continue
-        
+
         return None
-    
+
     def status(self):
         """Show token status"""
         print("\n=== OmniRoute Token Status ===\n")

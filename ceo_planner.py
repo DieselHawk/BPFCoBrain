@@ -1,7 +1,8 @@
-﻿import json
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from agent_bridge import AgentBridge
+from omniroute import OmniRouter
 
 ROOT = Path(__file__).resolve().parent
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -74,6 +75,44 @@ def collect_active_objectives(queue):
                 active.add((task.get("agent"), task.get("objective")))
 
     return active
+
+
+
+def local_ceo_reasoning(reports, active_objectives, queue):
+    """Ask the local model for executive reasoning without giving it dispatch authority."""
+    import os
+
+    if os.environ.get("BPFCO_OFFLINE") != "1":
+        return "Local CEO reasoning is only enabled in offline mode."
+
+    report_context = []
+    for report in reports[-10:]:
+        report_context.append({
+            "agent": report.get("agent", "Unknown"),
+            "status": report.get("status", "unknown"),
+            "summary": report.get("summary", ""),
+        })
+
+    prompt = (
+        "You are the local BPFCoBrain CEO reasoning engine. "
+        "Review the current specialist reports and queued work. "
+        "Provide a concise executive assessment of what has happened, "
+        "what needs attention, and what should be watched next. "
+        "Do not invent facts. Do not instruct external action. "
+        "Dispatch and approval rules are controlled by the host system, not by you. "
+        "Return plain text with three short sections: "
+        "SITUATION, ATTENTION, NEXT WATCH.\n\n"
+        f"Reports: {json.dumps(report_context, ensure_ascii=False)}\n"
+        f"Active objectives: {json.dumps(sorted(list(active_objectives)), ensure_ascii=False)}\n"
+        f"Queue: {json.dumps(queue, ensure_ascii=False)}"
+    )
+
+    router = OmniRouter(str(ROOT))
+    result = router.query_with_fallback(prompt)
+
+    return result or (
+        "Local CEO reasoning unavailable; deterministic planning remains active."
+    )
 
 
 def build_report_assessment(reports, active_objectives):
@@ -170,6 +209,11 @@ def run():
     ]
 
     assessment = build_report_assessment(reports, active_objectives)
+    local_reasoning = local_ceo_reasoning(
+        reports,
+        active_objectives,
+        queue,
+    )
 
     if assessment:
         lines.extend(assessment)
@@ -177,6 +221,10 @@ def run():
         lines.append("- No agent reports available for assessment.")
 
     lines.extend([
+        "",
+        "## Local CEO Reasoning",
+        "",
+        local_reasoning,
         "",
         "## Immediate Specialist Priorities",
         "",
