@@ -1,0 +1,8 @@
+{
+  "agent": "Bob_Finance",
+  "role": "Financial analysis, billing review, and internal finance support.",
+  "execution_mode": "internal_only",
+  "external_execution": "blocked_pending_user_approval",
+  "reports_to": "CEO",
+  "status": "registered"
+}

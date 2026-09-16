@@ -1,0 +1,8 @@
+{
+  "agent": "Neo_Sales",
+  "role": "Sales pipeline review, prospect research, campaign preparation, and follow-up planning.",
+  "execution_mode": "internal_only",
+  "external_execution": "blocked_pending_user_approval",
+  "reports_to": "CEO",
+  "status": "registered"
+}

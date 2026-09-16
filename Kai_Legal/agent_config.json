@@ -1,0 +1,8 @@
+{
+  "agent": "Kai_Legal",
+  "role": "Internal legal research, case-file review, document preparation, and deadline tracking.",
+  "execution_mode": "internal_only",
+  "external_execution": "blocked_pending_user_approval",
+  "reports_to": "CEO",
+  "status": "registered"
+}
