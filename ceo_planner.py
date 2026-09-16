@@ -8,6 +8,7 @@ EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
 PLAN_FILE = EXECUTIVE_DIR / "CEO_Work_Plan.md"
 STATE_FILE = EXECUTIVE_DIR / "state.json"
 QUEUE_FILE = EXECUTIVE_DIR / "queue.json"
+TASK_DIR = EXECUTIVE_DIR / "tasks"
 REPORT_DIR = EXECUTIVE_DIR / "reports"
 
 AGENT_PLANS = {
@@ -43,37 +44,74 @@ def load_json(path, default):
         return default
 
 
+def collect_reports():
+    reports = []
+    for path in sorted(REPORT_DIR.glob("*.json")):
+        data = load_json(path, {})
+        if data:
+            reports.append(data)
+    return reports
+
+
+def collect_completed_objectives():
+    completed = set()
+    for path in TASK_DIR.glob("*.json"):
+        task = load_json(path, {})
+        if task.get("status") == "complete":
+            completed.add((task.get("agent"), task.get("objective")))
+    return completed
+
+
+def collect_active_objectives(queue):
+    active = set()
+    for item in queue:
+        task_id = item.get("task_id")
+        if not task_id:
+            continue
+        task = load_json(TASK_DIR / f"{task_id}.json", {})
+        if task.get("objective"):
+            active.add((task.get("agent"), task.get("objective")))
+    return active
+
+
+def build_report_assessment(reports):
+    assessment = []
+
+    for report in reports[-10:]:
+        agent = report.get("agent", "Unknown")
+        status = report.get("status", "unknown")
+        summary = " ".join(str(report.get("summary", "")).split())
+
+        if status in {"complete", "completed"}:
+            assessment.append(
+                f"- {agent}: completed — {summary or 'No summary supplied.'}"
+            )
+        else:
+            assessment.append(
+                f"- {agent}: requires attention — {summary or 'No summary supplied.'}"
+            )
+
+    return assessment
+
+
 def run():
     EXECUTIVE_DIR.mkdir(parents=True, exist_ok=True)
 
     state = load_json(STATE_FILE, {})
     queue = load_json(QUEUE_FILE, [])
+    reports = collect_reports()
 
-    # CEO dispatches internal work only when the same objective is not
-    # already queued, in progress, or recently completed.
     bridge = AgentBridge()
 
-    active_objectives = set()
-    for item in queue:
-        task_id = item.get("task_id")
-        task_path = EXECUTIVE_DIR / "tasks" / f"{task_id}.json"
-        task = load_json(task_path, {})
-        if task.get("objective"):
-            active_objectives.add(
-                (task.get("agent"), task.get("objective"))
-            )
+    active_objectives = collect_active_objectives(queue)
+    completed_objectives = collect_completed_objectives()
 
-    completed_objectives = set()
-    for path in (EXECUTIVE_DIR / "tasks").glob("*.json"):
-        task = load_json(path, {})
-        if task.get("status") == "complete":
-            completed_objectives.add(
-                (task.get("agent"), task.get("objective"))
-            )
+    dispatched = []
 
     for agent, actions in AGENT_PLANS.items():
         for action in actions[:1]:
             key = (agent, action)
+
             if key in active_objectives or key in completed_objectives:
                 continue
 
@@ -83,14 +121,9 @@ def run():
                 priority="normal",
                 approval_required=True,
             )
+            dispatched.append((agent, action))
 
     queue = load_json(QUEUE_FILE, [])
-
-    reports = []
-    for path in sorted(REPORT_DIR.glob("*.json")):
-        data = load_json(path, {})
-        if data:
-            reports.append(data)
 
     lines = [
         "# CEO Work Plan",
@@ -99,13 +132,26 @@ def run():
         "",
         "## Executive Direction",
         "",
-        "The CEO coordinates the specialist agents, prioritizes internal work, "
-        "reviews their reports, and escalates external or high-impact actions "
+        "The CEO coordinates the specialist agents, reviews returned reports, "
+        "prioritizes internal work, and escalates external or high-impact actions "
         "for user approval.",
+        "",
+        "## Executive Assessment",
+        "",
+    ]
+
+    assessment = build_report_assessment(reports)
+
+    if assessment:
+        lines.extend(assessment)
+    else:
+        lines.append("- No agent reports available for assessment.")
+
+    lines.extend([
         "",
         "## Immediate Specialist Priorities",
         "",
-    ]
+    ])
 
     for agent, actions in AGENT_PLANS.items():
         status = state.get("agents", {}).get(agent, {})
@@ -114,39 +160,63 @@ def run():
             f"Role status: registered={status.get('registered', False)}; "
             f"directory={status.get('directory_exists', False)}"
         )
-        for action in actions:
+
+        key = (agent, actions[0])
+        if key in completed_objectives:
+            lines.append(f"- COMPLETED: {actions[0]}")
+        elif key in active_objectives:
+            lines.append(f"- ACTIVE/QUEUED: {actions[0]}")
+        else:
+            lines.append(f"- DISPATCHED: {actions[0]}")
+
+        for action in actions[1:]:
             lines.append(f"- {action}")
+
         lines.append("")
 
-    lines += ["## Existing Work", ""]
+    lines += ["## Current CEO Queue", ""]
 
     if queue:
         for item in queue:
             lines.append(
-                f"- Queued: **{item.get('agent', 'Unknown')}** — "
+                f"- **{item.get('agent', 'Unknown')}** — "
                 f"`{item.get('task_id', '')}` ({item.get('status', '')})"
             )
     else:
         lines.append("- No queued CEO tasks.")
 
+    lines += [
+        "",
+        "## Agent Reports",
+        "",
+    ]
+
     if reports:
-        lines += ["", "Recent reports:"]
         for report in reports[-10:]:
-            summary = str(report.get("summary", "")).replace("\n", " ")
+            summary = " ".join(str(report.get("summary", "")).split())
             lines.append(
                 f"- **{report.get('agent', 'Unknown')}** — "
-                f"{report.get('status', 'unknown')}: {summary}"
+                f"{report.get('status', 'unknown')}: "
+                f"{summary or 'No summary supplied.'}"
             )
     else:
         lines.append("- No agent reports available.")
 
     lines += [
         "",
-        "## Planning Rule",
+        "## CEO Planning Rules",
         "",
+        "- Completed objectives are not re-dispatched.",
+        "- Active or queued objectives are not duplicated.",
         "- Research, analysis, drafting, indexing, organization, and internal coordination may proceed.",
         "- External sends, payments, publications, legal filings, contracts, and other high-impact execution require explicit user approval.",
-        "- Planning is advisory until a real agent claims the task through the bridge.",
+        "- External execution remains blocked pending user approval.",
+        "",
+        "## Execution Status",
+        "",
+        f"- New tasks dispatched this cycle: {len(dispatched)}",
+        f"- Reports assessed this cycle: {len(reports)}",
+        f"- Current queued tasks: {len(queue)}",
         "",
     ]
 
@@ -155,8 +225,9 @@ def run():
     print("=== BPFCoBrain CEO PLANNER SELF-TEST ===")
     print("CEO work plan: OK")
     print(f"Specialist plans: {len(AGENT_PLANS)}")
-    print(f"Queued tasks considered: {len(queue)}")
-    print(f"Reports considered: {len(reports)}")
+    print(f"Reports assessed: {len(reports)}")
+    print(f"New tasks dispatched: {len(dispatched)}")
+    print(f"Current queued tasks: {len(queue)}")
     print(f"Plan: {PLAN_FILE}")
     print("External execution: BLOCKED pending user approval")
     print("PLANNER SELF-TEST COMPLETE")
