@@ -170,6 +170,35 @@ class OmniRouter:
         print(f"âœ“ {success}/{len(file_list)} files imported")
     
     def query_with_fallback(self, query: str, context: str = "", max_retries: int = 3):
+        """Query the configured model gateway with optional online intelligence."""
+
+        # Online intelligence is optional and never overrides offline mode.
+        from online_gate import OnlineGate
+
+        online_gate = OnlineGate()
+
+        if (
+            os.environ.get("BPFCO_OFFLINE") != "1"
+            and online_gate.enabled
+            and online_gate.needs_online(query)
+        ):
+            print("[*] Online intelligence detected.")
+
+            online_result = online_gate.research(query)
+
+            if online_result.get("status") == "success":
+                return json.dumps(
+                    online_result.get("data", online_result),
+                    ensure_ascii=False,
+                    indent=2,
+                )
+
+            print(
+                "[!] World Monitor unavailable: "
+                f"{online_result.get('reason', online_result.get('error', 'unknown'))}"
+            )
+            print("[*] Continuing with normal Brain routing.")
+
         """Query the configured model gateway. Offline mode uses local Ollama."""
         if os.environ.get("BPFCO_OFFLINE") == "1":
             model = os.environ.get("BPFCO_OLLAMA_MODEL", "llama3.2:latest")
@@ -325,4 +354,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
