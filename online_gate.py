@@ -156,26 +156,167 @@ class OnlineGate:
         self._tools = tools
         return tools
 
-    def select_tool(self, query, tools):
+    def select_tool(self, query, tools, agent_name="", role=""):
         """
-        Choose a suitable tool from the LIVE discovered inventory.
-        Never selects a tool that the server did not advertise.
+        Deterministic intent-first World Monitor routing.
+
+        Priority:
+        1. Explicit task intent
+        2. Agent role as supporting context
+        3. Live tool descriptions as fallback
+
+        Only tools advertised by the live MCP server can be selected.
         """
-        available = {
-            tool.get("name")
-            for tool in tools
-            if isinstance(tool, dict)
-        }
 
         text = str(query).lower()
 
-        for _, keywords, tool_name in self.ROUTES:
+        available = {
+            str(tool.get("name")): tool
+            for tool in tools
+            if isinstance(tool, dict) and tool.get("name")
+        }
+
+        # Strong, explicit routing rules.
+        INTENT_RULES = [
+            (
+                ("diesel", "fuel", "petrol", "gasoline", "energy",
+                 "electricity", "gas storage", "oil supply"),
+                "get_energy_intelligence",
+            ),
+            (
+                ("market", "stock price", "share price", "commodity price",
+                 "oil price", "gold price", "silver price", "forex",
+                 "fx", "crypto", "equity"),
+                "get_market_data",
+            ),
+            (
+                ("tender", "tenders", "procurement", "public procurement",
+                 "bid opportunity", "contract opportunity"),
+                "get_procurement_opportunities",
+            ),
+            (
+                ("sanction", "sanctions", "ofac", "sdn"),
+                "get_sanctions_data",
+            ),
+            (
+                ("conflict", "war", "armed conflict", "military attack",
+                 "missile", "ceasefire", "unrest", "invasion"),
+                "get_conflict_events",
+            ),
+            (
+                ("cyber", "ransomware", "malware", "cve",
+                 "cyber attack", "hack", "hacking"),
+                "get_cyber_threats",
+            ),
+            (
+                ("aviation", "airspace", "airport", "flight",
+                 "flights", "notam"),
+                "get_aviation_status",
+            ),
+            (
+                ("shipping", "maritime", "vessel", "port",
+                 "chokepoint", "strait"),
+                "get_chokepoint_status",
+            ),
+            (
+                ("economy", "economic", "gdp", "inflation",
+                 "interest rate", "central bank", "macro"),
+                "get_economic_data",
+            ),
+            (
+                ("country risk", "country instability",
+                 "country resilience"),
+                "get_country_risk",
+            ),
+            (
+                ("geopolitical news", "geopolitical developments",
+                 "latest geopolitical", "breaking geopolitical",
+                 "latest news", "breaking news", "current news",
+                 "recent news"),
+                "get_news_intelligence",
+            ),
+            (
+                ("world brief", "global situation",
+                 "global developments", "world situation"),
+                "get_world_brief",
+            ),
+        ]
+
+        # First matching explicit intent wins.
+        for keywords, tool_name in INTENT_RULES:
             if tool_name not in available:
                 continue
 
-            if any(keyword in text for keyword in keywords):
-                return tool_name
+            for keyword in keywords:
+                if keyword in text:
+                    print(
+                        f"[*] Online route: "
+                        f"{agent_name or 'generic'} -> {tool_name}"
+                    )
+                    return tool_name
 
+        # Role-aware fallback only when no explicit intent matched.
+        role_text = f"{agent_name} {role}".lower()
+
+        ROLE_HINTS = {
+            "sales": (
+                "procurement", "tender", "business",
+                "company", "companies", "commercial"
+            ),
+            "finance": (
+                "market", "commodity", "economic",
+                "oil", "energy", "financial"
+            ),
+            "legal": (
+                "sanction", "country risk", "policy",
+                "conflict", "cyber"
+            ),
+            "secretary": (
+                "news", "aviation", "maritime",
+                "alerts", "economic"
+            ),
+            "executive": (
+                "world brief", "global", "risk",
+                "economic", "geopolitical"
+            ),
+        }
+
+        fallback_candidates = []
+
+        for tool_name, tool in available.items():
+            haystack = (
+                f"{tool_name} "
+                f"{tool.get('description', '')}"
+            ).lower()
+
+            score = 0
+
+            for role_key, hints in ROLE_HINTS.items():
+                if role_key in role_text:
+                    for hint in hints:
+                        if hint in haystack:
+                            score += 1
+
+            if score:
+                fallback_candidates.append(
+                    (score, tool_name)
+                )
+
+        if fallback_candidates:
+            fallback_candidates.sort(
+                key=lambda item: item[0],
+                reverse=True,
+            )
+            selected = fallback_candidates[0][1]
+
+            print(
+                f"[*] Online role fallback: "
+                f"{agent_name or 'generic'} -> {selected}"
+            )
+
+            return selected
+
+        # Final safe fallback.
         if "get_news_intelligence" in available:
             return "get_news_intelligence"
 
@@ -183,7 +324,6 @@ class OnlineGate:
             return "get_world_brief"
 
         return None
-
     def build_arguments(self, tool_name, query):
         """
         Only send arguments known to be appropriate for the selected tool.
@@ -329,3 +469,7 @@ class OnlineGate:
             "tool": tool_name,
             "data": result,
         }
+
+
+
+
