@@ -34,3 +34,6 @@ credentials.json
 token.json
 .env
 .env.*
+
+# Fred avatar upstream repository
+Fred/Avatar/.git/
