@@ -57,6 +57,73 @@ bpfcoLiveCheck();setInterval(bpfcoLiveCheck,3000);
 
 <section class=content>
 <div id=overview class="view active">
+<!-- PRESENCE_FRAME_UI_V01 -->
+<style>
+#presenceFrameBox{
+margin:14px 0;padding:14px;border:1px solid #2b414e;border-radius:12px;
+background:radial-gradient(circle,#183344,#0b1118 70%)
+}
+.pfgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pfcard{padding:10px;border:1px solid #293944;border-radius:9px;background:#0d151c;text-align:center}
+.pfcard.active{border-color:#71c6ee;box-shadow:0 0 15px rgba(113,198,238,.12)}
+.pfface{width:58px;height:58px;border-radius:50%;margin:auto auto 7px;display:grid;
+place-items:center;background:linear-gradient(145deg,#294657,#13212b);font-weight:800;font-size:22px}
+.pfstate{font-size:11px;color:#84939f}
+.pfmeta{margin-top:11px;font:10px Consolas,monospace;color:#aebbc5;white-space:pre-wrap}
+@media(max-width:900px){.pfgrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<div id="presenceFrameBox" class="panel">
+<div class="head">
+<b>RENDERER FRAME</b>
+<span class="muted">BPFCoBrain → Presence adapter</span>
+</div>
+<div id="pfGrid" class="pfgrid"></div>
+<div id="pfMeta" class="pfmeta">Loading renderer frame…</div>
+</div>
+
+<script>
+const PF_AGENTS={
+ Fred:["CEO","F"],Bob:["Finance","B"],Cindy:["Secretary","C"],
+ Kai:["Legal","K"],Neo:["Sales","N"]
+};
+
+async function pfLoad(){
+ try{
+   const r=await fetch("/api/presence/frame",{cache:"no-store"});
+   const d=await r.json();
+   const f=d.frame;
+   const active=f.agent;
+
+   document.getElementById("pfGrid").innerHTML=
+     Object.entries(PF_AGENTS).map(([n,v])=>
+       `<div class="pfcard ${n===active?'active':''}">
+          <div class="pfface">${v[1]}</div>
+          <b>${n}</b>
+          <div class="muted">${v[0]}</div>
+          <div class="pfstate">${n===active?f.state:"READY"}</div>
+        </div>`
+     ).join("");
+
+   document.getElementById("pfMeta").textContent=
+     JSON.stringify({
+       agent:f.agent,
+       state:f.state,
+       event:f.event,
+       voice:f.voice,
+       renderer:f.renderer,
+       lip_sync:f.lip_sync,
+       motion:f.motion,
+       expression:f.expression
+     },null,2);
+ }catch(e){
+   document.getElementById("pfMeta").textContent="Presence adapter unavailable.";
+ }
+}
+
+pfLoad();
+setInterval(pfLoad,2000);
+</script>
 <!-- PRESENCE_V03_BRIDGE -->
 <style>
 #presenceBridge{padding:14px;border:1px solid #2b414e;border-radius:12px;background:radial-gradient(circle,#183343,#0b1118 70%);margin-bottom:12px}
@@ -384,6 +451,7 @@ function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
 function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
 </script></body></html>
+
 
 
 

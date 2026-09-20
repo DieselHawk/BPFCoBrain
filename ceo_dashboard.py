@@ -396,9 +396,36 @@ def presence_api():
         encoding="utf-8"
     )
     return jsonify({"ok":True,"presence":presence})
+# PRESENCE_FRAME_API_V01
+@app.route("/api/presence/frame")
+def presence_frame():
+    import json as _json
+    from Presence.adapters.bpfco_presence_adapter import make_frame
+
+    state_file = ROOT / "Brain" / "Executive" / "presence_state.json"
+
+    if state_file.exists():
+        try:
+            raw = _json.loads(state_file.read_text(encoding="utf-8"))
+        except Exception:
+            raw = {}
+    else:
+        raw = {}
+
+    frame = make_frame(
+        raw.get("agent","Fred"),
+        raw.get("state","IDLE"),
+        raw.get("event","none")
+    )
+
+    return jsonify({
+        "ok": True,
+        "frame": frame.__dict__
+    })
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 
 
