@@ -494,6 +494,192 @@ body{
         window.addEventListener("resize", () => { if (brainIndex) renderGraph(graphData); });
         window.addEventListener("load", loadIndex);
     </script>
+<style>
+#bpfcoInspector{
+position:fixed;right:18px;top:18px;width:320px;max-height:80vh;overflow:auto;
+z-index:99999;background:rgba(8,14,21,.94);color:#e8eef3;
+border:1px solid #314454;border-radius:12px;padding:14px;
+box-shadow:0 16px 45px rgba(0,0,0,.45);font:13px Segoe UI,Arial
+}
+#bpfcoInspector h3{margin:0 0 6px;color:#7ac8ef}
+#bpfcoInspector .muted{color:#84919d;font-size:11px}
+#bpfcoInspector .conn{padding:5px 0;border-bottom:1px solid #202c36}
+#bpfcoTools{display:flex;gap:6px;margin:9px 0;flex-wrap:wrap}
+#bpfcoTools button{
+border:1px solid #30404c;background:#15212b;color:#e8eef3;
+border-radius:7px;padding:6px 9px;cursor:pointer
+}
+#bpfcoData{font:10px Consolas,monospace;white-space:pre-wrap;color:#aebcc7}
+.bpfco-selected{filter:drop-shadow(0 0 7px #78c9ef)}
+</style>
+
+<div id="bpfcoInspector">
+  <h3>SUPER BRAIN · NODE INSPECTOR</h3>
+  <div class="muted">Select a real knowledge node</div>
+  <div id="bpfcoTools">
+    <button id="bpfcoPlus">＋ Zoom</button>
+    <button id="bpfcoMinus">－ Zoom</button>
+    <button id="bpfcoReset">Reset</button>
+  </div>
+  <div id="bpfcoSelected">Nothing selected.</div>
+  <hr style="border:0;border-top:1px solid #263640">
+  <div class="muted">REAL CONNECTIONS</div>
+  <div id="bpfcoConnections">—</div>
+  <hr style="border:0;border-top:1px solid #263640">
+  <div class="muted">NODE DATA</div>
+  <pre id="bpfcoData">—</pre>
+</div>
+
+<script>
+(function(){
+  let selected=null, selectedKey=null, svg=null;
+
+  const $=id=>document.getElementById(id);
+
+  function key(d){
+    if(!d) return "";
+    if(typeof d==="string") return d;
+    return String(d.id ?? d.path ?? d.title ?? d.name ?? d.label ?? "");
+  }
+
+  function label(d){
+    if(!d) return "Unknown";
+    if(typeof d==="string") return d;
+    return String(d.label ?? d.name ?? d.title ?? d.id ?? d.path ?? "Unnamed node");
+  }
+
+  function dataOf(el){
+    return el && el.__data__ ? el.__data__ : null;
+  }
+
+  function allNodeEls(){
+    return [...document.querySelectorAll("svg circle, svg g.node, svg .node")];
+  }
+
+  function allEdgeEls(){
+    return [...document.querySelectorAll("svg line, svg path.link, svg .link")];
+  }
+
+  function related(a,b){
+    const ka=key(a), kb=key(b);
+    return ka && kb && (ka===kb);
+  }
+
+  function neighbours(d){
+    const out=new Map();
+    const dk=key(d);
+
+    function add(x){
+      if(!x) return;
+      const k=key(x);
+      if(k && k!==dk) out.set(k,label(x));
+    }
+
+    if(Array.isArray(d?.connections)) d.connections.forEach(add);
+    if(Array.isArray(d?.links)) d.links.forEach(x=>add(x.target ?? x));
+    if(Array.isArray(d?.neighbors)) d.neighbors.forEach(add);
+    if(Array.isArray(d?.related)) d.related.forEach(add);
+
+    for(const el of allEdgeEls()){
+      const e=dataOf(el);
+      if(!e) continue;
+      const s=e.source ?? e.from;
+      const t=e.target ?? e.to;
+      if(related(s,d)) add(t);
+      if(related(t,d)) add(s);
+    }
+    return [...out.values()].sort();
+  }
+
+  function clear(){
+    allNodeEls().forEach(x=>{
+      x.classList.remove("bpfco-selected");
+      x.style.strokeWidth="";
+      x.style.stroke="";
+    });
+    allEdgeEls().forEach(x=>{
+      x.style.strokeWidth="";
+      x.style.opacity="";
+    });
+  }
+
+  function inspect(el){
+    const d=dataOf(el);
+    if(!d) return;
+    selected=el;
+    selectedKey=key(d);
+    clear();
+
+    el.classList.add("bpfco-selected");
+    el.style.stroke="#78c9ef";
+    el.style.strokeWidth="3px";
+
+    const ns=neighbours(d);
+
+    for(const edge of allEdgeEls()){
+      const e=dataOf(edge);
+      if(!e) continue;
+      const s=e.source ?? e.from;
+      const t=e.target ?? e.to;
+      if(related(s,d) || related(t,d)){
+        edge.style.stroke="#78c9ef";
+        edge.style.strokeWidth="4px";
+        edge.style.opacity="1";
+      }
+    }
+
+    $("bpfcoSelected").innerHTML=
+      "<b>"+label(d)+"</b><br><span class='muted'>"+
+      (d.path ?? d.type ?? "knowledge node")+"</span>";
+
+    $("bpfcoConnections").innerHTML=ns.length
+      ? ns.map(x=>"<div class='conn'>↳ "+x+"</div>").join("")
+      : "<div class='muted'>No resolved connections exposed by this node.</div>";
+
+    $("bpfcoData").textContent=JSON.stringify(d,null,2);
+  }
+
+  function hook(){
+    svg=document.querySelector("svg");
+    if(!svg) return;
+
+    svg.addEventListener("click",function(ev){
+      const el=ev.target.closest("circle,.node");
+      if(el && svg.contains(el)) inspect(el);
+    },true);
+  }
+
+  function wheel(delta){
+    svg=document.querySelector("svg");
+    if(!svg) return;
+    svg.dispatchEvent(new WheelEvent("wheel",{
+      bubbles:true,cancelable:true,
+      deltaY:delta,clientX:window.innerWidth/2,
+      clientY:window.innerHeight/2
+    }));
+  }
+
+  $("bpfcoPlus").onclick=()=>wheel(-500);
+  $("bpfcoMinus").onclick=()=>wheel(500);
+  $("bpfcoReset").onclick=()=>{
+    clear();
+    $("bpfcoSelected").textContent="Nothing selected.";
+    $("bpfcoConnections").textContent="—";
+    $("bpfcoData").textContent="—";
+  };
+
+  hook();
+
+  const mo=new MutationObserver(()=>hook());
+  mo.observe(document.body,{childList:true,subtree:true});
+
+  window.addEventListener("keydown",e=>{
+    if(e.key==="+" || e.key==="=") wheel(-500);
+    if(e.key==="-" || e.key==="_") wheel(500);
+  });
+})();
+</script>
 </body>
 </html>
+
 
