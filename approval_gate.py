@@ -175,31 +175,44 @@ def approve(approval_id):
     source = PENDING_DIR / f"{approval_id}.json"
 
     if not source.exists():
-        raise FileNotFoundError(f"Pending approval not found: {approval_id}")
-
-    # Security order is deliberate:
-    # 1. Valid BPFCo USB token
-    # 2. Human terminal confirmation
-    # 3. Only then create Approved record
-    if not _usb_token_valid():
-        raise PermissionError(
-            "BPFCo approval rejected: valid USB cryptographic token required."
+        raise FileNotFoundError(
+            f"Pending approval not found: {approval_id}"
         )
 
-    _require_human_terminal(approval_id)
+    # AUTOMATIC USB WAIT:
+    # The approval call remains alive while the USB token is absent.
+    # Insertion is detected automatically by repeated cryptographic validation.
+    wait_for_usb_token()
 
-    record = json.loads(source.read_text(encoding="utf-8"))
+    if not sys.stdin.isatty():
+        raise PermissionError(
+            "BPFCo approval rejected: interactive human terminal required."
+        )
+
+    print("")
+    print("=== BPFCo HUMAN APPROVAL ===")
+    print(f"Approval ID: {approval_id}")
+    print("USB cryptographic token: VALID")
+    input("Press ENTER to approve: ")
+
+    record = json.loads(
+        source.read_text(encoding="utf-8")
+    )
+
     record["status"] = "approved"
     record["approved_at"] = datetime.now(timezone.utc).isoformat()
     record["approved_by"] = "human_terminal"
     record["approval_method"] = "bpfco_usb_token_plus_enter"
 
     destination = APPROVED_DIR / source.name
-    destination.write_text(json.dumps(record, indent=2), encoding="utf-8")
+    destination.write_text(
+        json.dumps(record, indent=2),
+        encoding="utf-8"
+    )
+
     source.unlink()
 
     return record
-
 
 def reject(approval_id, reason="Rejected by human approver"):
     source = PENDING_DIR / f"{approval_id}.json"
@@ -217,6 +230,7 @@ def reject(approval_id, reason="Rejected by human approver"):
     source.unlink()
 
     return record
+
 
 
 
