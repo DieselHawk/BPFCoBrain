@@ -273,9 +273,39 @@ def vault_index():
 @app.route("/vendor/d3.v7.min.js")
 def d3_asset():
     return send_file(ROOT / "Dashboard" / "vendor" / "d3.v7.min.js")
+# PRESENCE_V01
+PRESENCE_FILE = EXECUTIVE_DIR / "presence_state.json"
+
+@app.route("/api/presence", methods=["GET","POST"])
+def presence():
+    if request.method == "GET":
+        return jsonify(load_json(PRESENCE_FILE, {
+            "agent":"Fred",
+            "state":"IDLE",
+            "event":"none"
+        }))
+
+    data = request.get_json(silent=True) or {}
+    agent = str(data.get("agent","Fred")).strip()
+    state_name = str(data.get("state","PRESENT")).strip()
+    event = str(data.get("event","call")).strip()
+
+    allowed = {"Fred","Bob","Cindy","Kai","Neo"}
+    if agent not in allowed:
+        return jsonify({"ok":False,"error":"Unknown agent"}),400
+
+    state = {
+        "agent":agent,
+        "state":state_name,
+        "event":event
+    }
+
+    PRESENCE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    return jsonify({"ok":True,"presence":state})
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 
 

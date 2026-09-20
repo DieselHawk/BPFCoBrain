@@ -109,6 +109,123 @@ setTimeout(bpfcoBrainSync,500);
 </div>
 
 <div id=meeting class=view>
+<!-- PRESENCE_UI_V01 -->
+<style>
+.presence-room{
+display:grid;grid-template-columns:210px 1fr;gap:14px;
+background:radial-gradient(circle at 50% 35%,#1a3344,#0b1118 65%);
+border:1px solid #2b3d49;border-radius:12px;padding:15px
+}
+.presence-agent{
+padding:10px;border:1px solid #2a3944;border-radius:9px;
+background:#0d141b;cursor:pointer
+}
+.presence-agent.active{border-color:#6fc5ee;box-shadow:0 0 18px rgba(111,197,238,.12)}
+.presence-face{
+width:92px;height:92px;border-radius:50%;margin:20px auto 10px;
+display:grid;place-items:center;font-size:34px;font-weight:800;
+background:linear-gradient(145deg,#2d4b5e,#13212a)
+}
+.presence-main{text-align:center;border:1px solid #2a3944;border-radius:11px;padding:12px;min-height:230px}
+.presence-actions{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+@media(max-width:800px){.presence-room{grid-template-columns:1fr}}
+</style>
+
+<div class="panel" id="presencePanel">
+  <div class="head">
+    <b>Presence Room</b>
+    <span class="muted">local adapter · VRM-ready</span>
+  </div>
+
+  <div class="presence-room">
+    <div id="presenceFleet"></div>
+
+    <div class="presence-main">
+      <div class="muted">CURRENT AGENT</div>
+      <div class="presence-face" id="presenceFace">F</div>
+      <h2 id="presenceName">Fred</h2>
+      <div class="muted" id="presenceRole">CEO</div>
+      <div class="presence-actions">
+        <button class="btn" onclick="presenceCall()">Call in</button>
+        <button class="btn" onclick="presenceSpeak()">Speak</button>
+        <button class="btn" onclick="presenceListen()">Listening</button>
+        <button class="btn" onclick="presenceClear()">Return</button>
+      </div>
+      <div class="notice" style="margin-top:12px">
+        Current voice = browser system voice. VRM + lip-sync adapter replaces this later.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const presenceAgents={
+ Fred:["Fred","CEO","F"],
+ Bob:["Bob","Finance","B"],
+ Cindy:["Cindy","Secretary","C"],
+ Kai:["Kai","Legal","K"],
+ Neo:["Neo","Sales","N"]
+};
+let presenceCurrent="Fred";
+
+function renderPresence(){
+ const list=document.getElementById("presenceFleet");
+ list.innerHTML=Object.entries(presenceAgents).map(([n,v])=>
+ `<div class="presence-agent ${n===presenceCurrent?'active':''}" onclick="selectPresence('${n}')">
+   <b>${n}</b><div class="muted">${v[1]}</div>
+ </div>`).join("");
+
+ const v=presenceAgents[presenceCurrent];
+ document.getElementById("presenceFace").textContent=v[2];
+ document.getElementById("presenceName").textContent=v[0];
+ document.getElementById("presenceRole").textContent=v[1];
+}
+
+function selectPresence(n){
+ presenceCurrent=n;
+ renderPresence();
+}
+
+async function presenceEvent(state,event){
+ await fetch("/api/presence",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({agent:presenceCurrent,state:event==="return"?"IDLE":state,event:event})
+ });
+ renderPresence();
+}
+
+function presenceCall(){
+ presenceEvent("PRESENT","call");
+ speech(`${presenceCurrent} is joining the meeting.`);
+}
+
+function presenceSpeak(){
+ presenceEvent("SPEAKING","speak");
+ speech(`${presenceCurrent} is speaking.`);
+}
+
+function presenceListen(){
+ presenceEvent("LISTENING","listen");
+ speech(`${presenceCurrent} is listening.`);
+}
+
+function presenceClear(){
+ presenceEvent("IDLE","return");
+ speech(`${presenceCurrent} is returning to the room.`);
+}
+
+function speech(text){
+ if(!("speechSynthesis" in window))return;
+ window.speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.rate=.95;
+ u.pitch=1;
+ window.speechSynthesis.speak(u);
+}
+
+renderPresence();
+</script>
 <div class=panel><div class=head><b>Staff Meeting Mode</b><span class=muted>five agents</span></div><div class=stage id=stage></div><div style="margin-top:12px"><button class=btn onclick=speaker('fred')>Fred speaks</button> <button class=btn onclick=speaker('bob')>Bob speaks</button> <button class=btn onclick=speaker('cindy')>Cindy speaks</button> <button class=btn onclick=speaker('kai')>Kai speaks</button> <button class=btn onclick=speaker('neo')>Neo speaks</button></div><div class=muted style="margin-top:10px">VRM / voice / lip-sync plugs into this interface later.</div></div>
 </div>
 </section></main>
@@ -125,5 +242,6 @@ function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
 function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
 </script></body></html>
+
 
 
