@@ -433,7 +433,261 @@ async function dispatch(){let o=$('obj').value.trim();if(!o)return;$('dr').textC
 function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
 function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
-</script></body></html>
+</script><!-- BPFCO_CONTEXT_ROUTER_CANONICAL -->
+<style>
+#bpfcoContext{
+position:fixed;right:18px;bottom:18px;width:340px;z-index:99998;
+background:rgba(8,14,21,.96);border:1px solid #30424f;border-radius:13px;
+padding:14px;box-shadow:0 18px 48px rgba(0,0,0,.5)
+}
+#bpfcoContext h3{margin:0 0 3px;color:#78c8ef;font-size:15px}
+#bpfcoContext .ctMuted{font-size:11px;color:#84939f}
+#bpfcoContext .ctValue{margin:8px 0;font-size:15px;font-weight:700}
+#bpfcoContext .ctRows{border-top:1px solid #263640;margin-top:9px;padding-top:8px}
+#bpfcoContext .ctRow{padding:5px 0;border-bottom:1px solid #1e2a33;font-size:11px}
+#bpfcoContext .ctBtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+#bpfcoContext button{
+border:1px solid #30414c;background:#16232d;color:#e8eef3;
+border-radius:8px;padding:7px 10px;cursor:pointer
+}
+#bpfcoContext button:disabled{opacity:.45;cursor:not-allowed}
+#bpfcoContext .ctAgent{color:#68dc98}
+#bpfcoContext .ctWarn{color:#f0c26b}
+</style>
+
+<div id="bpfcoContext">
+<h3>SUPER BRAIN · CONTEXT</h3>
+<div class="ctMuted">Select a real knowledge node</div>
+<div id="ctNode" class="ctValue">No node selected</div>
+<div id="ctAgent" class="ctAgent">Agent: —</div>
+<div id="ctReason" class="ctMuted">—</div>
+
+<div class="ctRows">
+<div class="ctMuted">CONNECTIONS</div>
+<div id="ctConnections">—</div>
+</div>
+
+<div class="ctBtns">
+<button id="ctCall" disabled>Call agent</button>
+<button id="ctTask" disabled>Queue task</button>
+<button id="ctClear">Clear</button>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+let selectedNode=null;
+let selectedAgent="Fred";
+let brainFrame=null;
+let brainHooked=false;
+
+const rules=[
+ {agent:"Bob",words:["finance","financial","account","accounts","billing","invoice","budget","cash","bank","payment","tax"]},
+ {agent:"Cindy",words:["secretary","admin","administration","schedule","meeting","email","correspondence","office"]},
+ {agent:"Kai",words:["legal","law","court","trust","contract","agreement","compliance","case","litigation"]},
+ {agent:"Neo",words:["sales","lead","leads","marketing","client","customer","campaign","prospect","transport","mining","construction"]}
+];
+
+function textFor(n){
+ return [
+   n?.title,n?.name,n?.label,n?.folder,n?.path,n?.source
+ ].filter(Boolean).join(" ");
+}
+
+function routeAgent(n){
+ const text=textFor(n).toLowerCase();
+
+ for(const r of rules){
+   const hit=r.words.find(w=>text.includes(w));
+   if(hit)return {agent:r.agent,reason:"Matched context: "+hit};
+ }
+
+ return {
+   agent:"Fred",
+   reason:"No specialist match; Fred remains executive owner."
+ };
+}
+
+function nodeLabel(n){
+ return n?.title || n?.name || n?.label || n?.id || n?.path || "Unnamed node";
+}
+
+function nodeKey(n){
+ return String(n?.id ?? n?.path ?? n?.title ?? n?.name ?? "");
+}
+
+function same(a,b){
+ return nodeKey(a) && nodeKey(a)===nodeKey(b);
+}
+
+function connections(n){
+ const out=new Map();
+
+ function add(x){
+   if(!x)return;
+   const k=nodeKey(x);
+   if(k && !same(x,n))out.set(k,nodeLabel(x));
+ }
+
+ try{
+   const doc=brainFrame?.contentDocument;
+   if(!doc)return [...out.values()];
+
+   [...doc.querySelectorAll("line,path")].forEach(el=>{
+     const d=el.__data__;
+     if(!d)return;
+
+     const source=d.source ?? d.from;
+     const target=d.target ?? d.to;
+
+     if(same(source,n))add(target);
+     if(same(target,n))add(source);
+   });
+
+   if(Array.isArray(n.connections))n.connections.forEach(add);
+   if(Array.isArray(n.links))n.links.forEach(x=>add(x.target??x));
+   if(Array.isArray(n.neighbors))n.neighbors.forEach(add);
+ }catch(e){}
+
+ return [...out.values()].sort();
+}
+
+function inspect(n){
+ selectedNode=n;
+ const route=routeAgent(n);
+ selectedAgent=route.agent;
+
+ document.getElementById("ctNode").textContent=nodeLabel(n);
+ document.getElementById("ctAgent").textContent="Agent: "+route.agent;
+ document.getElementById("ctReason").textContent=route.reason;
+
+ const cs=connections(n);
+ document.getElementById("ctConnections").innerHTML=cs.length
+   ? cs.slice(0,14).map(x=>"<div class='ctRow'>↳ "+escapeText(x)+"</div>").join("")
+   : "<div class='ctMuted'>No exposed resolved links for this node.</div>";
+
+ document.getElementById("ctCall").disabled=false;
+ document.getElementById("ctTask").disabled=false;
+}
+
+function escapeText(x){
+ return String(x).replace(/[&<>"']/g,function(m){
+   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];
+ });
+}
+
+function hookBrain(){
+ brainFrame=document.querySelector('iframe[src="/brain-graph"]') || document.querySelector("iframe");
+ if(!brainFrame)return;
+
+ const doc=brainFrame.contentDocument;
+ if(!doc)return;
+
+ if(doc.__bpfcoNodeHooked)return;
+
+ doc.addEventListener("click",function(ev){
+   const el=ev.target.closest("circle,.node");
+   if(!el || !doc.contains(el))return;
+   if(el.__data__)inspect(el.__data__);
+ },true);
+
+ doc.__bpfcoNodeHooked=true;
+ brainHooked=true;
+}
+
+async function callAgent(){
+ if(!selectedAgent)return;
+
+ try{
+   await fetch("/api/presence",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({
+       agent:selectedAgent,
+       state:"PRESENT",
+       event:"brain_context_call",
+       context:selectedNode ? nodeLabel(selectedNode) : ""
+     })
+   });
+
+   if(window.speechSynthesis){
+     speechSynthesis.cancel();
+     speechSynthesis.speak(
+       new SpeechSynthesisUtterance(
+         selectedAgent+" is joining from the selected brain context."
+       )
+     );
+   }
+
+   const meetingNav=[...document.querySelectorAll(".nav")]
+     .find(x=>x.textContent.includes("Meeting"));
+
+   if(meetingNav && typeof show==="function"){
+     show("meeting",meetingNav);
+   }
+ }catch(e){
+   console.error(e);
+ }
+}
+
+async function queueTask(){
+ if(!selectedNode)return;
+
+ const map={
+   Bob:"Bob_Finance",
+   Cindy:"Cindy_Secretary",
+   Kai:"Kai_Legal",
+   Neo:"Neo_Sales",
+   Fred:"Fred"
+ };
+
+ const agent=map[selectedAgent] || "Bob_Finance";
+ const objective="Review brain context: "+nodeLabel(selectedNode);
+
+ try{
+   const r=await fetch("/api/dispatch",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({
+       agent:agent,
+       objective:objective,
+       priority:"normal"
+     })
+   });
+
+   const result=await r.json();
+   document.getElementById("ctReason").textContent=
+     "Task queued: "+(result.task_id || result.status || "accepted");
+
+ }catch(e){
+   document.getElementById("ctReason").textContent=
+     "Task dispatch unavailable: "+e.message;
+ }
+}
+
+document.getElementById("ctCall").onclick=callAgent;
+document.getElementById("ctTask").onclick=queueTask;
+
+document.getElementById("ctClear").onclick=function(){
+ selectedNode=null;
+ selectedAgent="Fred";
+ document.getElementById("ctNode").textContent="No node selected";
+ document.getElementById("ctAgent").textContent="Agent: —";
+ document.getElementById("ctReason").textContent="—";
+ document.getElementById("ctConnections").textContent="—";
+ document.getElementById("ctCall").disabled=true;
+ document.getElementById("ctTask").disabled=true;
+};
+
+setTimeout(hookBrain,700);
+setInterval(hookBrain,2500);
+
+})();
+</script>
+</body></html>
+
 
 
 
