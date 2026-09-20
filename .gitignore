@@ -58,3 +58,6 @@ Presence/components/*/node_modules/
 
 # Runtime approval records
 Brain/Executive/Approvals/
+
+# Generated link-repair reports
+Brain/Executive/LinkRepair/link_repair_report.json
