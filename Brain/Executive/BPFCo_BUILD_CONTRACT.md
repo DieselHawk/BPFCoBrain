@@ -268,3 +268,23 @@ Any future session reading this repository must continue this architecture.
 Do not restart the project.
 Do not replace BPFCoBrain.
 Do not create parallel dashboard systems when an existing BPFCoBrain dashboard can be extended.
+
+## SECURITY IMPLEMENTATION — V1
+
+BPFCo now has a dedicated Brain security identity.
+
+Normal approval:
+Human terminal input + valid registered USB cryptographic token + Enter.
+
+The USB token is bound to the BPFCo Brain ID with HMAC-SHA256.
+The token secret is generated randomly and stored only on the USB.
+
+Recovery:
+A separately protected recovery password can revoke the lost token and issue a replacement token.
+Recovery is REKEY ONLY and is never a standing password bypass.
+
+The recovery verifier uses PBKDF2-HMAC-SHA256 with a random salt.
+No recovery password or token secret may enter Git.
+
+Future:
+The token provider can be replaced by a true hardware-backed cryptographic token while preserving the same approval interface.
