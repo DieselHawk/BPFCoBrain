@@ -50,3 +50,8 @@ Dashboard/__pycache__/
 
 # Local backups
 *.bak
+
+# BPFCo Presence upstream/runtime dependencies
+Presence/upstream/*/node_modules/
+Presence/upstream/*/.venv/
+Presence/components/*/node_modules/
