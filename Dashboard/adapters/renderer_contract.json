@@ -1,0 +1,35 @@
+﻿{
+  "renderer_strategy": "fallback_then_upgrade",
+  "current_renderer": "bpfco-d3-2d",
+  "future_renderer": "vasturiano-3d-force-graph",
+  "future_version": "1.80.0",
+  "license": "MIT",
+  "future_dependencies": [
+    "3d-force-graph",
+    "three",
+    "three-forcegraph"
+  ],
+  "data_contract": {
+    "nodes": [
+      "id",
+      "label",
+      "path",
+      "folder",
+      "word_count",
+      "connection_count",
+      "agent_hint"
+    ],
+    "links": [
+      "source",
+      "target"
+    ]
+  },
+  "visual_target": {
+    "background": "starfield",
+    "camera": "orbit",
+    "zoom": true,
+    "node_focus": true,
+    "connection_particles": true,
+    "agent_presence_overlay": true
+  }
+}
