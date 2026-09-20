@@ -180,6 +180,68 @@ def home():
     return render_template_string(HTML)
 
 
+# LIVE_AGENT_STATE_V04
+def live_agent_states():
+    tasks = []
+    try:
+        for path in TASK_DIR.glob("*.json"):
+            item = load_json(path, {})
+            if item:
+                tasks.append(item)
+    except Exception:
+        pass
+
+    presence = load_json(
+        EXECUTIVE_DIR / "presence_state.json",
+        {}
+    )
+
+    states = {
+        "Fred": {"state":"READY","task":None},
+        "Bob": {"state":"READY","task":None},
+        "Cindy": {"state":"READY","task":None},
+        "Kai": {"state":"READY","task":None},
+        "Neo": {"state":"READY","task":None},
+    }
+
+    name_map = {
+        "Bob_Finance":"Bob",
+        "Cindy_Secretary":"Cindy",
+        "Kai_Legal":"Kai",
+        "Neo_Sales":"Neo",
+    }
+
+    for task in tasks:
+        agent = name_map.get(task.get("agent"))
+        if not agent:
+            continue
+
+        status = task.get("status")
+        if status == "in_progress":
+            states[agent] = {
+                "state":"WORKING",
+                "task":{
+                    "task_id":task.get("task_id"),
+                    "objective":task.get("objective")
+                }
+            }
+        elif status == "queued" and states[agent]["state"] == "READY":
+            states[agent] = {
+                "state":"QUEUED",
+                "task":{
+                    "task_id":task.get("task_id"),
+                    "objective":task.get("objective")
+                }
+            }
+
+    # Presence takes precedence over workload display.
+    if presence.get("agent") in states:
+        states[presence["agent"]] = {
+            "state":presence.get("state","PRESENT"),
+            "task":states[presence["agent"]].get("task")
+        }
+
+    return states
 @app.route("/api/status")
 def status():
     state = load_json(STATE_FILE, {})
@@ -206,6 +268,7 @@ def status():
         "queued_tasks": len(queue),
         "reports": len(reports),
         "agents": agents,
+        "live_states": live_agent_states(),
     })
 
 
@@ -260,7 +323,7 @@ def dispatch():
 # SUPER_BRAIN_ROUTES
 @app.route("/super")
 def super_dashboard():
-    return send_file(ROOT / "Dashboard" / "super_dashboard_v03.html")
+    return send_file(ROOT / "Dashboard" / "super_dashboard_v04.html")
 
 @app.route("/brain-graph")
 def brain_graph():
@@ -336,6 +399,8 @@ def presence_api():
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
+
 
 
 
