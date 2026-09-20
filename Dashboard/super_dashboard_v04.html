@@ -894,7 +894,251 @@ setInterval(hookBrain,2500);
 
 })();
 </script>
+<!-- BPFCO_CONTROL_SURFACE_V01 -->
+<style>
+#bpfcoControlStatus{
+position:fixed;left:18px;bottom:18px;z-index:99997;
+padding:8px 11px;border:1px solid #293944;border-radius:9px;
+background:rgba(8,14,21,.95);color:#9eacb8;font:11px Segoe UI,Arial;
+box-shadow:0 12px 28px rgba(0,0,0,.35)
+}
+#bpfcoControlStatus.live{color:#69db98}
+#bpfcoControlStatus.warn{color:#efbf65}
+</style>
+<div id="bpfcoControlStatus">CONTROL SURFACE: CONNECTING</div>
+
+<script>
+(function(){
+"use strict";
+
+const $=id=>document.getElementById(id);
+
+function status(text,mode="live"){
+  const e=$("bpfcoControlStatus");
+  if(!e)return;
+  e.textContent="CONTROL SURFACE: "+text;
+  e.className=mode;
+}
+
+async function json(url,options={}){
+  const r=await fetch(url,{
+    cache:"no-store",
+    ...options
+  });
+  if(!r.ok)throw new Error(url+" -> HTTP "+r.status);
+  return r.json();
+}
+
+/* ---------- Navigation ---------- */
+window.BPFCO_show=window.BPFCO_show||function(name){
+  const btn=[...document.querySelectorAll(".nav")]
+    .find(x=>x.textContent.trim().toLowerCase().includes(name.toLowerCase()));
+
+  if(btn && typeof window.show==="function"){
+    window.show(name.toLowerCase(),btn);
+    status(name.toUpperCase()+" READY");
+    return true;
+  }
+  return false;
+};
+
+/* ---------- Presence ---------- */
+window.BPFCO_setPresence=async function(agent,state,event,speak=false){
+  const result=await json("/api/presence",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      agent:agent,
+      state:state,
+      event:event
+    })
+  });
+
+  status(agent+" "+state);
+
+  if(speak && window.speechSynthesis){
+    speechSynthesis.cancel();
+    speechSynthesis.speak(
+      new SpeechSynthesisUtterance(agent+" is "+state.toLowerCase()+".")
+    );
+  }
+
+  return result;
+};
+
+/* ---------- Dispatch ---------- */
+window.BPFCO_dispatchSafe=async function(){
+  const agentEl=$("who");
+  const objEl=$("obj");
+
+  const agent=agentEl ? agentEl.value : "";
+  const objective=objEl ? objEl.value.trim() : "";
+
+  if(!agent || !objective){
+    status("ENTER TASK OBJECTIVE","warn");
+    return;
+  }
+
+  try{
+    const result=await json("/api/dispatch",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        agent:agent,
+        objective:objective,
+        priority:$("priority")?.value || "normal"
+      })
+    });
+
+    if($("dr"))$("dr").textContent=JSON.stringify(result,null,2);
+    objEl.value="";
+    status("TASK QUEUED");
+    BPFCO_refresh();
+  }catch(e){
+    status("DISPATCH ERROR","warn");
+    console.error(e);
+  }
+};
+
+/* ---------- Live refresh ---------- */
+window.BPFCO_refresh=async function(){
+  try{
+    const [st,q,r,p,pres,act,brain]=await Promise.all([
+      json("/api/status"),
+      json("/api/queue"),
+      json("/api/reports"),
+      json("/api/plan"),
+      json("/api/presence"),
+      json("/api/activity"),
+      json("/api/brain-graph")
+    ]);
+
+    /* Existing page functions are reused where present. */
+    if(typeof window.load==="function"){
+      try{await window.load()}catch(e){}
+    }
+
+    if(typeof window.refreshLiveAgentState==="function"){
+      try{await window.refreshLiveAgentState()}catch(e){}
+    }
+
+    if(typeof window.loadActivity==="function"){
+      try{await window.loadActivity()}catch(e){}
+    }
+
+    /* Known existing fields. */
+    if($("q"))$("q").textContent=JSON.stringify(q,null,2);
+    if($("q2"))$("q2").textContent=JSON.stringify(q,null,2);
+    if($("r"))$("r").textContent=JSON.stringify(r,null,2);
+    if($("r2"))$("r2").textContent=JSON.stringify(r,null,2);
+    if($("p") && p.content!==undefined)$("p").textContent=p.content;
+    if($("pbNow"))$("pbNow").textContent=
+      (pres.agent||"Fred")+" · "+(pres.state||"IDLE");
+    if($("pv2s"))$("pv2s").textContent=
+      (pres.agent||"Fred")+" · "+(pres.state||"IDLE");
+
+    status(
+      "LIVE · "+(brain.stats?.notes||brain.nodes?.length||0)+
+      " NODES · "+(q.tasks?.length||q.queue?.length||0)+" QUEUED"
+    );
+
+    window.BPFCO_STATE={
+      status:st,
+      queue:q,
+      reports:r,
+      plan:p,
+      presence:pres,
+      activity:act,
+      brain:brain
+    };
+
+  }catch(e){
+    status("API CONNECTION ERROR","warn");
+    console.error(e);
+  }
+};
+
+/* ---------- Safe security boundary ---------- */
+window.BPFCO_externalActionBlocked=function(){
+  status("USB CRYPTO GATE REQUIRED","warn");
+  alert(
+    "BPFCo external execution is blocked.\n\n"+
+    "Required:\n"+
+    "1. Registered USB cryptographic token\n"+
+    "2. Successful token validation\n"+
+    "3. Human terminal approval\n\n"+
+    "No external action was executed."
+  );
+};
+
+/*
+  Replace accidental direct execution controls with the protected boundary.
+*/
+document.addEventListener("click",function(ev){
+  const b=ev.target.closest("button");
+  if(!b)return;
+
+  const t=(b.textContent||"").trim().toLowerCase();
+
+  if(t==="approve" || t==="execute" || t.includes("send externally")){
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    BPFCO_externalActionBlocked();
+    return;
+  }
+
+  if(t==="refresh"){
+    BPFCO_refresh();
+    return;
+  }
+
+  if(t==="staff meeting" || t==="meeting"){
+    BPFCO_show("meeting");
+    return;
+  }
+
+  if(t==="brain"){
+    BPFCO_show("brain");
+    return;
+  }
+
+  if(t==="agents"){
+    BPFCO_show("agents");
+    return;
+  }
+
+  if(t==="work"){
+    BPFCO_show("work");
+    return;
+  }
+
+  if(t==="security"){
+    BPFCO_show("security");
+    return;
+  }
+});
+
+/* Patch common dispatch buttons if they exist. */
+document.addEventListener("DOMContentLoaded",function(){
+  const buttons=[...document.querySelectorAll("button")];
+
+  buttons.forEach(b=>{
+    const t=(b.textContent||"").trim().toLowerCase();
+
+    if(t==="queue task" || t==="dispatch task"){
+      b.onclick=BPFCO_dispatchSafe;
+    }
+  });
+
+  BPFCO_refresh();
+});
+
+setInterval(BPFCO_refresh,5000);
+status("LIVE");
+})();
+</script>
 </body></html>
+
 
 
 
