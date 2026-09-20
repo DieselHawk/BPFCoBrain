@@ -17,7 +17,34 @@ iframe{width:100%;height:72vh;border:0;border-radius:10px;background:#fff}
 .stage{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.person{text-align:center;padding:15px;border:1px solid #293640;border-radius:10px;background:#0d141b}.person.active{border-color:#6fc4ee}.portrait{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;margin:auto auto 8px;background:linear-gradient(145deg,#294151,#14212a);font-size:28px;font-weight:800}
 @media(max-width:1050px){main{grid-template-columns:1fr}nav{display:flex;gap:5px;overflow:auto}.nav{width:auto}.g2,.g3{grid-template-columns:1fr}.cards,.stage{grid-template-columns:repeat(2,1fr)}.statgrid{grid-template-columns:1fr 1fr}}
 </style></head><body>
-<header><div><div class=muted>BPFCo · LOCAL COMMAND CENTER</div><h1>SUPER BRAIN</h1></div><div class=muted><span class=ok>LOCAL</span> · <span id=clock></span></div></header>
+<header>
+<!-- BPFCO_LIVE_LINK_V01 -->
+<style>
+#bpfcoLiveLink{display:inline-flex;gap:7px;align-items:center;padding:6px 10px;
+border:1px solid #2b3944;border-radius:999px;background:#0e151c;font-size:11px}
+#bpfcoLiveDot{width:7px;height:7px;border-radius:50%;background:#e0a64b}
+#bpfcoLiveDot.on{background:#63db97;box-shadow:0 0 9px #63db97}
+</style>
+<div id="bpfcoLiveLink">
+<span id="bpfcoLiveDot"></span>
+<span id="bpfcoLiveText">CONNECTING TO BPFCoBRAIN</span>
+</div>
+<script>
+async function bpfcoLiveCheck(){
+ try{
+   const r=await fetch("/api/status",{cache:"no-store"});
+   if(!r.ok) throw new Error("status");
+   const d=await r.json();
+   document.getElementById("bpfcoLiveDot").className="on";
+   document.getElementById("bpfcoLiveText").textContent=
+     "BPFCoBRAIN LIVE · "+(d.queued_tasks??0)+" queued · "+(d.reports??0)+" reports";
+ }catch(e){
+   document.getElementById("bpfcoLiveDot").className="";
+   document.getElementById("bpfcoLiveText").textContent="BPFCoBRAIN OFFLINE";
+ }
+}
+bpfcoLiveCheck();setInterval(bpfcoLiveCheck,3000);
+</script><div><div class=muted>BPFCo · LOCAL COMMAND CENTER</div><h1>SUPER BRAIN</h1></div><div class=muted><span class=ok>LOCAL</span> · <span id=clock></span></div></header>
 <main>
 <nav>
 <button class="nav active" onclick="show('overview',this)">◉ Overview</button>
@@ -357,6 +384,7 @@ function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
 function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
 </script></body></html>
+
 
 
 
