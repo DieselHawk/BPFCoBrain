@@ -1,6 +1,6 @@
 ﻿import json
 from pathlib import Path
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, jsonify, request, render_template_string, send_file
 
 ROOT = Path(r"C:\BPFCo\BPFCoBrain")
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -256,8 +256,22 @@ def dispatch():
     })
 
 
+
+# SUPER_BRAIN_ROUTES
+@app.route("/super")
+def super_dashboard():
+    return send_file(ROOT / "Dashboard" / "super_dashboard.html")
+
+@app.route("/brain-graph")
+def brain_graph():
+    return send_file(ROOT / "dashboard.html")
+
+@app.route("/.vault-index.json")
+def vault_index():
+    return send_file(ROOT / ".vault-index.json")
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 

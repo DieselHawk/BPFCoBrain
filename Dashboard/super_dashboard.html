@@ -1,0 +1,84 @@
+﻿<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPFCo Super Brain</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080c11;color:#e8eef3;font:14px Segoe UI,Arial}
+header{height:68px;padding:14px 20px;border-bottom:1px solid #27333d;display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:23px;letter-spacing:.06em}.muted{color:#81909c;font-size:12px}
+main{height:calc(100vh - 68px);display:grid;grid-template-columns:1fr 380px;gap:1px;background:#202a34}
+.graph{background:#090e14;min-width:0}.side{background:#0e151c;padding:14px;overflow:auto}
+iframe{width:100%;height:100%;border:0}
+.card{border:1px solid #273440;background:#111a22;border-radius:11px;padding:12px;margin-bottom:11px}
+.agent{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #202b35}.agent:last-child{border:0}
+.ok{color:#67dc98}.warn{color:#efbf65}
+.stat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #202b35}
+button{background:#18242e;border:1px solid #2d3b46;color:#e8eef3;border-radius:8px;padding:8px 10px;cursor:pointer}
+button:hover{background:#21303c}
+pre{white-space:pre-wrap;max-height:240px;overflow:auto;color:#aebbc5;font-size:11px}
+@media(max-width:900px){main{grid-template-columns:1fr;height:auto}.graph{height:70vh}.side{height:auto}}
+</style>
+</head>
+<body>
+<header>
+<div><div class="muted">BPFCo · LOCAL COMMAND CENTER</div><h1>SUPER BRAIN</h1></div>
+<div class="muted">Brain graph + CEO control · <span class="ok">LOCAL</span></div>
+</header>
+
+<main>
+<section class="graph"><iframe src="/brain-graph" title="BPFCo knowledge graph"></iframe></section>
+
+<aside class="side">
+<div class="card">
+<div class="muted">AGENT FLEET</div>
+<div id="agents">Loading…</div>
+</div>
+
+<div class="card">
+<div class="muted">BPFCo STATUS</div>
+<div id="stats">Loading…</div>
+</div>
+
+<div class="card">
+<div class="muted">CEO WORK QUEUE</div>
+<pre id="queue">Loading…</pre>
+</div>
+
+<div class="card">
+<div class="muted">CEO WORK PLAN</div>
+<pre id="plan">Loading…</pre>
+</div>
+
+<div class="card">
+<button onclick="location.reload()">Refresh</button>
+</div>
+</aside>
+</main>
+
+<script>
+async function j(u){return fetch(u).then(r=>r.json())}
+
+async function load(){
+  const s=await j('/api/status');
+  document.getElementById('agents').innerHTML=
+    Object.entries(s.agents).map(([n,a])=>
+      `<div class="agent"><span><b>${n.replace('_',' ')}</b><br><span class="muted">${a.role}</span></span><span class="${a.registered?'ok':'warn'}">${a.registered?'READY':'UNREGISTERED'}</span></div>`
+    ).join('');
+
+  document.getElementById('stats').innerHTML=
+    `<div class="stat"><span>Controller</span><b>${s.controller||'CEO'}</b></div>`+
+    `<div class="stat"><span>Queued tasks</span><b>${s.queued_tasks}</b></div>`+
+    `<div class="stat"><span>Reports</span><b>${s.reports}</b></div>`+
+    `<div class="stat"><span>Human approval</span><b class="warn">${s.human_approval}</b></div>`;
+
+  document.getElementById('queue').textContent=JSON.stringify(await j('/api/queue'),null,2);
+  document.getElementById('plan').textContent=(await j('/api/plan')).content;
+}
+load();
+setInterval(load,10000);
+</script>
+</body>
+</html>
