@@ -269,9 +269,14 @@ def brain_graph():
 @app.route("/.vault-index.json")
 def vault_index():
     return send_file(ROOT / ".vault-index.json")
+
+@app.route("/vendor/d3.v7.min.js")
+def d3_asset():
+    return send_file(ROOT / "Dashboard" / "vendor" / "d3.v7.min.js")
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 
 

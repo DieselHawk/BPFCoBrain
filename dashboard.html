@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>🧠 BPFCoBrain Dashboard</title>
+        <title>ðŸ§  BPFCoBrain Dashboard</title>
     <link rel="icon" href="brain-icon.ico">
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="/vendor/d3.v7.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -251,32 +251,85 @@
             text-align: center;
             padding: 20px;
         }
-    </style>
+    /* BPFCo Super Brain visual layer */
+body{
+    background:
+      radial-gradient(circle at 50% 45%,rgba(32,68,92,.45),transparent 32%),
+      radial-gradient(circle at 20% 20%,rgba(67,83,130,.20),transparent 25%),
+      radial-gradient(circle at 80% 70%,rgba(25,93,108,.16),transparent 28%),
+      #05080d !important;
+    color:#dce7ef !important;
+}
+.sidebar,.details-panel,.graph-container{
+    background:rgba(8,14,21,.90) !important;
+    border:1px solid #263745 !important;
+    box-shadow:0 10px 40px rgba(0,0,0,.35) !important;
+}
+.sidebar h2,.details-panel h2{
+    color:#76c8ee !important;
+    border-color:#315163 !important;
+}
+.stat-box,.detail-item{
+    background:rgba(16,26,36,.84) !important;
+    border-left-color:#4c9fc8 !important;
+}
+.stat-value,.concept-tag{
+    color:#7bcaf0 !important;
+}
+.concept-tag{
+    background:#173444 !important;
+}
+.graph-container{
+    position:relative;
+}
+.graph-container::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:.35;
+    background-image:
+      radial-gradient(circle at 12% 22%,#fff 0 1px,transparent 1.5px),
+      radial-gradient(circle at 26% 74%,#fff 0 1px,transparent 1.5px),
+      radial-gradient(circle at 41% 16%,#fff 0 1px,transparent 1.5px),
+      radial-gradient(circle at 53% 84%,#fff 0 1px,transparent 1.5px),
+      radial-gradient(circle at 71% 21%,#fff 0 1px,transparent 1.5px),
+      radial-gradient(circle at 87% 63%,#fff 0 1px,transparent 1.5px),
+      radial-gradient(circle at 94% 18%,#fff 0 1px,transparent 1.5px);
+    z-index:0;
+}
+#graph{position:relative;z-index:1}
+.graph-info{
+    background:rgba(7,13,19,.88) !important;
+    color:#9db1bf !important;
+    border:1px solid #2b3c48 !important;
+}
+</style>
 </head>
 <body>
     <div class="container">
         <!-- Left Sidebar -->
         <div class="sidebar">
-            <h2>🧠 Brain Stats</h2>
+            <h2>ðŸ§  Brain Stats</h2>
             
             <div class="stat-box">
                 <div class="stat-label">Total Notes</div>
-                <div class="stat-value" id="noteCount">—</div>
+                <div class="stat-value" id="noteCount">â€”</div>
             </div>
 
             <div class="stat-box">
                 <div class="stat-label">Total Words</div>
-                <div class="stat-value" id="wordCount">—</div>
+                <div class="stat-value" id="wordCount">â€”</div>
             </div>
 
             <div class="stat-box">
                 <div class="stat-label">Connections</div>
-                <div class="stat-value" id="connCount">—</div>
+                <div class="stat-value" id="connCount">â€”</div>
             </div>
 
             <div class="stat-box">
                 <div class="stat-label">Files</div>
-                <div class="stat-value" id="fileCount">—</div>
+                <div class="stat-value" id="fileCount">â€”</div>
             </div>
 
             <div class="stat-box">
@@ -293,10 +346,10 @@
 
             <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #e0e0e0;">
                 <button class="btn-primary" onclick="exportData()" style="width: 100%; margin-bottom: 8px;">
-                    📥 Export
+                    ðŸ“¥ Export
                 </button>
                 <button class="btn-secondary" onclick="refreshGraph()" style="width: 100%;">
-                    🔄 Refresh
+                    ðŸ”„ Refresh
                 </button>
             </div>
         </div>
@@ -304,25 +357,25 @@
         <!-- Center - Graph -->
         <div class="graph-container">
             <div class="graph-info">
-                📊 Brain Knowledge Graph | Drag to move • Scroll to zoom • Click to details
+                ðŸ“Š Brain Knowledge Graph | Drag to move â€¢ Scroll to zoom â€¢ Click to details
             </div>
             <div id="graph"></div>
         </div>
 
         <!-- Right Sidebar - Details -->
         <div class="details-panel">
-            <h2>ℹ️ Details</h2>
+            <h2>â„¹ï¸ Details</h2>
             
             <div id="detailsContent" class="empty-state">
                 <div>
-                    <div style="font-size: 48px; margin-bottom: 10px;">👈</div>
+                    <div style="font-size: 48px; margin-bottom: 10px;">ðŸ‘ˆ</div>
                     <div>Click a node in the graph to see details</div>
                 </div>
             </div>
 
             <div class="btn-group" style="margin-top: auto;">
-                <button class="btn-primary" onclick="copyToClipboard()">📋 Copy</button>
-                <button class="btn-secondary" onclick="closeDetails()">✕ Close</button>
+                <button class="btn-primary" onclick="copyToClipboard()">ðŸ“‹ Copy</button>
+                <button class="btn-secondary" onclick="closeDetails()">âœ• Close</button>
             </div>
         </div>
     </div>
@@ -391,13 +444,13 @@
             const width = container.clientWidth || 800, height = container.clientHeight || 600;
             const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
             const links = svg.append("g").selectAll("line").data(data.links).enter().append("line")
-                .attr("stroke", "#c7cbd6").attr("stroke-width", 1.5);
+                .attr("stroke", "#527487").attr("stroke-width", 1.5);
             const nodes = svg.append("g").selectAll("circle").data(data.nodes).enter().append("circle")
                 .attr("r", d => Math.max(5, Math.min(16, 5 + Math.sqrt(d.links.length + 1))))
                 .attr("fill", d => d.unresolved ? "#f59e0b" : "#667eea").attr("stroke", "white").attr("stroke-width", 1.5)
                 .style("cursor", "pointer").on("click", showDetails);
             const labels = svg.append("g").selectAll("text").data(data.nodes).enter().append("text")
-                .attr("text-anchor", "middle").attr("dy", "-9").attr("fill", "#333")
+                .attr("text-anchor", "middle").attr("dy", "-9").attr("fill", "#d9e5ec")
                 .attr("font-size", "10px").text(d => d.title.length > 24 ? `${d.title.slice(0, 21)}...` : d.title);
             simulation = d3.forceSimulation(data.nodes)
                 .force("link", d3.forceLink(data.links).id(d => d.id).distance(70))
@@ -430,7 +483,7 @@
                 const response = await fetch(`${INDEX_URL}?t=${Date.now()}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 brainIndex = await response.json(); graphData = normalizeIndex(brainIndex); updateStats(brainIndex, graphData); renderGraph(graphData);
-                setStatus(`Live vault index | ${graphData.nodes.length.toLocaleString()} notes • ${graphData.links.length.toLocaleString()} links`);
+                setStatus(`Live vault index | ${graphData.nodes.length.toLocaleString()} notes â€¢ ${graphData.links.length.toLocaleString()} links`);
             } catch (error) {
                 setStatus(`Unable to load ${INDEX_URL}. Open this folder through a local web server, not file:// (${error.message})`, true);
                 document.getElementById("graph").innerHTML = `<div class="empty-state">The live index could not be loaded.<br><small>Run <code>python -m http.server</code> in the vault folder, then open http://localhost:8000/dashboard.html.</small></div>`;
@@ -443,3 +496,4 @@
     </script>
 </body>
 </html>
+
