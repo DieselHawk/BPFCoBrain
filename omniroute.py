@@ -158,7 +158,9 @@ class OmniRouter:
         print(f"✅ {success}/{len(file_list)} files imported")
     
     def query_with_fallback(self, query: str, context: str = "", max_retries: int = 3, persona: str = None):
-        \"\"\"Query the configured model gateway. Local Ollama is preferred.\"\"\"
+        """Query the configured model gateway. Local Ollama is preferred."""
+
+
 
         # 1. Persona Injection
         if persona:
