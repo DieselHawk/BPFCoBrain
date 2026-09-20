@@ -17,6 +17,142 @@ iframe{width:100%;height:72vh;border:0;border-radius:10px;background:#fff}
 .stage{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.person{text-align:center;padding:15px;border:1px solid #293640;border-radius:10px;background:#0d141b}.person.active{border-color:#6fc4ee}.portrait{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;margin:auto auto 8px;background:linear-gradient(145deg,#294151,#14212a);font-size:28px;font-weight:800}
 @media(max-width:1050px){main{grid-template-columns:1fr}nav{display:flex;gap:5px;overflow:auto}.nav{width:auto}.g2,.g3{grid-template-columns:1fr}.cards,.stage{grid-template-columns:repeat(2,1fr)}.statgrid{grid-template-columns:1fr 1fr}}
 </style></head><body>
+<!-- SUPERBRAIN_DATA_BUS_V01 -->
+<style>
+#superBrainBus{
+margin:0 0 12px 0;padding:10px 12px;
+border:1px solid #2a3b47;border-radius:11px;
+background:#0c141b;display:flex;gap:9px;align-items:center;
+flex-wrap:wrap;font-size:11px
+}
+.sbbTitle{color:#78c8ef;font-weight:700;letter-spacing:.08em}
+.sbbItem{padding:5px 8px;border:1px solid #263640;border-radius:999px}
+.sbbOn{color:#65dc97}.sbbOff{color:#efbf65}
+</style>
+
+<div id="superBrainBus">
+  <span class="sbbTitle">SUPER BRAIN LIVE BUS</span>
+  <span class="sbbItem" id="sbbCore">Core: —</span>
+  <span class="sbbItem" id="sbbQueue">Queue: —</span>
+  <span class="sbbItem" id="sbbReports">Reports: —</span>
+  <span class="sbbItem" id="sbbPresence">Presence: —</span>
+  <span class="sbbItem" id="sbbActivity">Activity: —</span>
+  <span class="sbbItem" id="sbbBrain">Brain: —</span>
+  <span class="sbbItem" id="sbbOverall">LINKING…</span>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const endpoints={
+  core:"/api/status",
+  queue:"/api/queue",
+  reports:"/api/reports",
+  plan:"/api/plan",
+  presence:"/api/presence",
+  activity:"/api/activity",
+  brain:"/api/brain-graph"
+};
+
+const $=id=>document.getElementById(id);
+
+function countValue(x){
+  if(Array.isArray(x)) return x.length;
+  if(!x || typeof x!=="object") return 0;
+  for(const k of ["tasks","queue","items","reports","events","data"]){
+    if(Array.isArray(x[k])) return x[k].length;
+  }
+  return 0;
+}
+
+async function get(url){
+  const r=await fetch(url,{cache:"no-store"});
+  if(!r.ok) throw new Error(url+" "+r.status);
+  return r.json();
+}
+
+function set(id,text,on=true){
+  const e=$(id);
+  e.textContent=text;
+  e.className="sbbItem "+(on?"sbbOn":"sbbOff");
+}
+
+async function refreshBus(){
+
+  const results=await Promise.allSettled(
+    Object.entries(endpoints).map(async ([name,url])=>[name,await get(url)])
+  );
+
+  const d={};
+  for(const r of results){
+    if(r.status==="fulfilled") d[r.value[0]]=r.value[1];
+  }
+
+  const total=Object.keys(endpoints).length;
+  const linked=Object.keys(d).length;
+
+  set(
+    "sbbCore",
+    d.core ? "Core: LIVE" : "Core: OFFLINE",
+    !!d.core
+  );
+
+  set(
+    "sbbQueue",
+    d.queue ? "Queue: "+countValue(d.queue) : "Queue: OFFLINE",
+    !!d.queue
+  );
+
+  set(
+    "sbbReports",
+    d.reports ? "Reports: "+countValue(d.reports) : "Reports: OFFLINE",
+    !!d.reports
+  );
+
+  set(
+    "sbbPresence",
+    d.presence
+      ? "Presence: "+(d.presence.agent||"Fred")+" / "+(d.presence.state||"IDLE")
+      : "Presence: OFFLINE",
+    !!d.presence
+  );
+
+  set(
+    "sbbActivity",
+    d.activity
+      ? "Activity: "+countValue(d.activity)
+      : "Activity: OFFLINE",
+    !!d.activity
+  );
+
+  set(
+    "sbbBrain",
+    d.brain
+      ? "Brain: "+((d.brain.stats?.nodes)||d.brain.nodes?.length||0)+" nodes"
+      : "Brain: OFFLINE",
+    !!d.brain
+  );
+
+  set(
+    "sbbOverall",
+    linked===total ? "LINKED "+linked+"/"+total : "LINKED "+linked+"/"+total,
+    linked===total
+  );
+
+  window.BPFCO_SUPER_BRAIN_SNAPSHOT={
+    timestamp:new Date().toISOString(),
+    endpoints:d,
+    linked,
+    total
+  };
+}
+
+refreshBus();
+setInterval(refreshBus,3000);
+
+})();
+</script>
 <header>
 <!-- BPFCO_LIVE_LINK_V01 -->
 <style>
@@ -759,6 +895,7 @@ setInterval(hookBrain,2500);
 })();
 </script>
 </body></html>
+
 
 
 
