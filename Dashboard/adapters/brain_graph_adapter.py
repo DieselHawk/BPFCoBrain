@@ -13,54 +13,100 @@ def load_index():
         return {}
 
 def build_brain_graph():
-    data = load_index()
-    notes = data.get("notes", {})
+    index = load_index()
+    notes = index.get("notes", {})
 
     if not isinstance(notes, dict):
         notes = {}
 
     nodes = []
-    edges = []
-    known = set(notes.keys())
+    links = []
+    known = {str(k).lower(): k for k in notes.keys()}
 
     for node_id, note in notes.items():
         if not isinstance(note, dict):
             continue
 
+        targets = index.get("graph", {}).get(node_id)
+        if not isinstance(targets, list) or not targets:
+            targets = note.get("links", [])
+
+        node_links = list(targets or [])
+
         nodes.append({
-            "id": node_id,
-            "label": note.get("title") or node_id,
+            "id": str(node_id),
+            "label": note.get("title") or str(node_id),
+            "title": note.get("title") or str(node_id),
             "path": note.get("path", ""),
             "folder": note.get("folder", ""),
             "word_count": int(note.get("word_count", 0) or 0),
-            "connection_count": len(note.get("links", []) or []),
-            "links": list(note.get("links", []) or [])
+            "connection_count": len(node_links),
+            "links": node_links,
+            "content": note.get("content", ""),
+            "frontmatter": note.get("frontmatter", {})
         })
 
-        for target in note.get("links", []) or []:
-            if target in known:
-                edges.append({
-                    "source": node_id,
-                    "target": target
+    existing_ids = {n["id"] for n in nodes}
+    unresolved = {}
+
+    for node in list(nodes):
+        for target in node["links"]:
+            target_text = str(target)
+            target_id = known.get(target_text.lower())
+
+            if target_id is None:
+                external_id = f"external:{target_text}"
+                if external_id not in existing_ids:
+                    existing_ids.add(external_id)
+                    nodes.append({
+                        "id": external_id,
+                        "label": f"[unresolved] {target_text}",
+                        "title": f"[unresolved] {target_text}",
+                        "path": "",
+                        "folder": "unresolved",
+                        "word_count": 0,
+                        "connection_count": 0,
+                        "links": [],
+                        "content": "",
+                        "frontmatter": {},
+                        "unresolved": True
+                    })
+                target_id = external_id
+                unresolved[target_text] = unresolved.get(target_text, 0) + 1
+
+            key = tuple(sorted((node["id"], target_id)))
+            if not hasattr(build_brain_graph, "_seen"):
+                build_brain_graph._seen = set()
+
+            if key not in build_brain_graph._seen:
+                build_brain_graph._seen.add(key)
+                links.append({
+                    "source": node["id"],
+                    "target": target_id,
+                    "strength": 1,
+                    "unresolved": target_id.startswith("external:")
                 })
 
-    unresolved_map = data.get("unresolved_links", {})
-    unresolved = (
-        sum(len(v) for v in unresolved_map.values() if isinstance(v, list))
-        if isinstance(unresolved_map, dict) else 0
-    )
+    # Reset duplicate-protection between calls.
+    build_brain_graph._seen = set()
 
-    stats = data.get("stats", {})
+    stats = index.get("stats", {})
+    if not isinstance(stats, dict):
+        stats = {}
+
+    total_words = stats.get("total_words", 0)
+    total_notes = stats.get("total_notes", len([n for n in nodes if not n.get("unresolved")]))
+    indexed_connections = stats.get("connections", 0)
 
     return {
         "source": ".vault-index.json",
         "nodes": nodes,
-        "links": edges,
+        "links": links,
         "stats": {
-            "notes": len(nodes),
-            "words": int(stats.get("total_words", 0) or 0),
-            "indexed_connections": int(stats.get("connections", 0) or 0),
-            "resolved_links": len(edges),
-            "unresolved_links": unresolved
+            "notes": int(total_notes or 0),
+            "words": int(total_words or 0),
+            "indexed_connections": int(indexed_connections or 0),
+            "resolved_links": sum(1 for x in links if not x["unresolved"]),
+            "unresolved_links": sum(1 for x in links if x["unresolved"])
         }
     }

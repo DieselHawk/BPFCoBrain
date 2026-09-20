@@ -9,6 +9,7 @@ checks = [
     ("/brain-graph", "BRAIN GRAPH"),
     ("/vendor/d3.v7.min.js", "LOCAL D3"),
     ("/api/status", "CEO STATUS"),
+    ("/api/brain-graph", "BRAIN GRAPH API"),
     ("/api/queue", "TASK QUEUE"),
     ("/api/reports", "AGENT REPORTS"),
     ("/api/plan", "CEO PLAN"),
@@ -43,3 +44,4 @@ if passed == len(checks):
 else:
     print("BPFCo INTEGRATION: ATTENTION REQUIRED")
     raise SystemExit(1)
+
