@@ -422,9 +422,92 @@ def presence_frame():
         "ok": True,
         "frame": frame.__dict__
     })
+# BPFCO_ACTIVITY_V01
+def bpfco_activity():
+    events=[]
+
+    def add(ts,agent,event,detail):
+        events.append({
+            "time":ts,
+            "agent":agent,
+            "event":event,
+            "detail":detail
+        })
+
+    presence_file = ROOT / "Brain" / "Executive" / "presence_state.json"
+    if presence_file.exists():
+        try:
+            x=json.loads(presence_file.read_text(encoding="utf-8"))
+            add(
+                presence_file.stat().st_mtime,
+                x.get("agent","Fred"),
+                "PRESENCE",
+                x.get("state","IDLE")+" · "+x.get("event","none")
+            )
+        except Exception:
+            pass
+
+    queue_file = ROOT / "Brain" / "Executive" / "queue.json"
+    if queue_file.exists():
+        try:
+            q=json.loads(queue_file.read_text(encoding="utf-8"))
+            items=q if isinstance(q,list) else (
+                q.get("tasks",q.get("queue",[])) if isinstance(q,dict) else []
+            )
+            if isinstance(items,list):
+                add(
+                    queue_file.stat().st_mtime,
+                    "Fred",
+                    "QUEUE",
+                    f"{len(items)} queued item(s)"
+                )
+        except Exception:
+            add(queue_file.stat().st_mtime,"Fred","QUEUE","queue updated")
+
+    task_dir = ROOT / "Brain" / "Executive" / "tasks"
+    if task_dir.exists():
+        for path in sorted(
+            task_dir.glob("*.json"),
+            key=lambda x:x.stat().st_mtime,
+            reverse=True
+        )[:12]:
+            try:
+                x=json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                x={}
+
+            agent=x.get("agent",path.stem.split("-")[-1])
+            status=x.get("status",x.get("state","TASK"))
+            objective=x.get("objective",x.get("title","task"))
+            add(path.stat().st_mtime,agent,"TASK",f"{status} · {objective}")
+
+    roll = ROOT / "Brain" / "Executive" / "rollover"
+    if roll.exists():
+        for path in sorted(
+            roll.glob("*.json"),
+            key=lambda x:x.stat().st_mtime,
+            reverse=True
+        )[:5]:
+            add(path.stat().st_mtime,"Fred","ROLLOVER",path.name)
+
+    reports = ROOT / "Brain" / "Executive"
+    for path in sorted(
+        reports.rglob("*.md"),
+        key=lambda x:x.stat().st_mtime,
+        reverse=True
+    )[:8]:
+        if "Report" in path.name or "report" in path.name or "CEO_" in path.name:
+            add(path.stat().st_mtime,"Fred","REPORT",path.name)
+
+    return sorted(events,key=lambda x:x["time"],reverse=True)[:30]
+
+@app.route("/api/activity")
+def activity_api():
+    return jsonify({"events":bpfco_activity()})
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 
 

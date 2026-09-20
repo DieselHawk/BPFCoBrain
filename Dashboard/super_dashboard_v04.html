@@ -420,7 +420,79 @@ renderPresence();
 </script>
 <div class=panel><div class=head><b>Staff Meeting Mode</b><span class=muted>five agents</span></div><div class=stage id=stage></div><div style="margin-top:12px"><button class=btn onclick=speaker('fred')>Fred speaks</button> <button class=btn onclick=speaker('bob')>Bob speaks</button> <button class=btn onclick=speaker('cindy')>Cindy speaks</button> <button class=btn onclick=speaker('kai')>Kai speaks</button> <button class=btn onclick=speaker('neo')>Neo speaks</button></div><div class=muted style="margin-top:10px">VRM / voice / lip-sync plugs into this interface later.</div></div>
 </div>
-</section></main>
+<!-- BPFCO_ACTIVITY_UI_V01 -->
+<style>
+#bpfcoActivityPanel{
+margin:14px 0;padding:14px;border:1px solid #293944;border-radius:12px;
+background:#0f171f
+}
+#bpfcoActivity{
+max-height:320px;overflow:auto
+}
+.ba{
+display:grid;grid-template-columns:72px 78px 92px 1fr;gap:9px;
+padding:8px 0;border-bottom:1px solid #202b35;
+font-size:11px;align-items:start
+}
+.ba:last-child{border-bottom:0}
+.baTime{color:#627482;font-family:Consolas,monospace}
+.baAgent{font-weight:700;color:#dce7ee}
+.baEvent{color:#78c8ef;font-weight:700}
+.baDetail{color:#9dacb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:850px){
+ .ba{grid-template-columns:62px 65px 75px 1fr}
+}
+</style>
+
+<div id="bpfcoActivityPanel" class="panel">
+<div class="head">
+<b>LIVE ACTIVITY</b>
+<span class="muted">queue · tasks · presence · rollover · reports</span>
+</div>
+<div id="bpfcoActivity">Loading activity…</div>
+</div>
+
+<script>
+(function(){
+
+function activityTime(ts){
+ const d=new Date(ts*1000);
+ return isNaN(d) ? "--:--:--" : d.toLocaleTimeString([],{
+   hour:"2-digit",minute:"2-digit",second:"2-digit"
+ });
+}
+
+async function loadActivity(){
+ try{
+   const r=await fetch("/api/activity",{cache:"no-store"});
+   if(!r.ok)throw new Error("activity "+r.status);
+   const d=await r.json();
+
+   if(!d.events?.length){
+     document.getElementById("bpfcoActivity").innerHTML=
+       "<div class='muted'>No runtime events recorded yet.</div>";
+     return;
+   }
+
+   document.getElementById("bpfcoActivity").innerHTML=
+     d.events.map(e=>`
+       <div class="ba">
+         <div class="baTime">${activityTime(e.time)}</div>
+         <div class="baAgent">${String(e.agent||"System")}</div>
+         <div class="baEvent">${String(e.event||"EVENT")}</div>
+         <div class="baDetail">${String(e.detail||"")}</div>
+       </div>
+     `).join("");
+ }catch(e){
+   document.getElementById("bpfcoActivity").textContent=
+     "BPFCo activity API unavailable.";
+ }
+}
+
+loadActivity();
+setInterval(loadActivity,3000);
+})();
+</script></section></main>
 
 <script>
 let current='fred';const A={fred:['Fred','CEO','F'],bob:['Bob','Finance','B'],cindy:['Cindy','Secretary','C'],kai:['Kai','Legal','K'],neo:['Neo','Sales','N']};
@@ -687,6 +759,7 @@ setInterval(hookBrain,2500);
 })();
 </script>
 </body></html>
+
 
 
 
