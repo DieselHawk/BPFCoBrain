@@ -1,0 +1,364 @@
+﻿<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPFCo Super Brain</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070b10;color:#e9eff4;font:14px Segoe UI,Arial}
+header{height:64px;padding:12px 18px;border-bottom:1px solid #26323d;display:flex;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:21px;letter-spacing:.07em}.muted{color:#82909d;font-size:12px}.ok{color:#64db97}.warn{color:#f0c26b}
+main{display:grid;grid-template-columns:210px 1fr;height:calc(100vh - 64px)}
+nav{background:#0d141b;border-right:1px solid #26323d;padding:12px}.nav{width:100%;text-align:left;margin:4px 0;padding:10px 12px;border:1px solid #202c36;border-radius:8px;background:#111a22;color:#dce5ec;cursor:pointer}.nav.active{border-color:#6cbfe8;background:#172631}
+.content{padding:14px;overflow:auto}.view{display:none}.view.active{display:block}.grid{display:grid;gap:12px}.g2{grid-template-columns:1.4fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.panel{background:#10171f;border:1px solid #27343f;border-radius:12px;padding:14px;margin-bottom:12px}.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.card{padding:11px;border:1px solid #293641;border-radius:9px;background:#0d141b}.face{width:42px;height:42px;border-radius:50%;background:linear-gradient(145deg,#294151,#13212b);display:grid;place-items:center;font-weight:800;font-size:20px;margin-bottom:7px}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{padding:11px;border:1px solid #293641;border-radius:9px}.stat b{display:block;font-size:20px;margin-top:3px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #202b35}.row:last-child{border:0}
+button,input,select,textarea{font:inherit}.btn{padding:8px 11px;border:1px solid #2a3742;border-radius:8px;background:#17232d;color:#e7eef3;cursor:pointer}.btn:hover{filter:brightness(1.12)}textarea{width:100%;height:90px;background:#0b1117;color:#eef3f6;border:1px solid #2a3742;border-radius:8px;padding:9px}select{background:#0b1117;color:#eef3f6;border:1px solid #2a3742;border-radius:8px;padding:8px}
+pre{white-space:pre-wrap;background:#0a1016;border:1px solid #202b35;border-radius:8px;padding:10px;max-height:300px;overflow:auto}
+iframe{width:100%;height:72vh;border:0;border-radius:10px;background:#fff}
+.stage{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.person{text-align:center;padding:15px;border:1px solid #293640;border-radius:10px;background:#0d141b}.person.active{border-color:#6fc4ee}.portrait{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;margin:auto auto 8px;background:linear-gradient(145deg,#294151,#14212a);font-size:28px;font-weight:800}
+@media(max-width:1050px){main{grid-template-columns:1fr}nav{display:flex;gap:5px;overflow:auto}.nav{width:auto}.g2,.g3{grid-template-columns:1fr}.cards,.stage{grid-template-columns:repeat(2,1fr)}.statgrid{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<header><div><div class=muted>BPFCo · LOCAL COMMAND CENTER</div><h1>SUPER BRAIN</h1></div><div class=muted><span class=ok>LOCAL</span> · <span id=clock></span></div></header>
+<main>
+<nav>
+<button class="nav active" onclick="show('overview',this)">◉ Overview</button>
+<button class=nav onclick="show('brain',this)">✦ Brain</button>
+<button class=nav onclick="show('agents',this)">◎ Agents</button>
+<button class=nav onclick="show('work',this)">▣ Work</button>
+<button class=nav onclick="show('security',this)">⚿ Security</button>
+<button class=nav onclick="show('meeting',this)">◌ Meeting</button>
+</nav>
+
+<section class=content>
+<div id=overview class="view active">
+<!-- PRESENCE_V03_BRIDGE -->
+<style>
+#presenceBridge{padding:14px;border:1px solid #2b414e;border-radius:12px;background:radial-gradient(circle,#183343,#0b1118 70%);margin-bottom:12px}
+#pbFleet{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.pbAgent{padding:10px;border:1px solid #2a3944;border-radius:9px;background:#0d151c;text-align:center}
+.pbAgent.active{border-color:#72c6ee;box-shadow:0 0 15px rgba(114,198,238,.12)}
+.pbFace{width:58px;height:58px;border-radius:50%;margin:auto auto 7px;display:grid;place-items:center;background:linear-gradient(145deg,#294657,#13212a);font-weight:800;font-size:22px}
+.pbState{font-size:11px;color:#84939f;margin:3px 0 8px}
+.pbCall{border:1px solid #31434f;background:#16232d;color:#e8eef3;border-radius:7px;padding:6px 9px;cursor:pointer}
+#pbNow{text-align:center;margin-top:11px;color:#aab8c4}
+@media(max-width:900px){#pbFleet{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<div id="presenceBridge">
+<div class="head">
+<b>LIVE AGENT PRESENCE</b>
+<span class="muted">CEO state ↔ Presence adapter</span>
+</div>
+<div id="pbFleet"></div>
+<div id="pbNow">Loading live presence…</div>
+</div>
+
+<script>
+const PB={
+ Fred:["CEO","F"],Bob:["Finance","B"],Cindy:["Secretary","C"],
+ Kai:["Legal","K"],Neo:["Sales","N"]
+};
+let pbCurrent="Fred";
+
+async function pbGet(u,o){
+ return fetch(u,o).then(r=>r.json());
+}
+
+function pbDrawFleet(status){
+ const a=status?.agents||{};
+ document.getElementById("pbFleet").innerHTML=
+ Object.entries(PB).map(([name,v])=>{
+   const key=name.replace(" ","_");
+   const live=a[key]||a[name]||{};
+   const state=live.state||"READY";
+   return `<div class="pbAgent ${name===pbCurrent?'active':''}">
+     <div class="pbFace">${v[1]}</div>
+     <b>${name}</b>
+     <div class="muted">${v[0]}</div>
+     <div class="pbState">${state}</div>
+     <button class="pbCall" onclick="pbCall('${name}')">Call</button>
+   </div>`;
+ }).join("");
+}
+
+async function pbPresence(){
+ try{
+   const p=await pbGet("/api/presence");
+   pbCurrent=p.agent||"Fred";
+   document.getElementById("pbNow").innerHTML=
+     `<b>${pbCurrent}</b> · ${p.state||"IDLE"} · <span class="muted">${p.event||"none"}</span>`;
+ }catch(e){}
+}
+
+async function pbRefresh(){
+ try{
+   const s=await pbGet("/api/status");
+   pbDrawFleet(s);
+ }catch(e){}
+ await pbPresence();
+}
+
+async function pbCall(name){
+ pbCurrent=name;
+ await fetch("/api/presence",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({agent:name,state:"PRESENT",event:"call"})
+ });
+ if(window.speechSynthesis){
+   speechSynthesis.cancel();
+   speechSynthesis.speak(new SpeechSynthesisUtterance(name+" is joining."));
+ }
+ pbRefresh();
+}
+
+pbRefresh();
+setInterval(pbRefresh,3000);
+</script>
+<!-- PRESENCE_V02_READY -->
+<style>
+.presenceBox{margin:14px 0;padding:14px;border:1px solid #29404d;border-radius:12px;background:radial-gradient(circle,#173244,#0b1118 70%)}
+.presenceGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.presCard{padding:9px;text-align:center;border:1px solid #293944;border-radius:9px;background:#0d151c;cursor:pointer}
+.presCard.active{border-color:#70c5ee}
+.presFace{width:70px;height:70px;border-radius:50%;margin:auto auto 7px;display:grid;place-items:center;font-size:25px;font-weight:800;background:linear-gradient(145deg,#2a4658,#13212b)}
+.presStatus{text-align:center;margin:10px;color:#9aabb8}
+</style>
+<div class="presenceBox">
+<div class="head"><b>LIVE AGENT PRESENCE</b><span class="muted">VRM / TTS ready point</span></div>
+<div class="presenceGrid" id="pv2"></div>
+<div class="presenceStatus" id="pv2s">Fred · IDLE</div>
+<div style="text-align:center">
+<button class="btn" onclick="pvCall()">Call in</button>
+<button class="btn" onclick="pvSpeak()">Speak</button>
+<button class="btn" onclick="pvListen()">Listen</button>
+<button class="btn" onclick="pvReturn()">Return</button>
+</div>
+</div>
+<script>
+const PV={Fred:["CEO","F"],Bob:["Finance","B"],Cindy:["Secretary","C"],Kai:["Legal","K"],Neo:["Sales","N"]};let pv="Fred",ps="IDLE";
+function pvDraw(){pv2.innerHTML=Object.entries(PV).map(([n,v])=>`<div class="presCard ${n===pv?'active':''}" onclick="pv=n;ps='IDLE';pvDraw()"><div class="presFace">${v[1]}</div><b>${n}</b><div class="muted">${v[0]}</div></div>`).join("");pv2s.textContent=pv+" · "+ps}
+async function pvSet(state,event){ps=state;pvDraw();await fetch("/api/presence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({agent:pv,state:state,event:event})})}
+function pvTalk(t){if(window.speechSynthesis){speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t))}}
+function pvCall(){pvSet("PRESENT","call");pvTalk(pv+" is joining.")}
+function pvSpeak(){pvSet("SPEAKING","speak");pvTalk(pv+" is speaking.")}
+function pvListen(){pvSet("LISTENING","listen")}
+function pvReturn(){pvSet("IDLE","return")}
+pvDraw();
+</script>
+<div class="grid g2">
+<div class=panel><div class=head><b>Fred · CEO</b><span class=ok>ONLINE</span></div><div class=muted>Executive control plane</div><div id=agentMini style="margin-top:12px"></div></div>
+<div class=panel><div class=head><b>Brain Metrics</b><span class=muted>live</span></div><div class=statgrid id=metrics></div></div>
+</div>
+<div class=grid g3>
+<div class=panel><div class=head><b>System</b><span class=muted>local</span></div><div id=sys></div></div>
+<div class=panel><div class=head><b>Queue</b></div><pre id=q>Loading…</pre></div>
+<div class=panel><div class=head><b>Reports</b></div><pre id=r>Loading…</pre></div>
+</div>
+<div class=panel><div class=head><b>CEO Work Plan</b></div><pre id=p>Loading…</pre></div>
+</div>
+
+<div id=brain class=view style="position:relative">
+<!-- BPFCO_BRAIN_DOCK_V02 -->
+<style>
+#brainDock{position:absolute;left:16px;top:16px;z-index:20;width:280px;background:rgba(8,14,21,.94);border:1px solid #30414d;border-radius:12px;padding:12px;box-shadow:0 14px 35px rgba(0,0,0,.38)}
+#brainDock h4{margin:0 0 4px;color:#78c8ef}
+#brainDock input,#brainDock select{width:100%;margin:6px 0;padding:8px;background:#0b1218;color:#e7eef3;border:1px solid #2b3b47;border-radius:7px}
+#domainButtons{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
+.bd{padding:5px 8px;background:#14212a;color:#cddae3;border:1px solid #2b3d49;border-radius:999px;cursor:pointer;font-size:10px}
+</style>
+<div id="brainDock">
+<h4>SUPER BRAIN</h4>
+<small>Real BPFCoBrain graph controls</small>
+<input id="brainSearch" placeholder="Search notes / concepts">
+<div id="domainButtons"></div>
+<select id="agentCall">
+<option value="">Call an agent…</option>
+<option>Fred</option><option>Bob</option><option>Cindy</option><option>Kai</option><option>Neo</option>
+</select>
+<button class="btn" style="width:100%" onclick="callBrainAgent()">Bring agent to presence</button>
+</div>
+<script>
+(function(){
+function frame(){return document.querySelector('iframe')}
+function doc(){const f=frame();return f&&f.contentDocument?f.contentDocument:null}
+window.bpfcoBrainSync=function(){
+ const d=doc();if(!d)return;
+ const ns=[...d.querySelectorAll('#graph circle')].map(x=>x.__data__).filter(Boolean);
+ const domains=[...new Set(ns.map(n=>n.folder).filter(Boolean))].sort().slice(0,12);
+ document.getElementById('domainButtons').innerHTML=domains.map(x=>'<button class="bd" onclick="filterBrainDomain('+JSON.stringify(x)+')">'+String(x).replace(/[&<>]/g,'')+'</button>').join('');
+};
+window.filterBrainDomain=function(x){
+ const d=doc();if(!d)return;
+ const i=d.getElementById('searchInput');if(i){i.value=x;i.dispatchEvent(new Event('input',{bubbles:true}))}
+};
+window.callBrainAgent=function(){
+ const n=document.getElementById('agentCall').value;if(!n)return;
+ const b=[...document.querySelectorAll('.nav')].find(x=>x.textContent.includes('Meeting'));
+ if(b)show('meeting',b);
+ if(typeof speaker==='function')speaker(n.toLowerCase());
+};
+setInterval(bpfcoBrainSync,3000);
+setTimeout(bpfcoBrainSync,500);
+})();
+</script>
+<div class=panel><div class=head><b>Knowledge Universe</b><span class=muted>existing BPFCoBrain graph</span></div><iframe src="/brain-graph"></iframe></div>
+</div>
+
+<div id=agents class=view>
+<div class=panel><div class=head><b>Agent Fleet</b><span class=muted>live from CEO controller</span></div><div class=cards id=agentCards></div></div>
+<div class=panel><div class=head><b>Dispatch</b><span class=muted>uses existing AgentBridge</span></div>
+<select id=who><option value=Bob_Finance>Bob — Finance</option><option value=Cindy_Secretary>Cindy — Secretary</option><option value=Kai_Legal>Kai — Legal</option><option value=Neo_Sales>Neo — Sales</option></select>
+<textarea id=obj placeholder="Objective for the agent…"></textarea><button class=btn onclick=dispatch()>Queue task</button><pre id=dr></pre></div>
+</div>
+
+<div id=work class=view>
+<div class=grid g2><div class=panel><div class=head><b>Task Queue</b></div><pre id=q2>Loading…</pre></div><div class=panel><div class=head><b>Agent Reports</b></div><pre id=r2>Loading…</pre></div></div>
+<div class=panel><div class=head><b>Execution State</b></div><div class=muted>External execution remains approval-gated.</div></div>
+</div>
+
+<div id=security class=view>
+<div class=grid g2>
+<div class=panel><div class=head><b>Approval Gate</b><span class=warn>HUMAN REQUIRED</span></div><div class=muted>Terminal approval remains required for external actions.</div><div class=row><span>Current controller gate</span><b id=approvalState>Loading…</b></div><div class=row><span>USB crypto token</span><b class=warn>ADAPTER RESERVED</b></div><div class=row><span>Recovery key</span><b class=warn>NOT CONNECTED</b></div></div>
+<div class=panel><div class=head><b>Security Rules</b></div><div class=row><span>No USB</span><b class=warn>REJECT</b></div><div class=row><span>Invalid token</span><b class=warn>REJECT</b></div><div class=row><span>Valid token + Enter</span><b class=ok>ACCEPT</b></div></div>
+</div>
+</div>
+
+<div id=meeting class=view>
+<!-- PRESENCE_UI_V01 -->
+<style>
+.presence-room{
+display:grid;grid-template-columns:210px 1fr;gap:14px;
+background:radial-gradient(circle at 50% 35%,#1a3344,#0b1118 65%);
+border:1px solid #2b3d49;border-radius:12px;padding:15px
+}
+.presence-agent{
+padding:10px;border:1px solid #2a3944;border-radius:9px;
+background:#0d141b;cursor:pointer
+}
+.presence-agent.active{border-color:#6fc5ee;box-shadow:0 0 18px rgba(111,197,238,.12)}
+.presence-face{
+width:92px;height:92px;border-radius:50%;margin:20px auto 10px;
+display:grid;place-items:center;font-size:34px;font-weight:800;
+background:linear-gradient(145deg,#2d4b5e,#13212a)
+}
+.presence-main{text-align:center;border:1px solid #2a3944;border-radius:11px;padding:12px;min-height:230px}
+.presence-actions{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+@media(max-width:800px){.presence-room{grid-template-columns:1fr}}
+</style>
+
+<div class="panel" id="presencePanel">
+  <div class="head">
+    <b>Presence Room</b>
+    <span class="muted">local adapter · VRM-ready</span>
+  </div>
+
+  <div class="presence-room">
+    <div id="presenceFleet"></div>
+
+    <div class="presence-main">
+      <div class="muted">CURRENT AGENT</div>
+      <div class="presence-face" id="presenceFace">F</div>
+      <h2 id="presenceName">Fred</h2>
+      <div class="muted" id="presenceRole">CEO</div>
+      <div class="presence-actions">
+        <button class="btn" onclick="presenceCall()">Call in</button>
+        <button class="btn" onclick="presenceSpeak()">Speak</button>
+        <button class="btn" onclick="presenceListen()">Listening</button>
+        <button class="btn" onclick="presenceClear()">Return</button>
+      </div>
+      <div class="notice" style="margin-top:12px">
+        Current voice = browser system voice. VRM + lip-sync adapter replaces this later.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const presenceAgents={
+ Fred:["Fred","CEO","F"],
+ Bob:["Bob","Finance","B"],
+ Cindy:["Cindy","Secretary","C"],
+ Kai:["Kai","Legal","K"],
+ Neo:["Neo","Sales","N"]
+};
+let presenceCurrent="Fred";
+
+function renderPresence(){
+ const list=document.getElementById("presenceFleet");
+ list.innerHTML=Object.entries(presenceAgents).map(([n,v])=>
+ `<div class="presence-agent ${n===presenceCurrent?'active':''}" onclick="selectPresence('${n}')">
+   <b>${n}</b><div class="muted">${v[1]}</div>
+ </div>`).join("");
+
+ const v=presenceAgents[presenceCurrent];
+ document.getElementById("presenceFace").textContent=v[2];
+ document.getElementById("presenceName").textContent=v[0];
+ document.getElementById("presenceRole").textContent=v[1];
+}
+
+function selectPresence(n){
+ presenceCurrent=n;
+ renderPresence();
+}
+
+async function presenceEvent(state,event){
+ await fetch("/api/presence",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({agent:presenceCurrent,state:event==="return"?"IDLE":state,event:event})
+ });
+ renderPresence();
+}
+
+function presenceCall(){
+ presenceEvent("PRESENT","call");
+ speech(`${presenceCurrent} is joining the meeting.`);
+}
+
+function presenceSpeak(){
+ presenceEvent("SPEAKING","speak");
+ speech(`${presenceCurrent} is speaking.`);
+}
+
+function presenceListen(){
+ presenceEvent("LISTENING","listen");
+ speech(`${presenceCurrent} is listening.`);
+}
+
+function presenceClear(){
+ presenceEvent("IDLE","return");
+ speech(`${presenceCurrent} is returning to the room.`);
+}
+
+function speech(text){
+ if(!("speechSynthesis" in window))return;
+ window.speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.rate=.95;
+ u.pitch=1;
+ window.speechSynthesis.speak(u);
+}
+
+renderPresence();
+</script>
+<div class=panel><div class=head><b>Staff Meeting Mode</b><span class=muted>five agents</span></div><div class=stage id=stage></div><div style="margin-top:12px"><button class=btn onclick=speaker('fred')>Fred speaks</button> <button class=btn onclick=speaker('bob')>Bob speaks</button> <button class=btn onclick=speaker('cindy')>Cindy speaks</button> <button class=btn onclick=speaker('kai')>Kai speaks</button> <button class=btn onclick=speaker('neo')>Neo speaks</button></div><div class=muted style="margin-top:10px">VRM / voice / lip-sync plugs into this interface later.</div></div>
+</div>
+</section></main>
+
+<script>
+let current='fred';const A={fred:['Fred','CEO','F'],bob:['Bob','Finance','B'],cindy:['Cindy','Secretary','C'],kai:['Kai','Legal','K'],neo:['Neo','Sales','N']};
+const $=x=>document.getElementById(x);
+function show(id,b){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
+function renderAgents(d){$('agentCards').innerHTML=Object.entries(d.agents).map(([k,v])=>`<div class=card><div class=face>${A[k.toLowerCase()]?.[2]||k[0]}</div><b>${k.replace('_',' ')}</b><div class=muted>${v.role}</div><div class=${v.registered?'ok':'warn'}>${v.registered?'REGISTERED':'NOT REGISTERED'}</div><div class=muted>workspace: ${v.workspace_files}</div></div>`).join('');$('agentMini').innerHTML=Object.entries(d.agents).map(([k,v])=>`<div class=row><span>${k.replace('_',' ')}</span><b class=${v.registered?'ok':'warn'}>${v.registered?'READY':'CHECK'}</b></div>`).join('')}
+async function get(u,o){return fetch(u,o).then(x=>x.json())}
+async function load(){try{let d=await get('/api/status');renderAgents(d);$('metrics').innerHTML=[['Queued',d.queued_tasks],['Reports',d.reports],['Approval',d.human_approval],['Memory',d.persistent_memory]].map(x=>`<div class=stat><span class=muted>${x[0]}</span><b>${x[1]}</b></div>`).join('');$('approvalState').textContent=d.human_approval?'ENABLED':'CHECK';$('approvalState').className=d.human_approval?'ok':'warn';$('sys').innerHTML=[['Controller',d.controller],['Persistent memory',d.persistent_memory],['Human approval',d.human_approval]].map(x=>`<div class=row><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');let q=await get('/api/queue'),r=await get('/api/reports'),p=await get('/api/plan');$('q').textContent=$('q2').textContent=JSON.stringify(q,null,2);$('r').textContent=$('r2').textContent=JSON.stringify(r,null,2);$('p').textContent=p.content}catch(e){$('q').textContent='Dashboard API unavailable: '+e}}
+async function dispatch(){let o=$('obj').value.trim();if(!o)return;$('dr').textContent=JSON.stringify(await get('/api/dispatch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:$('who').value,objective:o,priority:'normal'})}),null,2);$('obj').value='';load()}
+function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
+function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
+setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
+</script></body></html>
+
+
+
+
+

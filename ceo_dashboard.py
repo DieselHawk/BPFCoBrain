@@ -260,7 +260,7 @@ def dispatch():
 # SUPER_BRAIN_ROUTES
 @app.route("/super")
 def super_dashboard():
-    return send_file(ROOT / "Dashboard" / "super_dashboard_v02.html")
+    return send_file(ROOT / "Dashboard" / "super_dashboard_v03.html")
 
 @app.route("/brain-graph")
 def brain_graph():
@@ -336,6 +336,7 @@ def presence_api():
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 
 
