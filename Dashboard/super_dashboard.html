@@ -42,7 +42,50 @@ iframe{width:100%;height:72vh;border:0;border-radius:10px;background:#fff}
 <div class=panel><div class=head><b>CEO Work Plan</b></div><pre id=p>Loading…</pre></div>
 </div>
 
-<div id=brain class=view>
+<div id=brain class=view style="position:relative">
+<!-- BPFCO_BRAIN_DOCK_V02 -->
+<style>
+#brainDock{position:absolute;left:16px;top:16px;z-index:20;width:280px;background:rgba(8,14,21,.94);border:1px solid #30414d;border-radius:12px;padding:12px;box-shadow:0 14px 35px rgba(0,0,0,.38)}
+#brainDock h4{margin:0 0 4px;color:#78c8ef}
+#brainDock input,#brainDock select{width:100%;margin:6px 0;padding:8px;background:#0b1218;color:#e7eef3;border:1px solid #2b3b47;border-radius:7px}
+#domainButtons{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
+.bd{padding:5px 8px;background:#14212a;color:#cddae3;border:1px solid #2b3d49;border-radius:999px;cursor:pointer;font-size:10px}
+</style>
+<div id="brainDock">
+<h4>SUPER BRAIN</h4>
+<small>Real BPFCoBrain graph controls</small>
+<input id="brainSearch" placeholder="Search notes / concepts">
+<div id="domainButtons"></div>
+<select id="agentCall">
+<option value="">Call an agent…</option>
+<option>Fred</option><option>Bob</option><option>Cindy</option><option>Kai</option><option>Neo</option>
+</select>
+<button class="btn" style="width:100%" onclick="callBrainAgent()">Bring agent to presence</button>
+</div>
+<script>
+(function(){
+function frame(){return document.querySelector('iframe')}
+function doc(){const f=frame();return f&&f.contentDocument?f.contentDocument:null}
+window.bpfcoBrainSync=function(){
+ const d=doc();if(!d)return;
+ const ns=[...d.querySelectorAll('#graph circle')].map(x=>x.__data__).filter(Boolean);
+ const domains=[...new Set(ns.map(n=>n.folder).filter(Boolean))].sort().slice(0,12);
+ document.getElementById('domainButtons').innerHTML=domains.map(x=>'<button class="bd" onclick="filterBrainDomain('+JSON.stringify(x)+')">'+String(x).replace(/[&<>]/g,'')+'</button>').join('');
+};
+window.filterBrainDomain=function(x){
+ const d=doc();if(!d)return;
+ const i=d.getElementById('searchInput');if(i){i.value=x;i.dispatchEvent(new Event('input',{bubbles:true}))}
+};
+window.callBrainAgent=function(){
+ const n=document.getElementById('agentCall').value;if(!n)return;
+ const b=[...document.querySelectorAll('.nav')].find(x=>x.textContent.includes('Meeting'));
+ if(b)show('meeting',b);
+ if(typeof speaker==='function')speaker(n.toLowerCase());
+};
+setInterval(bpfcoBrainSync,3000);
+setTimeout(bpfcoBrainSync,500);
+})();
+</script>
 <div class=panel><div class=head><b>Knowledge Universe</b><span class=muted>existing BPFCoBrain graph</span></div><iframe src="/brain-graph"></iframe></div>
 </div>
 
@@ -82,3 +125,4 @@ function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
 function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
 setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
 </script></body></html>
+
