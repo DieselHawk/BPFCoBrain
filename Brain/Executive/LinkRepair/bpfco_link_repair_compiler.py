@@ -7,16 +7,36 @@ ROOT = Path(__file__).resolve().parents[3]
 INDEX = ROOT / ".vault-index.json"
 OUT = ROOT / "Brain" / "Executive" / "LinkRepair" / "link_repair_report.json"
 
-def normalize(s):
-    return re.sub(r"""[\s\-_.,;:!?'"(){}\[\]#/\\]""", "", str(s)).lower()
+def clean_target(value):
+    s = str(value or "").strip()
 
-def tokenize(s):
-    return [x for x in re.split(r"[\s\-_]+", str(s)) if x]
+    # Obsidian-style target cleanup.
+    if "|" in s:
+        s = s.split("|", 1)[0]
 
-def is_subset(a,b):
-    return all(x in set(b) for x in a)
+    if "#" in s:
+        s = s.split("#", 1)[0]
 
-def levenshtein(a,b):
+    s = s.replace("\\", "/").strip()
+
+    # Remove leading ./ and trailing markdown extension.
+    while s.startswith("./"):
+        s = s[2:]
+
+    if s.lower().endswith(".md"):
+        s = s[:-3]
+
+    return s.strip()
+
+def normalize(value):
+    s = clean_target(value).lower()
+    return re.sub(r"[^a-z0-9]+", "", s)
+
+def tokens(value):
+    s = clean_target(value).lower()
+    return re.findall(r"[a-z0-9]+", s)
+
+def levenshtein(a, b):
     if a == b:
         return 0
     if not a:
@@ -25,128 +45,219 @@ def levenshtein(a,b):
         return len(a)
 
     if len(a) > len(b):
-        a,b = b,a
+        a, b = b, a
 
-    row = list(range(len(a)+1))
+    prev = list(range(len(a) + 1))
 
-    for j in range(1,len(b)+1):
-        prev=row[0]
-        row[0]=j
+    for j, cb in enumerate(b, 1):
+        cur = [j]
 
-        for i in range(1,len(a)+1):
-            val=min(
-                row[i]+1,
-                row[i-1]+1,
-                prev+(a[i-1] != b[j-1])
-            )
-            prev=row[i]
-            row[i]=val
+        for i, ca in enumerate(a, 1):
+            cur.append(min(
+                cur[-1] + 1,
+                prev[i] + 1,
+                prev[i - 1] + (ca != cb)
+            ))
 
-    return row[len(a)]
+        prev = cur
 
-def frontmatter_aliases(note):
-    fm=note.get("frontmatter",{})
-    if not isinstance(fm,dict):
+    return prev[-1]
+
+def alias_list(note):
+    fm = note.get("frontmatter", {})
+    if not isinstance(fm, dict):
         return []
 
-    aliases=fm.get("aliases",[])
-    if isinstance(aliases,str):
-        aliases=[aliases]
+    aliases = fm.get("aliases", [])
+    if isinstance(aliases, str):
+        aliases = [aliases]
 
-    if not isinstance(aliases,list):
+    if not isinstance(aliases, list):
         return []
 
     return [str(x).strip() for x in aliases if str(x).strip()]
 
-def build_index(notes):
-    stems=[]
-    norm={}
+def add_identity(index, identity, entry):
+    n = normalize(identity)
+    if not n:
+        return
+    index.setdefault(n, []).append({
+        **entry,
+        "identity": identity
+    })
 
-    for title,note in notes.items():
-        path=str(note.get("path",f"{title}.md"))
-        stem=Path(path).stem
+def build_candidates(notes):
+    exact = {}
+    entries = []
 
-        entry={
-            "path":path,
-            "stem":stem,
-            "key":stem.lower(),
-            "is_alias":False
-        }
-
-        stems.append(entry)
-
-        k=normalize(stem)
-        norm.setdefault(k,[]).append(entry)
-
-        for alias in frontmatter_aliases(note):
-            ae={
-                "path":path,
-                "stem":stem,
-                "key":alias.lower(),
-                "is_alias":True
-            }
-
-            norm.setdefault(normalize(alias),[]).append(ae)
-
-    return stems,norm
-
-def find_match(target,stems,norm):
-    lower=str(target).lower()
-    nt=normalize(lower)
-
-    # 1. Exact normalized match.
-    candidates=norm.get(nt,[])
-    if candidates:
-        chosen=next((x for x in candidates if not x["is_alias"]),candidates[0])
-        return {
-            "match":chosen["path"],
-            "type":"alias match" if chosen["is_alias"] else "similar name",
-            "confidence":"high"
-        }
-
-    # 2. Levenshtein <= 2.
-    best=None
-    bestdist=999
-
-    for s in stems:
-        if abs(len(s["key"])-len(lower))>2:
+    for note_key, note in notes.items():
+        if not isinstance(note, dict):
             continue
 
-        d=levenshtein(lower,s["key"])
+        path = str(note.get("path", "")).strip()
+        stem = Path(path).stem if path else str(note_key)
+        folder = str(note.get("folder", "")).strip()
+        title = str(note.get("title", "")).strip() or str(note_key)
 
-        if d<=2 and d<bestdist:
-            bestdist=d
-            best=s
-
-    if best:
-        return {
-            "match":best["path"],
-            "type":"possible match",
-            "confidence":"medium",
-            "distance":bestdist
+        entry = {
+            "note_key": str(note_key),
+            "path": path,
+            "folder": folder,
+            "title": title
         }
 
-    # 3. Token subset.
-    tt=tokenize(lower)
+        entries.append(entry)
 
-    if len(tt)>=2:
-        for s in stems:
-            st=tokenize(s["key"])
-            if len(st)<2:
-                continue
+        identities = {
+            str(note_key),
+            title,
+            stem
+        }
 
-            if is_subset(tt,st) or is_subset(st,tt):
-                return {
-                    "match":s["path"],
-                    "type":"possible match",
-                    "confidence":"medium"
-                }
+        if path:
+            identities.add(path)
+            identities.add(Path(path).name)
+            identities.add(Path(path).stem)
 
-    return None
+        for alias in alias_list(note):
+            identities.add(alias)
+
+        for identity in identities:
+            add_identity(exact, identity, entry)
+
+    return entries, exact
+
+def unique_entries(items):
+    out = []
+    seen = set()
+
+    for x in items:
+        k=(x["note_key"],x["path"])
+        if k not in seen:
+            seen.add(k)
+            out.append(x)
+
+    return out
+
+def find_candidates(target, entries, exact):
+    cleaned = clean_target(target)
+    norm = normalize(cleaned)
+
+    # 1. Exact normalized match across EVERY known BPFCo identity.
+    exact_hits = unique_entries(exact.get(norm, []))
+
+    if len(exact_hits) == 1:
+        return {
+            "type": "exact_match",
+            "confidence": "high",
+            "candidates": exact_hits,
+            "matched_identity": exact.get(norm, [])[0].get("identity")
+        }
+
+    if len(exact_hits) > 1:
+        return {
+            "type": "ambiguous_exact_match",
+            "confidence": "review",
+            "candidates": exact_hits
+        }
+
+    # 2. Fuzzy normalized match.
+    fuzzy = []
+
+    for entry in entries:
+        identities = [
+            entry["note_key"],
+            entry["title"],
+            Path(entry["path"]).stem if entry["path"] else "",
+            entry["path"]
+        ]
+
+        distances = [
+            levenshtein(norm, normalize(x))
+            for x in identities if normalize(x)
+        ]
+
+        if distances:
+            d=min(distances)
+
+            # Avoid ridiculous fuzzy matches.
+            if d <= 2:
+                fuzzy.append((d,entry))
+
+    if fuzzy:
+        fuzzy.sort(key=lambda x:(x[0],x[1]["path"]))
+
+        best_distance=fuzzy[0][0]
+        best=[
+            x[1] for x in fuzzy
+            if x[0]==best_distance
+        ]
+
+        best=unique_entries(best)
+
+        if len(best)==1:
+            return {
+                "type":"near_match",
+                "confidence":"medium",
+                "distance":best_distance,
+                "candidates":best
+            }
+
+        return {
+            "type":"ambiguous_near_match",
+            "confidence":"review",
+            "distance":best_distance,
+            "candidates":best
+        }
+
+    # 3. Token containment/subset match.
+    target_tokens=set(tokens(cleaned))
+
+    if target_tokens:
+        token_hits=[]
+
+        for entry in entries:
+            candidate_strings=[
+                entry["note_key"],
+                entry["title"],
+                Path(entry["path"]).stem if entry["path"] else ""
+            ]
+
+            candidate_token_sets=[
+                set(tokens(x))
+                for x in candidate_strings if tokens(x)
+            ]
+
+            for ct in candidate_token_sets:
+                if target_tokens.issubset(ct) or ct.issubset(target_tokens):
+                    token_hits.append(entry)
+                    break
+
+        token_hits=unique_entries(token_hits)
+
+        if len(token_hits)==1:
+            return {
+                "type":"token_match",
+                "confidence":"medium",
+                "candidates":token_hits
+            }
+
+        if len(token_hits)>1:
+            return {
+                "type":"ambiguous_token_match",
+                "confidence":"review",
+                "candidates":token_hits
+            }
+
+    return {
+        "type":"planned_note",
+        "confidence":"none",
+        "candidates":[]
+    }
 
 def main():
     if not INDEX.exists():
-        raise SystemExit("Missing .vault-index.json")
+        raise SystemExit(f"Missing index: {INDEX}")
 
     data=json.loads(INDEX.read_text(encoding="utf-8-sig"))
 
@@ -159,66 +270,67 @@ def main():
     if not isinstance(unresolved,dict):
         unresolved={}
 
-    stems,norm=build_index(notes)
+    entries,exact=build_candidates(notes)
 
     rows=[]
-    seen_targets=defaultdict(set)
 
     for source,targets in unresolved.items():
-        if not isinstance(targets,list):
-            continue
+        targets=list(targets or [])
 
-        for raw in targets:
-            target=str(raw).strip()
-            if not target:
-                continue
-
-            clean=target.split("|",1)[0]
-            clean=clean.split("#",1)[0]
-            clean=clean.replace("\\","/").strip()
-
-            match=find_match(clean,stems,norm)
+        for target in targets:
+            result=find_candidates(target,entries,exact)
 
             row={
-                "source":source,
-                "target":target,
-                "normalized_target":normalize(clean)
+                "source":str(source),
+                "target":str(target),
+                "normalized_target":normalize(target),
+                "type":result["type"],
+                "confidence":result["confidence"]
             }
 
-            if match:
-                row.update(match)
-                seen_targets[normalize(clean)].add(source)
-            else:
-                row["type"]="planned note"
-                row["confidence"]="none"
-                seen_targets[normalize(clean)].add(source)
+            if "distance" in result:
+                row["distance"]=result["distance"]
+
+            row["candidates"]=[
+                {
+                    "note_key":x["note_key"],
+                    "path":x["path"],
+                    "title":x["title"],
+                    "folder":x["folder"]
+                }
+                for x in result["candidates"]
+            ]
+
+            if result.get("matched_identity"):
+                row["matched_identity"]=result["matched_identity"]
 
             rows.append(row)
 
     high=[x for x in rows if x["confidence"]=="high"]
     medium=[x for x in rows if x["confidence"]=="medium"]
+    review=[x for x in rows if x["confidence"]=="review"]
     planned=[x for x in rows if x["confidence"]=="none"]
 
-    recurring=[]
-    for x in planned:
-        if len(seen_targets.get(x["normalized_target"],set()))>1:
-            recurring.append(x)
-
     report={
+        "compiler":"BPFCo Link Repair Compiler v2",
         "source":".vault-index.json",
-        "compiler":"BPFCo Link Repair Compiler",
-        "method":"Git-derived normalized + alias + Levenshtein<=2 + token-subset classifier",
         "scan_only":True,
+        "schema":{
+            "notes":"object keyed by note identity",
+            "note_fields":["path","folder","word_count","links","frontmatter"],
+            "unresolved_links":"source -> array of target strings"
+        },
         "totals":{
             "unresolved":len(rows),
             "high_confidence":len(high),
             "medium_confidence":len(medium),
-            "planned":len(planned),
-            "recurring_planned":len(recurring)
+            "review":len(review),
+            "planned":len(planned)
         },
         "proposals":{
             "high_confidence":high,
             "medium_confidence":medium,
+            "review":review,
             "planned":planned
         }
     }
@@ -228,16 +340,15 @@ def main():
         encoding="utf-8"
     )
 
-    print("=== BPFCo LINK REPAIR COMPILER ===")
-    print(f"Unresolved scanned : {len(rows)}")
-    print(f"High confidence    : {len(high)}")
-    print(f"Medium confidence  : {len(medium)}")
-    print(f"Planned notes      : {len(planned)}")
-    print(f"Recurring planned  : {len(recurring)}")
-    print(f"Report             : {OUT}")
+    print("=== BPFCo LINK REPAIR COMPILER v2 ===")
+    print("Unresolved scanned :",len(rows))
+    print("High confidence   :",len(high))
+    print("Medium confidence :",len(medium))
+    print("Needs review      :",len(review))
+    print("Planned/missing   :",len(planned))
+    print("Report            :",OUT)
     print("")
     print("NO NOTES WERE MODIFIED.")
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
-
