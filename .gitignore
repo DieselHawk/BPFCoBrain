@@ -37,3 +37,16 @@ token.json
 
 # Fred avatar upstream repository
 Fred/Avatar/.git/
+
+# Runtime state
+Brain/Executive/queue.json
+Brain/Executive/presence_state.json
+Brain/Executive/tasks/*.json
+Brain/Security/security_state.json
+
+# Generated Python
+__pycache__/
+Dashboard/__pycache__/
+
+# Local backups
+*.bak
