@@ -509,9 +509,14 @@ def activity_api():
 def brain_graph_api():
     from Dashboard.adapters.brain_graph_adapter import build_brain_graph
     return jsonify(build_brain_graph())
+
+@app.route("/super-3d")
+def super_brain_3d():
+    return send_file(ROOT / "Dashboard" / "super_brain_3d.html")
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 
 

@@ -1,0 +1,109 @@
+﻿<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPFCo Super Brain 3D</title>
+<script src="/vendor/3d-force-graph.min.js"></script>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#02050a;color:#e8eef4;font:13px Segoe UI,Arial}
+#graph{position:fixed;inset:0}
+#stars{position:fixed;inset:0;pointer-events:none;background:
+radial-gradient(circle at 10% 20%,#fff 0 1px,transparent 1.5px),
+radial-gradient(circle at 24% 78%,#fff 0 1px,transparent 1.5px),
+radial-gradient(circle at 39% 11%,#fff 0 1px,transparent 1.5px),
+radial-gradient(circle at 56% 66%,#fff 0 1px,transparent 1.5px),
+radial-gradient(circle at 73% 18%,#fff 0 1px,transparent 1.5px),
+radial-gradient(circle at 88% 57%,#fff 0 1px,transparent 1.5px),
+radial-gradient(circle at 94% 83%,#fff 0 1px,transparent 1.5px);
+opacity:.45}
+#hud{position:fixed;left:16px;top:16px;z-index:5;padding:12px 14px;
+background:rgba(6,12,18,.86);border:1px solid #29404d;border-radius:11px;
+backdrop-filter:blur(5px)}
+#hud b{color:#78c8ef}.muted{color:#82909d;font-size:11px}
+#info{margin-top:6px}
+#selected{position:fixed;right:16px;top:16px;z-index:5;width:290px;
+padding:12px;background:rgba(6,12,18,.90);border:1px solid #29404d;border-radius:11px;display:none}
+</style>
+</head>
+<body>
+<div id="graph"></div>
+<div id="stars"></div>
+
+<div id="hud">
+<b>BPFCo SUPER BRAIN · 3D</b>
+<div class="muted">Existing brain graph data · 3D renderer</div>
+<div id="info">Loading brain…</div>
+</div>
+
+<div id="selected">
+<b id="selTitle">Node</b>
+<div class="muted" id="selPath"></div>
+<div id="selStats"></div>
+</div>
+
+<script>
+(async function(){
+
+const response=await fetch("/api/brain-graph",{cache:"no-store"});
+const brain=await response.json();
+
+const allNodes=brain.nodes||[];
+const allLinks=brain.links||[];
+
+document.getElementById("info").textContent=
+  `${brain.stats?.notes||allNodes.length} nodes · `+
+  `${brain.stats?.resolved_links||allLinks.length} resolved links`;
+
+const score=n=>Number(n.connection_count||0);
+
+const chosen=[...allNodes]
+  .sort((a,b)=>score(b)-score(a))
+  .slice(0,160);
+
+const chosenIds=new Set(chosen.map(n=>String(n.id)));
+
+const links=allLinks.filter(l=>
+  chosenIds.has(String(l.source)) &&
+  chosenIds.has(String(l.target))
+);
+
+const elem=document.getElementById("graph");
+
+const Graph=new ForceGraph3D(elem,{
+  controlType:"orbit",
+  backgroundColor:"#02050a",
+  showNavInfo:false
+})
+.graphData({
+  nodes:chosen,
+  links:links
+})
+.nodeLabel(n=>
+  `${n.label||n.id}<br>`+
+  `${n.folder||""}<br>`+
+  `links: ${n.connection_count||0}`
+)
+.nodeAutoColorBy(n=>n.folder||"BPFCo")
+.nodeVal(n=>Math.max(1,Math.log2((n.connection_count||0)+2)))
+.linkDirectionalParticles(2)
+.linkDirectionalParticleWidth(.8)
+.linkOpacity(.35)
+.onNodeClick(node=>{
+  document.getElementById("selected").style.display="block";
+  document.getElementById("selTitle").textContent=node.label||node.id;
+  document.getElementById("selPath").textContent=node.path||node.folder||"";
+  document.getElementById("selStats").textContent=
+    `Words: ${node.word_count||0} · Connections: ${node.connection_count||0}`;
+
+  Graph.cameraPosition(
+    {x:node.x+40,y:node.y+40,z:node.z+40},
+    node,
+    1200
+  );
+});
+
+})();
+</script>
+</body>
+</html>
