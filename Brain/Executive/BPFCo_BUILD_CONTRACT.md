@@ -98,3 +98,42 @@ A future agent reading this repository must treat this document as the architect
 Do not restart the project.
 Do not ask the user to repeat information already encoded in the repository.
 Do not substitute a different architecture merely because a new Git project is available.
+
+## ARCHITECTURE MANDATE — GIT COMPONENT HARVEST
+
+BPFCoBrain remains the authoritative brain and orchestration system.
+
+The BPFCo Super Dashboard must preferentially USE and ADAPT proven open-source Git components rather than re-implement mature dashboard features.
+
+Primary dashboard reference:
+- builderz-labs/mission-control
+  - agent fleet
+  - task lifecycle
+  - live activity
+  - memory/relationship graph
+  - approvals/audit
+  - REST/OpenAPI
+  - WebSocket/SSE
+  - local SQLite
+
+Secondary visual references/components may be harvested from suitable open-source projects.
+
+Presence:
+- ARPAHLS/avatar remains the preferred VRM rendering/stage candidate.
+- AILIS and ELINO remain architectural/component references.
+- Presence serves Fred, Bob, Cindy, Kai and Neo.
+- BPFCoBrain remains in control of identity, state, permissions and orchestration.
+
+RULE:
+Do not pull or install large dependencies on mobile data.
+Heavy Git/npm/pnpm/model/avatar downloads are Wi-Fi-only.
+
+RULE:
+Do not replace existing BPFCoBrain functionality with an external project.
+Integrate useful proven components behind BPFCo interfaces.
+
+TARGET:
+Build toward a polished BPFCo Command Center with:
+agent fleet + tasks + handoffs + approvals + audit + knowledge graph + system health + live activity + presence + five-agent staff meeting mode.
+
+Future sessions MUST continue toward this target and MUST NOT restart the architecture.
