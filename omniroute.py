@@ -1,10 +1,10 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """OmniRoute - File ingestion and multi-model token orchestrator"""
 
 import sys, os, json, re, argparse, hashlib
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime
 import urllib.request
 import urllib.error
@@ -43,22 +43,18 @@ class FileImporter:
             print(f"Unsupported file type: {source.suffix}")
             return False
         
-        # Generate unique hash
         content_hash = hashlib.md5(source.read_bytes()).hexdigest()[:8]
         
-        # Check if already imported
         if content_hash in self.imports:
             print(f"Already imported: {source.name}")
             return False
         
-        # Create destination
         dest_folder = self.vault_path / category
         dest_folder.mkdir(exist_ok=True)
         
         dest_name = f"{source.stem}-{content_hash}.md"
         dest_path = dest_folder / dest_name
         
-        # Format file as markdown with metadata
         content = source.read_text(encoding='utf-8', errors='ignore')
         markdown = f"""---
 type: imported
@@ -77,10 +73,8 @@ file_type: {source.suffix}
 {content}
 ```
 """
-        
         dest_path.write_text(markdown)
         
-        # Log import
         self.imports[content_hash] = {
             "source": str(source_path),
             "dest": str(dest_path),
@@ -89,7 +83,7 @@ file_type: {source.suffix}
         }
         self._save_imports()
         
-        print(f"âœ“ Imported: {source.name} â†’ {dest_name}")
+        print(f"✅ Imported: {source.name} → {dest_name}")
         return True
 
 class TokenManager:
@@ -113,26 +107,22 @@ class TokenManager:
     def _save_usage(self):
         self.usage_log.write_text(json.dumps(self.usage, indent=2))
     
-    def get_available_model(self) -> str:
-        """Get next available model with remaining tokens"""
+    def get_available_model(self) -> Optional[str]:
         for model, config in self.MODELS.items():
             used = self.usage[model]["used"]
             available = config["tokens"] - used
-            if available > 10000:  # Keep 10k buffer
+            if available > 10000:
                 return model
         return None
     
     def log_usage(self, model: str, tokens: int):
-        """Log token usage"""
         if model not in self.usage:
             self.usage[model] = {"used": 0, "reset": datetime.now().isoformat()}
         self.usage[model]["used"] += tokens
         self._save_usage()
-        
         print(f"[{model}] +{tokens} tokens (total: {self.usage[model]['used']})")
     
     def get_status(self) -> Dict:
-        """Get token status for all models"""
         status = {}
         for model, config in self.MODELS.items():
             used = self.usage[model]["used"]
@@ -140,211 +130,134 @@ class TokenManager:
             status[model] = {
                 "used": used,
                 "available": available,
-                "percent": int((used / config["tokens"]) * 100)
+                "percent": int((used / config["tokens"]) * 100) if config["tokens"] > 0 else 0
             }
         return status
     
     def reset_daily(self):
-        """Reset daily token limits"""
         for model in self.usage:
             self.usage[model]["used"] = 0
             self.usage[model]["reset"] = datetime.now().isoformat()
         self._save_usage()
-        print("âœ“ Daily token limits reset")
+        print("✅ Daily token limits reset")
 
 class OmniRouter:
     """Main orchestrator"""
     
     def __init__(self, vault_path: str):
+        self.vault_path = Path(vault_path)
         self.importer = FileImporter(vault_path)
         self.token_manager = TokenManager()
-        self.vault_path = vault_path
     
     def ingest_files(self, file_list: List[str], category: str = "03-References"):
-        """Ingest multiple files"""
         print(f"[*] Ingesting {len(file_list)} files into {category}...")
         success = 0
         for file_path in file_list:
             if self.importer.import_file(file_path, category):
                 success += 1
-        print(f"âœ“ {success}/{len(file_list)} files imported")
+        print(f"✅ {success}/{len(file_list)} files imported")
     
-    def query_with_fallback(self, query: str, context: str = "", max_retries: int = 3):
-        """Query the configured model gateway with optional online intelligence."""
+    def query_with_fallback(self, query: str, context: str = "", max_retries: int = 3, persona: str = None):
+        \"\"\"Query the configured model gateway. Local Ollama is preferred.\"\"\"
 
-        # Online intelligence is optional and never overrides offline mode.
-        from online_gate import OnlineGate
+        # 1. Persona Injection
+        if persona:
+            # Search for persona in Brain/Executive/Personas/ relative to repo root
+            persona_path = Path("Brain/Executive/Personas") / f"{persona.lower()}.md"
+            if persona_path.exists():
+                persona_content = persona_path.read_text(encoding='utf-8')
+                context = f"SYSTEM PERSONA MANDATE:\n{persona_content}\n\nCONTEXT:\n{context}"
+            else:
+                print(f"[!] Persona file for {persona} not found at {persona_path}")
 
-        online_gate = OnlineGate()
+        # 2. Local-First Routing (Ollama)
+        # Priority: Ollama (local)
+        model = os.environ.get("BPFCO_OLLAMA_MODEL", "hermes3:8b")
+        url = os.environ.get("BPFCO_OLLAMA_URL", "http://127.0.0.1:11434/api/chat")
 
-        if (
-            os.environ.get("BPFCO_OFFLINE") != "1"
-            and online_gate.enabled
-            and online_gate.needs_online(query)
-        ):
-            print("[*] Online intelligence detected.")
+        prompt = f"Context:\n{context}\n\nQuery: {query}"
+        payload = json.dumps({
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "options": {"num_predict": 512, "temperature": 0.2},
+        }).encode("utf-8")
 
-            online_result = online_gate.research(query)
+        print(f"\n[*] Routing to local Ollama [{model}]...")
 
-            if online_result.get("status") == "success":
-                return json.dumps(
-                    online_result.get("data", online_result),
-                    ensure_ascii=False,
-                    indent=2,
-                )
-
-            print(
-                "[!] World Monitor unavailable: "
-                f"{online_result.get('reason', online_result.get('error', 'unknown'))}"
+        try:
+            request = urllib.request.Request(
+                url, data=payload, headers={"Content-Type": "application/json"}, method="POST"
             )
-            print("[*] Continuing with normal Brain routing.")
-
-        """Query the configured model gateway. Offline mode uses local Ollama."""
-        if os.environ.get("BPFCO_OFFLINE") == "1":
-            model = os.environ.get("BPFCO_OLLAMA_MODEL", "llama3.2:latest")
-            url = os.environ.get(
-                "BPFCO_OLLAMA_URL",
-                "http://127.0.0.1:11434/api/generate",
-            )
-
-            prompt = f"Context:\n{context}\n\nQuery: {query}"
-
-            url = os.environ.get(
-                "BPFCO_OLLAMA_URL",
-                "http://127.0.0.1:11434/api/chat",
-            )
-
-            payload = json.dumps({
-                "model": model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
-                "stream": False,
-                "options": {
-                    "num_predict": 128,
-                    "temperature": 0.1,
-                },
-            }).encode("utf-8")
-
-            print(f"\n[*] Offline mode: using local Ollama {model}")
-
-            try:
-                request = urllib.request.Request(
-                    url,
-                    data=payload,
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-
-                with urllib.request.urlopen(request, timeout=300) as response:
-                    result = json.loads(response.read().decode("utf-8"))
-
-                answer = (
-                    result.get("message", {}).get("content", "")
-                ).strip()
-
-                if not answer:
-                    print("[!] Ollama returned no response")
-                    return None
-
+            with urllib.request.urlopen(request, timeout=300) as response:
+                result = json.loads(response.read().decode("utf-8"))
+            
+            answer = result.get("message", {}).get("content", "").strip()
+            if answer:
                 return answer
-
-            except Exception as exc:
-                print(
-                    f"[!] Local Ollama error: "
-                    f"{type(exc).__name__}: {exc}"
-                )
+        except Exception as exc:
+            print(f"[!] Local Ollama error: {type(exc).__name__}: {exc}")
+            if os.environ.get("BPFCO_OFFLINE") == "1":
                 return None
 
-        import anthropic
-
-        client = anthropic.Anthropic()
-
-        for attempt in range(max_retries):
-            model = self.token_manager.get_available_model()
-
-            if not model:
-                print("ERROR: No models with available tokens!")
-                return None
-
-            print(f"\n[*] Using {model} (attempt {attempt + 1}/{max_retries})")
-
-            try:
-                response = client.messages.create(
-                    model=model,
-                    max_tokens=1024,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": f"Context:\n{context}\n\nQuery: {query}"
-                        }
-                    ]
-                )
-
-                tokens_used = (
-                    response.usage.input_tokens +
-                    response.usage.output_tokens
-                )
-
-                self.token_manager.log_usage(model, tokens_used)
-
-                return response.content[0].text
-
-            except anthropic.RateLimitError:
-                print(
-                    f"[!] {model} token limit reached, trying next..."
-                )
-                continue
-
-            except Exception as e:
-                print(f"[!] Error with {model}: {e}")
-                continue
-
-        return None
+        # 3. Cloud Fallback (Anthropic)
+        try:
+            import anthropic
+            client = anthropic.Anthropic()
+            for attempt in range(max_retries):
+                model_cloud = self.token_manager.get_available_model()
+                if not model_cloud: return None
+                
+                print(f"\n[*] Using cloud model {model_cloud} (attempt {attempt + 1}/{max_retries})")
+                try:
+                    response = client.messages.create(
+                        model=model_cloud, max_tokens=1024,
+                        messages=[{"role": "user", "content": f"Context:\n{context}\n\nQuery: {query}"}]
+                    )
+                    self.token_manager.log_usage(model_cloud, response.usage.input_tokens + response.usage.output_tokens)
+                    return response.content[0].text
+                except Exception as e:
+                    print(f"[!] Error with {model_cloud}: {e}")
+            return None
+        except ImportError:
+            print("[!] Anthropic library not installed, cloud fallback unavailable.")
+            return None
 
     def status(self):
-        """Show token status"""
         print("\n=== OmniRoute Token Status ===\n")
         status = self.token_manager.get_status()
         for model, stats in status.items():
             bar = "█" * (stats["percent"] // 5) + "░" * (20 - stats["percent"] // 5)
-            print(f"{model}")
-            print(f"  [{bar}] {stats['percent']}% ({stats['used']:,}/{stats['used'] + stats['available']:,})")
-            print(f"  Available: {stats['available']:,} tokens\n")
+            print(f"{model}\n  [{bar}] {stats['percent']}% ({stats['used']:,}/{stats['used'] + stats['available']:,})")
 
 def main():
     parser = argparse.ArgumentParser(description="OmniRoute - File ingestion & multi-model orchestrator")
     subparsers = parser.add_subparsers(dest="command")
     
-    # Import command
     import_parser = subparsers.add_parser("import", help="Import files into brain")
     import_parser.add_argument("files", nargs="+", help="File paths to import")
     import_parser.add_argument("--category", default="03-References", help="Vault category")
     
-    # Status command
     subparsers.add_parser("status", help="Show token usage status")
     
-    # Query command
     query_parser = subparsers.add_parser("query", help="Query with automatic fallback")
     query_parser.add_argument("query", help="Query text")
     query_parser.add_argument("--context", default="", help="Additional context")
+    query_parser.add_argument("--persona", default=None, help="Agent persona to use (e.g. Fred, Bob)")
     
-    # Reset command
     subparsers.add_parser("reset", help="Reset daily token limits")
     
     args = parser.parse_args()
-    vault_path = str(Path.home() / "Documents" / "Obsidian Vault")
-    router = OmniRouter(vault_path)
+    
+    vault_path = Path(__file__).resolve().parent / "Brain"
+    router = OmniRouter(str(vault_path))
     
     if args.command == "import":
         router.ingest_files(args.files, args.category)
     elif args.command == "status":
         router.status()
     elif args.command == "query":
-        result = router.query_with_fallback(args.query, args.context)
+        result = router.query_with_fallback(args.query, args.context, persona=args.persona)
         if result:
             print(f"\n=== Response ===\n{result}")
     elif args.command == "reset":
@@ -354,5 +267,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
