@@ -1,84 +1,84 @@
-﻿<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+﻿<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BPFCo Super Brain</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#080c11;color:#e8eef3;font:14px Segoe UI,Arial}
-header{height:68px;padding:14px 20px;border-bottom:1px solid #27333d;display:flex;justify-content:space-between;align-items:center}
-h1{margin:0;font-size:23px;letter-spacing:.06em}.muted{color:#81909c;font-size:12px}
-main{height:calc(100vh - 68px);display:grid;grid-template-columns:1fr 380px;gap:1px;background:#202a34}
-.graph{background:#090e14;min-width:0}.side{background:#0e151c;padding:14px;overflow:auto}
-iframe{width:100%;height:100%;border:0}
-.card{border:1px solid #273440;background:#111a22;border-radius:11px;padding:12px;margin-bottom:11px}
-.agent{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #202b35}.agent:last-child{border:0}
-.ok{color:#67dc98}.warn{color:#efbf65}
-.stat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #202b35}
-button{background:#18242e;border:1px solid #2d3b46;color:#e8eef3;border-radius:8px;padding:8px 10px;cursor:pointer}
-button:hover{background:#21303c}
-pre{white-space:pre-wrap;max-height:240px;overflow:auto;color:#aebbc5;font-size:11px}
-@media(max-width:900px){main{grid-template-columns:1fr;height:auto}.graph{height:70vh}.side{height:auto}}
-</style>
-</head>
-<body>
-<header>
-<div><div class="muted">BPFCo · LOCAL COMMAND CENTER</div><h1>SUPER BRAIN</h1></div>
-<div class="muted">Brain graph + CEO control · <span class="ok">LOCAL</span></div>
-</header>
-
+*{box-sizing:border-box}body{margin:0;background:#070b10;color:#e9eff4;font:14px Segoe UI,Arial}
+header{height:64px;padding:12px 18px;border-bottom:1px solid #26323d;display:flex;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:21px;letter-spacing:.07em}.muted{color:#82909d;font-size:12px}.ok{color:#64db97}.warn{color:#f0c26b}
+main{display:grid;grid-template-columns:210px 1fr;height:calc(100vh - 64px)}
+nav{background:#0d141b;border-right:1px solid #26323d;padding:12px}.nav{width:100%;text-align:left;margin:4px 0;padding:10px 12px;border:1px solid #202c36;border-radius:8px;background:#111a22;color:#dce5ec;cursor:pointer}.nav.active{border-color:#6cbfe8;background:#172631}
+.content{padding:14px;overflow:auto}.view{display:none}.view.active{display:block}.grid{display:grid;gap:12px}.g2{grid-template-columns:1.4fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.panel{background:#10171f;border:1px solid #27343f;border-radius:12px;padding:14px;margin-bottom:12px}.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.card{padding:11px;border:1px solid #293641;border-radius:9px;background:#0d141b}.face{width:42px;height:42px;border-radius:50%;background:linear-gradient(145deg,#294151,#13212b);display:grid;place-items:center;font-weight:800;font-size:20px;margin-bottom:7px}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{padding:11px;border:1px solid #293641;border-radius:9px}.stat b{display:block;font-size:20px;margin-top:3px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #202b35}.row:last-child{border:0}
+button,input,select,textarea{font:inherit}.btn{padding:8px 11px;border:1px solid #2a3742;border-radius:8px;background:#17232d;color:#e7eef3;cursor:pointer}.btn:hover{filter:brightness(1.12)}textarea{width:100%;height:90px;background:#0b1117;color:#eef3f6;border:1px solid #2a3742;border-radius:8px;padding:9px}select{background:#0b1117;color:#eef3f6;border:1px solid #2a3742;border-radius:8px;padding:8px}
+pre{white-space:pre-wrap;background:#0a1016;border:1px solid #202b35;border-radius:8px;padding:10px;max-height:300px;overflow:auto}
+iframe{width:100%;height:72vh;border:0;border-radius:10px;background:#fff}
+.stage{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.person{text-align:center;padding:15px;border:1px solid #293640;border-radius:10px;background:#0d141b}.person.active{border-color:#6fc4ee}.portrait{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;margin:auto auto 8px;background:linear-gradient(145deg,#294151,#14212a);font-size:28px;font-weight:800}
+@media(max-width:1050px){main{grid-template-columns:1fr}nav{display:flex;gap:5px;overflow:auto}.nav{width:auto}.g2,.g3{grid-template-columns:1fr}.cards,.stage{grid-template-columns:repeat(2,1fr)}.statgrid{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<header><div><div class=muted>BPFCo · LOCAL COMMAND CENTER</div><h1>SUPER BRAIN</h1></div><div class=muted><span class=ok>LOCAL</span> · <span id=clock></span></div></header>
 <main>
-<section class="graph"><iframe src="/brain-graph" title="BPFCo knowledge graph"></iframe></section>
+<nav>
+<button class="nav active" onclick="show('overview',this)">◉ Overview</button>
+<button class=nav onclick="show('brain',this)">✦ Brain</button>
+<button class=nav onclick="show('agents',this)">◎ Agents</button>
+<button class=nav onclick="show('work',this)">▣ Work</button>
+<button class=nav onclick="show('security',this)">⚿ Security</button>
+<button class=nav onclick="show('meeting',this)">◌ Meeting</button>
+</nav>
 
-<aside class="side">
-<div class="card">
-<div class="muted">AGENT FLEET</div>
-<div id="agents">Loading…</div>
+<section class=content>
+<div id=overview class="view active">
+<div class="grid g2">
+<div class=panel><div class=head><b>Fred · CEO</b><span class=ok>ONLINE</span></div><div class=muted>Executive control plane</div><div id=agentMini style="margin-top:12px"></div></div>
+<div class=panel><div class=head><b>Brain Metrics</b><span class=muted>live</span></div><div class=statgrid id=metrics></div></div>
+</div>
+<div class=grid g3>
+<div class=panel><div class=head><b>System</b><span class=muted>local</span></div><div id=sys></div></div>
+<div class=panel><div class=head><b>Queue</b></div><pre id=q>Loading…</pre></div>
+<div class=panel><div class=head><b>Reports</b></div><pre id=r>Loading…</pre></div>
+</div>
+<div class=panel><div class=head><b>CEO Work Plan</b></div><pre id=p>Loading…</pre></div>
 </div>
 
-<div class="card">
-<div class="muted">BPFCo STATUS</div>
-<div id="stats">Loading…</div>
+<div id=brain class=view>
+<div class=panel><div class=head><b>Knowledge Universe</b><span class=muted>existing BPFCoBrain graph</span></div><iframe src="/brain-graph"></iframe></div>
 </div>
 
-<div class="card">
-<div class="muted">CEO WORK QUEUE</div>
-<pre id="queue">Loading…</pre>
+<div id=agents class=view>
+<div class=panel><div class=head><b>Agent Fleet</b><span class=muted>live from CEO controller</span></div><div class=cards id=agentCards></div></div>
+<div class=panel><div class=head><b>Dispatch</b><span class=muted>uses existing AgentBridge</span></div>
+<select id=who><option value=Bob_Finance>Bob — Finance</option><option value=Cindy_Secretary>Cindy — Secretary</option><option value=Kai_Legal>Kai — Legal</option><option value=Neo_Sales>Neo — Sales</option></select>
+<textarea id=obj placeholder="Objective for the agent…"></textarea><button class=btn onclick=dispatch()>Queue task</button><pre id=dr></pre></div>
 </div>
 
-<div class="card">
-<div class="muted">CEO WORK PLAN</div>
-<pre id="plan">Loading…</pre>
+<div id=work class=view>
+<div class=grid g2><div class=panel><div class=head><b>Task Queue</b></div><pre id=q2>Loading…</pre></div><div class=panel><div class=head><b>Agent Reports</b></div><pre id=r2>Loading…</pre></div></div>
+<div class=panel><div class=head><b>Execution State</b></div><div class=muted>External execution remains approval-gated.</div></div>
 </div>
 
-<div class="card">
-<button onclick="location.reload()">Refresh</button>
+<div id=security class=view>
+<div class=grid g2>
+<div class=panel><div class=head><b>Approval Gate</b><span class=warn>HUMAN REQUIRED</span></div><div class=muted>Terminal approval remains required for external actions.</div><div class=row><span>Current controller gate</span><b id=approvalState>Loading…</b></div><div class=row><span>USB crypto token</span><b class=warn>ADAPTER RESERVED</b></div><div class=row><span>Recovery key</span><b class=warn>NOT CONNECTED</b></div></div>
+<div class=panel><div class=head><b>Security Rules</b></div><div class=row><span>No USB</span><b class=warn>REJECT</b></div><div class=row><span>Invalid token</span><b class=warn>REJECT</b></div><div class=row><span>Valid token + Enter</span><b class=ok>ACCEPT</b></div></div>
 </div>
-</aside>
-</main>
+</div>
+
+<div id=meeting class=view>
+<div class=panel><div class=head><b>Staff Meeting Mode</b><span class=muted>five agents</span></div><div class=stage id=stage></div><div style="margin-top:12px"><button class=btn onclick=speaker('fred')>Fred speaks</button> <button class=btn onclick=speaker('bob')>Bob speaks</button> <button class=btn onclick=speaker('cindy')>Cindy speaks</button> <button class=btn onclick=speaker('kai')>Kai speaks</button> <button class=btn onclick=speaker('neo')>Neo speaks</button></div><div class=muted style="margin-top:10px">VRM / voice / lip-sync plugs into this interface later.</div></div>
+</div>
+</section></main>
 
 <script>
-async function j(u){return fetch(u).then(r=>r.json())}
-
-async function load(){
-  const s=await j('/api/status');
-  document.getElementById('agents').innerHTML=
-    Object.entries(s.agents).map(([n,a])=>
-      `<div class="agent"><span><b>${n.replace('_',' ')}</b><br><span class="muted">${a.role}</span></span><span class="${a.registered?'ok':'warn'}">${a.registered?'READY':'UNREGISTERED'}</span></div>`
-    ).join('');
-
-  document.getElementById('stats').innerHTML=
-    `<div class="stat"><span>Controller</span><b>${s.controller||'CEO'}</b></div>`+
-    `<div class="stat"><span>Queued tasks</span><b>${s.queued_tasks}</b></div>`+
-    `<div class="stat"><span>Reports</span><b>${s.reports}</b></div>`+
-    `<div class="stat"><span>Human approval</span><b class="warn">${s.human_approval}</b></div>`;
-
-  document.getElementById('queue').textContent=JSON.stringify(await j('/api/queue'),null,2);
-  document.getElementById('plan').textContent=(await j('/api/plan')).content;
-}
-load();
-setInterval(load,10000);
-</script>
-</body>
-</html>
+let current='fred';const A={fred:['Fred','CEO','F'],bob:['Bob','Finance','B'],cindy:['Cindy','Secretary','C'],kai:['Kai','Legal','K'],neo:['Neo','Sales','N']};
+const $=x=>document.getElementById(x);
+function show(id,b){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
+function renderAgents(d){$('agentCards').innerHTML=Object.entries(d.agents).map(([k,v])=>`<div class=card><div class=face>${A[k.toLowerCase()]?.[2]||k[0]}</div><b>${k.replace('_',' ')}</b><div class=muted>${v.role}</div><div class=${v.registered?'ok':'warn'}>${v.registered?'REGISTERED':'NOT REGISTERED'}</div><div class=muted>workspace: ${v.workspace_files}</div></div>`).join('');$('agentMini').innerHTML=Object.entries(d.agents).map(([k,v])=>`<div class=row><span>${k.replace('_',' ')}</span><b class=${v.registered?'ok':'warn'}>${v.registered?'READY':'CHECK'}</b></div>`).join('')}
+async function get(u,o){return fetch(u,o).then(x=>x.json())}
+async function load(){try{let d=await get('/api/status');renderAgents(d);$('metrics').innerHTML=[['Queued',d.queued_tasks],['Reports',d.reports],['Approval',d.human_approval],['Memory',d.persistent_memory]].map(x=>`<div class=stat><span class=muted>${x[0]}</span><b>${x[1]}</b></div>`).join('');$('approvalState').textContent=d.human_approval?'ENABLED':'CHECK';$('approvalState').className=d.human_approval?'ok':'warn';$('sys').innerHTML=[['Controller',d.controller],['Persistent memory',d.persistent_memory],['Human approval',d.human_approval]].map(x=>`<div class=row><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');let q=await get('/api/queue'),r=await get('/api/reports'),p=await get('/api/plan');$('q').textContent=$('q2').textContent=JSON.stringify(q,null,2);$('r').textContent=$('r2').textContent=JSON.stringify(r,null,2);$('p').textContent=p.content}catch(e){$('q').textContent='Dashboard API unavailable: '+e}}
+async function dispatch(){let o=$('obj').value.trim();if(!o)return;$('dr').textContent=JSON.stringify(await get('/api/dispatch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:$('who').value,objective:o,priority:'normal'})}),null,2);$('obj').value='';load()}
+function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
+function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
+setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
+</script></body></html>
