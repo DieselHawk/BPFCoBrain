@@ -1,6 +1,6 @@
 {
     "agents": {
-        "CEO": true,
+        "CEO": false,
         "Bob_Finance": true,
         "Cindy_Secretary": true,
         "Kai_Legal": true,
