@@ -504,9 +504,15 @@ def bpfco_activity():
 @app.route("/api/activity")
 def activity_api():
     return jsonify({"events":bpfco_activity()})
+# BPFCO_BRAIN_GRAPH_API_V01
+@app.route("/api/brain-graph")
+def brain_graph_api():
+    from Dashboard.adapters.brain_graph_adapter import build_brain_graph
+    return jsonify(build_brain_graph())
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
+
 
 
 
