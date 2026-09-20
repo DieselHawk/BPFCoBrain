@@ -55,3 +55,6 @@ Dashboard/__pycache__/
 Presence/upstream/*/node_modules/
 Presence/upstream/*/.venv/
 Presence/components/*/node_modules/
+
+# Runtime approval records
+Brain/Executive/Approvals/
