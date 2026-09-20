@@ -3,7 +3,7 @@ import json
 import re
 from collections import defaultdict
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 INDEX = ROOT / ".vault-index.json"
 OUT = ROOT / "Brain" / "Executive" / "LinkRepair" / "link_repair_report.json"
 
@@ -240,3 +240,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
