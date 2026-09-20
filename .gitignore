@@ -61,3 +61,6 @@ Brain/Executive/Approvals/
 
 # Generated link-repair reports
 Brain/Executive/LinkRepair/link_repair_report.json
+
+# Temporary pre-repair index backup
+.vault-index.before-linkfix.json

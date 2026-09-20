@@ -1,8 +1,22 @@
 {
-  "timestamp": "2026-09-02T11:33:27.209565",
+  "timestamp": "2026-09-20T11:33:01.368985",
   "vault_path": "C:\\BPFCo\\BPFCoBrain",
-  "note_count": 836,
+  "note_count": 850,
   "notes": {
+    "AGENTS": {
+      "path": "AGENTS.md",
+      "folder": "BPFCoBrain",
+      "word_count": 205,
+      "links": [],
+      "frontmatter": {}
+    },
+    "BPFCOBRAIN_MANUS_HANDOFF": {
+      "path": "BPFCOBRAIN_MANUS_HANDOFF.md",
+      "folder": "BPFCoBrain",
+      "word_count": 0,
+      "links": [],
+      "frontmatter": {}
+    },
     "BRAIN-CONTEXT": {
       "path": "BRAIN-CONTEXT.md",
       "folder": "BPFCoBrain",
@@ -14,12 +28,7 @@
       "path": "BRAIN-SETUP.md",
       "folder": "BPFCoBrain",
       "word_count": 729,
-      "links": [
-        "graph-algorithms",
-        "clustering-techniques",
-        "llm-integration",
-        "optimization-patterns"
-      ],
+      "links": [],
       "frontmatter": {}
     },
     "FOREVER-GUIDE": {
@@ -40,16 +49,20 @@
       "path": "GRAPHFY-GUIDE.md",
       "folder": "BPFCoBrain",
       "word_count": 267,
-      "links": [
-        "Note-Name",
-        "like-this"
-      ],
+      "links": [],
       "frontmatter": {}
     },
     "HOW-TO-ADD-FOLDER": {
       "path": "HOW-TO-ADD-FOLDER.md",
       "folder": "BPFCoBrain",
       "word_count": 804,
+      "links": [],
+      "frontmatter": {}
+    },
+    "Human_In_The_Loop": {
+      "path": "Human_In_The_Loop.md",
+      "folder": "BPFCoBrain",
+      "word_count": 52,
       "links": [],
       "frontmatter": {}
     },
@@ -78,9 +91,7 @@
       "path": "OMNIROUTE-GUIDE.md",
       "folder": "BPFCoBrain",
       "word_count": 488,
-      "links": [
-        "links"
-      ],
+      "links": [],
       "frontmatter": {}
     },
     "PERMANENCE": {
@@ -98,18 +109,23 @@
       "frontmatter": {}
     },
     "README": {
-      "path": "README.md",
-      "folder": "BPFCoBrain",
-      "word_count": 115,
-      "links": [
-        "link-syntax"
-      ],
+      "path": "Brain\\Executive\\LinkRepair\\README.md",
+      "folder": "LinkRepair",
+      "word_count": 72,
+      "links": [],
       "frontmatter": {}
     },
     "SIMPLE-GUIDE": {
       "path": "SIMPLE-GUIDE.md",
       "folder": "BPFCoBrain",
       "word_count": 439,
+      "links": [],
+      "frontmatter": {}
+    },
+    "copilot-instructions": {
+      "path": ".github\\copilot-instructions.md",
+      "folder": ".github",
+      "word_count": 57,
       "links": [],
       "frontmatter": {}
     },
@@ -1016,10 +1032,7 @@
       "path": "03-References\\constructors-6ba5e92d.md",
       "folder": "03-References",
       "word_count": 1779,
-      "links": [
-        "^\\",
-        "^\\"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\pip\\_internal\\req\\constructors.py",
@@ -1055,13 +1068,7 @@
       "path": "03-References\\core-1ed10041.md",
       "folder": "03-References",
       "word_count": 32136,
-      "links": [
-        "0.2, -0.7, 3.0",
-        "False, False, False",
-        "1, 2, 3, 4",
-        "--, --, --, 1, -2",
-        " True,  True,  True, False, False"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\ma\\core.py",
@@ -1253,9 +1260,7 @@
       "path": "03-References\\defchararray-90526a47.md",
       "folder": "03-References",
       "word_count": 4358,
-      "links": [
-        "'Numpy', ' ', 'is nice!'"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\_core\\defchararray.py",
@@ -1430,10 +1435,7 @@
       "path": "03-References\\dtype-c0242e6a.md",
       "folder": "03-References",
       "word_count": 120,
-      "links": [
-        "\"f0\", \"f1\"",
-        "\"f0\""
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\typing\\tests\\data\\pass\\dtype.py",
@@ -1639,16 +1641,7 @@
       "path": "03-References\\extras-bd50fe3d.md",
       "folder": "03-References",
       "word_count": 7995,
-      "links": [
-        "3, 4",
-        "3",
-        "7, 8",
-        "6, 7, 8",
-        "6, 7, 8",
-        "0, -1",
-        "0, 1, 2, 6, 8, 9",
-        "0, 1, 2, 6, 8, 9"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\ma\\extras.py",
@@ -1768,11 +1761,7 @@
       "path": "03-References\\flatiter-61e41be9.md",
       "folder": "03-References",
       "word_count": 64,
-      "links": [
-        "0",
-        "[0",
-        "[[[0"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\typing\\tests\\data\\pass\\flatiter.py",
@@ -1880,13 +1869,7 @@
       "path": "03-References\\fromnumeric-f7aac04a.md",
       "folder": "03-References",
       "word_count": 19277,
-      "links": [
-        "1,2,3",
-        "0, 1, 2, 3",
-        "1234",
-        "1, 3",
-        "3, 4"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\_core\\fromnumeric.py",
@@ -2025,10 +2008,7 @@
       "path": "03-References\\graphmatrix-50a1fd1d.md",
       "folder": "03-References",
       "word_count": 739,
-      "links": [
-        "1",
-        "2"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\networkx\\linalg\\graphmatrix.py",
@@ -2755,12 +2735,7 @@
       "path": "03-References\\ma-6de6ff5b.md",
       "folder": "03-References",
       "word_count": 524,
-      "links": [
-        "0",
-        "0, 0",
-        "0",
-        "0, 0"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\typing\\tests\\data\\pass\\ma.py",
@@ -2820,11 +2795,7 @@
       "path": "03-References\\matlib-880bc65d.md",
       "folder": "03-References",
       "word_count": 1345,
-      "links": [
-        "1.,  1.",
-        "0.,  0.",
-        "-1.0856306"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\matlib.py",
@@ -3071,10 +3042,7 @@
       "path": "03-References\\multiarray-ad4a339c.md",
       "folder": "03-References",
       "word_count": 7150,
-      "links": [
-        "5, 6",
-        "[1, 3, 5"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\_core\\multiarray.py",
@@ -3122,9 +3090,7 @@
       "path": "03-References\\ndarray_misc-24de0da8.md",
       "folder": "03-References",
       "word_count": 308,
-      "links": [
-        "1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\typing\\tests\\data\\pass\\ndarray_misc.py",
@@ -3136,10 +3102,7 @@
       "path": "03-References\\ndarray_shape_manipulation-eda5628b.md",
       "folder": "03-References",
       "word_count": 110,
-      "links": [
-        "1, 2",
-        "[1, 2"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\typing\\tests\\data\\pass\\ndarray_shape_manipulation.py",
@@ -3218,9 +3181,7 @@
       "path": "03-References\\numeric-df004903.md",
       "folder": "03-References",
       "word_count": 10091,
-      "links": [
-        "0, 1, 2"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\_core\\numeric.py",
@@ -3563,9 +3524,7 @@
       "path": "03-References\\python-300574b4.md",
       "folder": "03-References",
       "word_count": 3835,
-      "links": [
-        "^\\"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\pip\\_vendor\\pygments\\lexers\\python.py",
@@ -3601,16 +3560,7 @@
       "path": "03-References\\random-b56c117b.md",
       "folder": "03-References",
       "word_count": 3583,
-      "links": [
-        "1.0",
-        "1.0",
-        "1.0",
-        "1.0",
-        "1.0",
-        "1.0",
-        "1.0",
-        "1.0"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\typing\\tests\\data\\pass\\random.py",
@@ -3634,10 +3584,7 @@
       "path": "03-References\\recfunctions-43d23194.md",
       "folder": "03-References",
       "word_count": 6858,
-      "links": [
-        "'x', 'z'",
-        "'x', 'z'"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\recfunctions.py",
@@ -3889,9 +3836,7 @@
       "path": "03-References\\retry-aa5bada6.md",
       "folder": "03-References",
       "word_count": 177,
-      "links": [
-        "Callable[P, T"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\pip\\_internal\\utils\\retry.py",
@@ -4121,22 +4066,7 @@
       "path": "03-References\\shape_base-fa381f92.md",
       "folder": "03-References",
       "word_count": 4266,
-      "links": [
-        "3.",
-        "0., 1., 2.",
-        "1, 2",
-        "1",
-        "1, 2",
-        "1, 2",
-        "[3.",
-        "1, 2",
-        "[1, 2",
-        "[1 2",
-        "a",
-        "0",
-        "b",
-        "1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\_core\\shape_base.py",
@@ -4498,25 +4428,7 @@
       "path": "03-References\\test_arraypad-39a57de7.md",
       "folder": "03-References",
       "word_count": 8360,
-      "links": [
-        "3, 3",
-        "3",
-        "obj, obj",
-        "3, 4",
-        "3, 4",
-        "\"a\", obj",
-        "3, 3",
-        "3, 4",
-        "-3",
-        "-3, 4",
-        "4, -3",
-        "1, 2",
-        "1, -2",
-        "[3",
-        "4, 5, 6",
-        "4, 5, 6",
-        "4, 5, 6"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\tests\\test_arraypad.py",
@@ -4600,9 +4512,7 @@
       "path": "03-References\\test_attrmatrix-0a2153b1.md",
       "folder": "03-References",
       "word_count": 306,
-      "links": [
-        "6.0"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\networkx\\linalg\\tests\\test_attrmatrix.py",
@@ -4746,11 +4656,7 @@
       "path": "03-References\\test_character-5e04c1af.md",
       "folder": "03-References",
       "word_count": 1971,
-      "links": [
-        "'a'",
-        "'a', 'b', 'c'",
-        "'A', 'B', 'C'"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\f2py\\tests\\test_character.py",
@@ -4786,9 +4692,7 @@
       "path": "03-References\\test_connected-6c78089e.md",
       "folder": "03-References",
       "word_count": 520,
-      "links": [
-        "1, 2, 3"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\networkx\\algorithms\\components\\tests\\test_connected.py",
@@ -5155,39 +5059,7 @@
       "path": "03-References\\test_function_base-3b16382a.md",
       "folder": "03-References",
       "word_count": 17030,
-      "links": [
-        "1.0, 4.0, 8.0",
-        "1.0, 5.0, 9.5",
-        "4, 4, 4",
-        "1, 1, 1",
-        "1, 1, 2, 1",
-        "0, 3",
-        "5.0, 7.0, 7.0",
-        "8.0",
-        "0, 0",
-        "0, 0",
-        "[1, 2",
-        "1, 2, 3",
-        "1j, 2j, 3j",
-        "1, 2, 3",
-        "1j, 2j, 3j",
-        "1, 2, 3",
-        "[0, 0, 0",
-        "0, 0, 0",
-        "[1, 1, 1",
-        "2, 2, 2",
-        "[3, 4, 5",
-        "3, 4, 5",
-        "True, False",
-        "False, True",
-        "False, True",
-        "False, True",
-        "[2, 2",
-        "Fraction(1, 2)",
-        "Fraction(7, 4)",
-        "1, 2, 3, 4",
-        "1, 2, 3, 4"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\tests\\test_function_base.py",
@@ -5331,13 +5203,7 @@
       "path": "03-References\\test_histograms-db31db4d.md",
       "folder": "03-References",
       "word_count": 3653,
-      "links": [
-        "0.",
-        "0., 0.5, 1.0",
-        "0., 0.5, 1.0",
-        "0., 0.5, 1.0",
-        "0., 0.5, 1.0"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\tests\\test_histograms.py",
@@ -5373,12 +5239,7 @@
       "path": "03-References\\test_index_tricks-570c8215.md",
       "folder": "03-References",
       "word_count": 2317,
-      "links": [
-        "1, 0, 1, 0",
-        "1, 2, 3",
-        "4, 5, 6",
-        "1, 2, 3, 0, 0, 4, 5, 6"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\tests\\test_index_tricks.py",
@@ -5402,11 +5263,7 @@
       "path": "03-References\\test_io-6dbb74a7.md",
       "folder": "03-References",
       "word_count": 9664,
-      "links": [
-        "'foo', 'baz'",
-        "'x', 'z'",
-        "10 * _ for _ in range(5)"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\tests\\test_io.py",
@@ -5550,11 +5407,7 @@
       "path": "03-References\\test_laguerre-d5b5e695.md",
       "folder": "03-References",
       "word_count": 2045,
-      "links": [
-        "1",
-        "[1",
-        "1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\polynomial\\tests\\test_laguerre.py",
@@ -5638,11 +5491,7 @@
       "path": "03-References\\test_legendre-2bf928ab.md",
       "folder": "03-References",
       "word_count": 2191,
-      "links": [
-        "1",
-        "[1",
-        "1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\polynomial\\tests\\test_legendre.py",
@@ -5673,24 +5522,7 @@
       "path": "03-References\\test_linalg-c45210f7.md",
       "folder": "03-References",
       "word_count": 7995,
-      "links": [
-        "0.0",
-        "0.0",
-        "0.0j",
-        "0.0j",
-        "0.0",
-        "0.0",
-        "0.0",
-        "0.0j",
-        "0.0j",
-        "0.0j",
-        "3, 0, 1, 2",
-        "2, 3, 0, 1",
-        "1, 2, 3, 0",
-        "[rshft_0",
-        "1.",
-        "14.2828"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\linalg\\tests\\test_linalg.py",
@@ -5865,9 +5697,7 @@
       "path": "03-References\\test_mixing-adafd042.md",
       "folder": "03-References",
       "word_count": 609,
-      "links": [
-        "2"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\networkx\\algorithms\\assortativity\\tests\\test_mixing.py",
@@ -6107,11 +5937,7 @@
       "path": "03-References\\test_polynomial-e381463b.md",
       "folder": "03-References",
       "word_count": 2594,
-      "links": [
-        "1",
-        "[1",
-        "1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\polynomial\\tests\\test_polynomial.py",
@@ -6135,9 +5961,7 @@
       "path": "03-References\\test_polyutils-e511d337.md",
       "folder": "03-References",
       "word_count": 422,
-      "links": [
-        "[1, 2"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\polynomial\\tests\\test_polyutils.py",
@@ -6324,9 +6148,7 @@
       "path": "03-References\\test_return_complex-086cfc6e.md",
       "folder": "03-References",
       "word_count": 273,
-      "links": [
-        "234"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\f2py\\tests\\test_return_complex.py",
@@ -6350,10 +6172,7 @@
       "path": "03-References\\test_return_logical-62f773d5.md",
       "folder": "03-References",
       "word_count": 245,
-      "links": [
-        "234",
-        "0"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\f2py\\tests\\test_return_logical.py",
@@ -6461,15 +6280,7 @@
       "path": "03-References\\test_simple_paths-c4e09ee8.md",
       "folder": "03-References",
       "word_count": 2758,
-      "links": [
-        "1",
-        "1",
-        "0",
-        "(0, 1), (1, 2)",
-        "0",
-        "0, 1, 2, 3",
-        "0, 1, 2, 3"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\networkx\\algorithms\\tests\\test_simple_paths.py",
@@ -6481,11 +6292,7 @@
       "path": "03-References\\test_size-6a4f77c8.md",
       "folder": "03-References",
       "word_count": 166,
-      "links": [
-        "1, 2",
-        "1, 2",
-        "1, 2"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\f2py\\tests\\test_size.py",
@@ -6888,9 +6695,7 @@
       "path": "03-References\\test_utils-e1070e98.md",
       "folder": "03-References",
       "word_count": 227,
-      "links": [
-        "\"f1\", \"f3\""
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\tests\\test_utils.py",
@@ -6974,9 +6779,7 @@
       "path": "03-References\\test_weakly_connected-0b78d587.md",
       "folder": "03-References",
       "word_count": 305,
-      "links": [
-        "1, 2, 3"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\networkx\\algorithms\\components\\tests\\test_weakly_connected.py",
@@ -7391,9 +7194,7 @@
       "path": "03-References\\typing_extensions-8cd2cf4f.md",
       "folder": "03-References",
       "word_count": 12997,
-      "links": [
-        "int, str, bool"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\pip\\_vendor\\typing_extensions.py",
@@ -7885,9 +7686,7 @@
       "path": "03-References\\_arrayterator_impl-c27ccdd3.md",
       "folder": "03-References",
       "word_count": 912,
-      "links": [
-        "[[0 1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\_arrayterator_impl.py",
@@ -8115,13 +7914,7 @@
       "path": "03-References\\_function_base_impl-5dbf3ad3.md",
       "folder": "03-References",
       "word_count": 23790,
-      "links": [
-        "-1,  2,  0, -2",
-        "0, 1, 2, 3",
-        "0. ,  0.5,  1. ",
-        "0,2,4",
-        "7, 8, 9"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\_function_base_impl.py",
@@ -8169,14 +7962,7 @@
       "path": "03-References\\_index_tricks_impl-26437f52.md",
       "folder": "03-References",
       "word_count": 4036,
-      "links": [
-        "2, 4",
-        "0, 1, 2, 3, 4",
-        "1, 2, 3, 4, 5, 6",
-        "1,2,3",
-        "4,5,6",
-        "1, 2, 3, ..., 4, 5, 6"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\_index_tricks_impl.py",
@@ -8296,9 +8082,7 @@
       "path": "03-References\\_linalg-1512deb4.md",
       "folder": "03-References",
       "word_count": 14426,
-      "links": [
-        "x 1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\linalg\\_linalg.py",
@@ -8401,11 +8185,7 @@
       "path": "03-References\\_nested_sequence-69fa91b9.md",
       "folder": "03-References",
       "word_count": 261,
-      "links": [
-        "1.0",
-        "[1.0",
-        "[[1.0"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\_typing\\_nested_sequence.py",
@@ -8513,20 +8293,7 @@
       "path": "03-References\\_shape_base_impl-c43f7ea3.md",
       "folder": "03-References",
       "word_count": 4900,
-      "links": [
-        "1, 2",
-        "[1, 2",
-        "[1, 4",
-        "2, 5",
-        "3, 6",
-        "[0.,  1.",
-        "4.,  5.",
-        "[2.,  3.",
-        "6.,  7.",
-        "12., 13., 14., 15.",
-        "[0, 1, 2, 0, 1, 2",
-        "0, 1, 2, 0, 1, 2"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\_shape_base_impl.py",
@@ -8550,9 +8317,7 @@
       "path": "03-References\\_stride_tricks_impl-1d48a365.md",
       "folder": "03-References",
       "word_count": 2651,
-      "links": [
-        "1,2,3"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\_stride_tricks_impl.py",
@@ -8576,10 +8341,7 @@
       "path": "03-References\\_twodim_base_impl-c469b36a.md",
       "folder": "03-References",
       "word_count": 4756,
-      "links": [
-        "0, -1",
-        "0, -1"
-      ],
+      "links": [],
       "frontmatter": {
         "type": "imported",
         "source": "C:\\Users\\Jaques\\Documents\\kimi\\workspace\\.graphify-venv\\Lib\\site-packages\\numpy\\lib\\_twodim_base_impl.py",
@@ -9691,6 +9453,20 @@
         "file_type": ".py"
       }
     },
+    "Leads_Pipeline_Test": {
+      "path": "Neo_Sales\\Leads_Pipeline_Test.md",
+      "folder": "Neo_Sales",
+      "word_count": 38,
+      "links": [],
+      "frontmatter": {}
+    },
+    "neo_config": {
+      "path": "Neo_Sales\\neo_config.md",
+      "folder": "Neo_Sales",
+      "word_count": 55,
+      "links": [],
+      "frontmatter": {}
+    },
     "Atomic-Note": {
       "path": "Templates\\Atomic-Note.md",
       "folder": "Templates",
@@ -9733,6 +9509,62 @@
         "created": "{{date:YYYY-MM-DD}}",
         "status": "active"
       }
+    },
+    "README.ja": {
+      "path": "Presence\\upstream\\elino\\README.ja.md",
+      "folder": "elino",
+      "word_count": 487,
+      "links": [],
+      "frontmatter": {}
+    },
+    "README.zh-CN": {
+      "path": "Presence\\upstream\\elino\\README.zh-CN.md",
+      "folder": "elino",
+      "word_count": 530,
+      "links": [],
+      "frontmatter": {}
+    },
+    "README-BPFCO": {
+      "path": "Presence\\components\\elino\\README-BPFCO.md",
+      "folder": "elino",
+      "word_count": 101,
+      "links": [],
+      "frontmatter": {}
+    },
+    "BPFCo_BUILD_CONTRACT": {
+      "path": "Brain\\Executive\\BPFCo_BUILD_CONTRACT.md",
+      "folder": "Executive",
+      "word_count": 1233,
+      "links": [],
+      "frontmatter": {}
+    },
+    "BPFCo_SESSION_START_PROMPT": {
+      "path": "Brain\\Executive\\BPFCo_SESSION_START_PROMPT.md",
+      "folder": "Executive",
+      "word_count": 230,
+      "links": [],
+      "frontmatter": {}
+    },
+    "CEO_Morning_Report": {
+      "path": "Brain\\Executive\\CEO_Morning_Report.md",
+      "folder": "Executive",
+      "word_count": 181,
+      "links": [],
+      "frontmatter": {}
+    },
+    "CEO_Work_Plan": {
+      "path": "Brain\\Executive\\CEO_Work_Plan.md",
+      "folder": "Executive",
+      "word_count": 392,
+      "links": [],
+      "frontmatter": {}
+    },
+    "SUPER_BRAIN_TARGET": {
+      "path": "Brain\\Executive\\SUPER_BRAIN_TARGET.md",
+      "folder": "Executive",
+      "word_count": 83,
+      "links": [],
+      "frontmatter": {}
     },
     "command-kilo": {
       "path": "00-Inbox\\workspace\\.graphify-venv\\Lib\\site-packages\\graphify\\command-kilo.md",
@@ -10019,12 +9851,15 @@
     }
   },
   "graph": {
+    "AGENTS": [],
+    "BPFCOBRAIN_MANUS_HANDOFF": [],
     "BRAIN-CONTEXT": [],
     "BRAIN-SETUP": [],
     "FOREVER-GUIDE": [],
     "GOOGLE-OAUTH-SETUP": [],
     "GRAPHFY-GUIDE": [],
     "HOW-TO-ADD-FOLDER": [],
+    "Human_In_The_Loop": [],
     "ICON-SETUP": [],
     "MANUS-BOB-SETUP": [],
     "MANUS-HOOKUP-GUIDE": [],
@@ -10033,6 +9868,7 @@
     "PREVIEW-GUIDE": [],
     "README": [],
     "SIMPLE-GUIDE": [],
+    "copilot-instructions": [],
     "test_fibonacci-2a25db43": [],
     "abc-39d8c0ac": [],
     "adapter-9db1eb43": [],
@@ -10820,9 +10656,19 @@
     "__pip-runner__-bb553613": [],
     "__version__-1b689438": [],
     "__version__-cf7b49d0": [],
+    "Leads_Pipeline_Test": [],
+    "neo_config": [],
     "Atomic-Note": [],
     "Map-of-Content": [],
     "Project-Note": [],
+    "README.ja": [],
+    "README.zh-CN": [],
+    "README-BPFCO": [],
+    "BPFCo_BUILD_CONTRACT": [],
+    "BPFCo_SESSION_START_PROMPT": [],
+    "CEO_Morning_Report": [],
+    "CEO_Work_Plan": [],
+    "SUPER_BRAIN_TARGET": [],
     "command-kilo": [],
     "skill-agents": [],
     "skill-aider": [],
@@ -10857,32 +10703,24 @@
     "update": []
   },
   "unresolved_links": {
+    "AGENTS": [],
+    "BPFCOBRAIN_MANUS_HANDOFF": [],
     "BRAIN-CONTEXT": [],
-    "BRAIN-SETUP": [
-      "graph-algorithms",
-      "clustering-techniques",
-      "llm-integration",
-      "optimization-patterns"
-    ],
+    "BRAIN-SETUP": [],
     "FOREVER-GUIDE": [],
     "GOOGLE-OAUTH-SETUP": [],
-    "GRAPHFY-GUIDE": [
-      "Note-Name",
-      "like-this"
-    ],
+    "GRAPHFY-GUIDE": [],
     "HOW-TO-ADD-FOLDER": [],
+    "Human_In_The_Loop": [],
     "ICON-SETUP": [],
     "MANUS-BOB-SETUP": [],
     "MANUS-HOOKUP-GUIDE": [],
-    "OMNIROUTE-GUIDE": [
-      "links"
-    ],
+    "OMNIROUTE-GUIDE": [],
     "PERMANENCE": [],
     "PREVIEW-GUIDE": [],
-    "README": [
-      "link-syntax"
-    ],
+    "README": [],
     "SIMPLE-GUIDE": [],
+    "copilot-instructions": [],
     "test_fibonacci-2a25db43": [],
     "abc-39d8c0ac": [],
     "adapter-9db1eb43": [],
@@ -10960,19 +10798,10 @@
     "connected-da6c78c0": [],
     "connection-3530b010": [],
     "connectivity-57499871": [],
-    "constructors-6ba5e92d": [
-      "^\\",
-      "^\\"
-    ],
+    "constructors-6ba5e92d": [],
     "contraction-468fea70": [],
     "controller-29ce231b": [],
-    "core-1ed10041": [
-      "0.2, -0.7, 3.0",
-      "False, False, False",
-      "1, 2, 3, 4",
-      "--, --, --, 1, -2",
-      "True,  True,  True, False, False"
-    ],
+    "core-1ed10041": [],
     "core-9550f6f9": [],
     "correlation-c10053ab": [],
     "covering-4a9665b7": [],
@@ -10988,9 +10817,7 @@
     "datetime-913ab688": [],
     "debug-c193ec94": [],
     "defchararray-87605a9a": [],
-    "defchararray-90526a47": [
-      "'Numpy', ' ', 'is nice!'"
-    ],
+    "defchararray-90526a47": [],
     "degree_alg-96cdb6d2": [],
     "degree_seq-a1fccb66": [],
     "deprecation-a2b8aef0": [],
@@ -11005,10 +10832,7 @@
     "download-3621b8e7": [],
     "download-dc2d239d": [],
     "dragon4_LICENSE-cc036684": [],
-    "dtype-c0242e6a": [
-      "\"f0\", \"f1\"",
-      "\"f0\""
-    ],
+    "dtype-c0242e6a": [],
     "dtypes-999bc9ce": [],
     "edgebfs-4c4ae9ba": [],
     "edgedfs-9b8d0272": [],
@@ -11026,16 +10850,7 @@
     "exceptions-8e282c0b": [],
     "exceptions-a0ddf5d9": [],
     "extraction-spec-42fef56a": [],
-    "extras-bd50fe3d": [
-      "3, 4",
-      "3",
-      "7, 8",
-      "6, 7, 8",
-      "6, 7, 8",
-      "0, -1",
-      "0, 1, 2, 6, 8, 9",
-      "0, 1, 2, 6, 8, 9"
-    ],
+    "extras-bd50fe3d": [],
     "f2py2e-7e02c4d5": [],
     "f90mod_rules-945cca07": [],
     "factory-32245ca5": [],
@@ -11045,11 +10860,7 @@
     "filetypes-daae55f8": [],
     "filewrapper-2f9cf9f9": [],
     "file_cache-9d083ecb": [],
-    "flatiter-61e41be9": [
-      "0",
-      "[0",
-      "[[[0"
-    ],
+    "flatiter-61e41be9": [],
     "flow_matrix-afde61dd": [],
     "format-74d13a6f": [],
     "format_control-bdc269c3": [],
@@ -11058,13 +10869,7 @@
     "freeze-745b741e": [],
     "fromnumeric-d0b407c3": [],
     "fromnumeric-f75ce47c": [],
-    "fromnumeric-f7aac04a": [
-      "1,2,3",
-      "0, 1, 2, 3",
-      "1234",
-      "1, 3",
-      "3, 4"
-    ],
+    "fromnumeric-f7aac04a": [],
     "func2subr-0da62310": [],
     "function_base-514514c8": [],
     "function_base-fb90f8da": [],
@@ -11076,10 +10881,7 @@
     "glibc-571da2de": [],
     "gml-92aa4b02": [],
     "graph6-e2d3840c": [],
-    "graphmatrix-50a1fd1d": [
-      "1",
-      "2"
-    ],
+    "graphmatrix-50a1fd1d": [],
     "graphml-bb4ac044": [],
     "greedy_coloring-1508f946": [],
     "groff-902960cf": [],
@@ -11140,21 +10942,12 @@
     "logging-ca0b4a67": [],
     "lowest_common_ancestors-fa73461c": [],
     "low_level-c4cf8188": [],
-    "ma-6de6ff5b": [
-      "0",
-      "0, 0",
-      "0",
-      "0, 0"
-    ],
+    "ma-6de6ff5b": [],
     "makefile-d26b39c4": [],
     "manifest-640a16c5": [],
     "markers-ce463450": [],
     "matching-997c5144": [],
-    "matlib-880bc65d": [
-      "1.,  1.",
-      "0.,  0.",
-      "-1.0856306"
-    ],
+    "matlib-880bc65d": [],
     "memmap-5d7be17d": [],
     "mercurial-eb530b5a": [],
     "metadata-39771cd0": [],
@@ -11175,29 +10968,19 @@
     "mrecords-fa9348f4": [],
     "mst-da1add68": [],
     "multiarray-0c104f8d": [],
-    "multiarray-ad4a339c": [
-      "5, 6",
-      "[1, 3, 5"
-    ],
+    "multiarray-ad4a339c": [],
     "multiarray-f3e8dead": [],
     "multiline_adjlist-87078f82": [],
     "ndarray_conversion-8eb6f861": [],
-    "ndarray_misc-24de0da8": [
-      "1"
-    ],
-    "ndarray_shape_manipulation-eda5628b": [
-      "1, 2",
-      "[1, 2"
-    ],
+    "ndarray_misc-24de0da8": [],
+    "ndarray_shape_manipulation-eda5628b": [],
     "nditer-cfd0eb94": [],
     "non_randomness-4fb11781": [],
     "npyio-59937ae1": [],
     "ntlmpool-0d256433": [],
     "numeric-2ca3e297": [],
     "numeric-c4a8e63f": [],
-    "numeric-df004903": [
-      "0, 1, 2"
-    ],
+    "numeric-df004903": [],
     "numerictypes-1c910a39": [],
     "numerictypes-8f177c8b": [],
     "numerictypes-eabe42a0": [],
@@ -11226,26 +11009,12 @@
     "providers-665e6250": [],
     "proxy-6823df66": [],
     "pyopenssl-395256c6": [],
-    "python-300574b4": [
-      "^\\"
-    ],
+    "python-300574b4": [],
     "quality-09699eae": [],
     "queue-71642693": [],
-    "random-b56c117b": [
-      "1.0",
-      "1.0",
-      "1.0",
-      "1.0",
-      "1.0",
-      "1.0",
-      "1.0",
-      "1.0"
-    ],
+    "random-b56c117b": [],
     "recfunctions-0d4746c1": [],
-    "recfunctions-43d23194": [
-      "'x', 'z'",
-      "'x', 'z'"
-    ],
+    "recfunctions-43d23194": [],
     "records-42c50e94": [],
     "records-e5961e40": [],
     "redis_cache-fefe3212": [],
@@ -11266,9 +11035,7 @@
     "response-6eb83504": [],
     "response-d15dab20": [],
     "retry-8a29318d": [],
-    "retry-aa5bada6": [
-      "Callable[P, T"
-    ],
+    "retry-aa5bada6": [],
     "rtf-584f0c7e": [],
     "rule-790460de": [],
     "rules-61be1c3a": [],
@@ -11288,22 +11055,7 @@
     "setuptools_build-9ae597ef": [],
     "shape-39c1cd24": [],
     "shape_base-8a4c0a96": [],
-    "shape_base-fa381f92": [
-      "3.",
-      "0., 1., 2.",
-      "1, 2",
-      "1",
-      "1, 2",
-      "1, 2",
-      "[3.",
-      "1, 2",
-      "[1, 2",
-      "[1 2",
-      "a",
-      "0",
-      "b",
-      "1"
-    ],
+    "shape_base-fa381f92": [],
     "show-06014a5e": [],
     "simple-c75b7784": [],
     "six-6a3d2d8f": [],
@@ -11334,34 +11086,14 @@
     "test_adjlist-7c4fa26c": [],
     "test_algebraic_connectivity-8f7a8160": [],
     "test_arrayobject-3fecf626": [],
-    "test_arraypad-39a57de7": [
-      "3, 3",
-      "3",
-      "obj, obj",
-      "3, 4",
-      "3, 4",
-      "\"a\", obj",
-      "3, 3",
-      "3, 4",
-      "-3",
-      "-3, 4",
-      "4, -3",
-      "1, 2",
-      "1, -2",
-      "[3",
-      "4, 5, 6",
-      "4, 5, 6",
-      "4, 5, 6"
-    ],
+    "test_arraypad-39a57de7": [],
     "test_arrayterator-4a26c01c": [],
     "test_array_from_pyobj-8667a17f": [],
     "test_array_utils-a33bcadf": [],
     "test_assumed_shape-85851fc2": [],
     "test_asyn_fluid-8c6db3fe": [],
     "test_attracting-a88f3b9d": [],
-    "test_attrmatrix-0a2153b1": [
-      "6.0"
-    ],
+    "test_attrmatrix-0a2153b1": [],
     "test_beamsearch-e12d3aea": [],
     "test_bethehessian-605f9d11": [],
     "test_betweenness_centrality-0159eb06": [],
@@ -11373,16 +11105,10 @@
     "test_callback-3e443fc6": [],
     "test_capi_maps-e7774ebf": [],
     "test_centrality-bfa45f1f": [],
-    "test_character-5e04c1af": [
-      "'a'",
-      "'a', 'b', 'c'",
-      "'A', 'B', 'C'"
-    ],
+    "test_character-5e04c1af": [],
     "test_closeness_centrality-1c52ee72": [],
     "test_common-c035227c": [],
-    "test_connected-6c78089e": [
-      "1, 2, 3"
-    ],
+    "test_connected-6c78089e": [],
     "test_connectivity-27bb8ee4": [],
     "test_connectivity-af3cb1ae": [],
     "test_contraction-bbc44297": [],
@@ -11413,39 +11139,7 @@
     "test_f2cmap-53e58ef9": [],
     "test_f2py2e-c87bdbfe": [],
     "test_format-58c21b62": [],
-    "test_function_base-3b16382a": [
-      "1.0, 4.0, 8.0",
-      "1.0, 5.0, 9.5",
-      "4, 4, 4",
-      "1, 1, 1",
-      "1, 1, 2, 1",
-      "0, 3",
-      "5.0, 7.0, 7.0",
-      "8.0",
-      "0, 0",
-      "0, 0",
-      "[1, 2",
-      "1, 2, 3",
-      "1j, 2j, 3j",
-      "1, 2, 3",
-      "1j, 2j, 3j",
-      "1, 2, 3",
-      "[0, 0, 0",
-      "0, 0, 0",
-      "[1, 1, 1",
-      "2, 2, 2",
-      "[3, 4, 5",
-      "3, 4, 5",
-      "True, False",
-      "False, True",
-      "False, True",
-      "False, True",
-      "[2, 2",
-      "Fraction(1, 2)",
-      "Fraction(7, 4)",
-      "1, 2, 3, 4",
-      "1, 2, 3, 4"
-    ],
+    "test_function_base-3b16382a": [],
     "test_gexf-1e1d94cd": [],
     "test_gml-4c00c0d9": [],
     "test_graph6-3cabe030": [],
@@ -11457,27 +11151,12 @@
     "test_harmonic_centrality-c822b5dd": [],
     "test_helper-81504a5d": [],
     "test_hierarchy-1b51d8dc": [],
-    "test_histograms-db31db4d": [
-      "0.",
-      "0., 0.5, 1.0",
-      "0., 0.5, 1.0",
-      "0., 0.5, 1.0",
-      "0., 0.5, 1.0"
-    ],
+    "test_histograms-db31db4d": [],
     "test_hits-f6744d10": [],
     "test_hybrid-9c621125": [],
-    "test_index_tricks-570c8215": [
-      "1, 0, 1, 0",
-      "1, 2, 3",
-      "4, 5, 6",
-      "1, 2, 3, 0, 0, 4, 5, 6"
-    ],
+    "test_index_tricks-570c8215": [],
     "test_inplace-7db0d996": [],
-    "test_io-6dbb74a7": [
-      "'foo', 'baz'",
-      "'x', 'z'",
-      "10 * _ for _ in range(5)"
-    ],
+    "test_io-6dbb74a7": [],
     "test_isfile-786a8d7e": [],
     "test_isoc-41b67fdb": [],
     "test_isolate-e002340e": [],
@@ -11489,42 +11168,17 @@
     "test_kcutsets-76675910": [],
     "test_kind-18da23c0": [],
     "test_label_propagation-b8072e21": [],
-    "test_laguerre-d5b5e695": [
-      "1",
-      "[1",
-      "1"
-    ],
+    "test_laguerre-d5b5e695": [],
     "test_laplacian-1690a5cd": [],
     "test_laplacian_centrality-cb58b2c1": [],
     "test_latex-741643b1": [],
     "test_lattice-318d0ede": [],
     "test_layout-ede306e5": [],
     "test_leda-540949b7": [],
-    "test_legendre-2bf928ab": [
-      "1",
-      "[1",
-      "1"
-    ],
+    "test_legendre-2bf928ab": [],
     "test_leiden-4889f301": [],
     "test_limited_api-bc3789b7": [],
-    "test_linalg-c45210f7": [
-      "0.0",
-      "0.0",
-      "0.0j",
-      "0.0j",
-      "0.0",
-      "0.0",
-      "0.0",
-      "0.0j",
-      "0.0j",
-      "0.0j",
-      "3, 0, 1, 2",
-      "2, 3, 0, 1",
-      "1, 2, 3, 0",
-      "[rshft_0",
-      "1.",
-      "14.2828"
-    ],
+    "test_linalg-c45210f7": [],
     "test_line-ed0d156e": [],
     "test_link_prediction-15a7262a": [],
     "test_loadtxt-4e30befd": [],
@@ -11539,9 +11193,7 @@
     "test_max_weight_clique-2f28a6f4": [],
     "test_mis-628a48ff": [],
     "test_mixed-41d319fc": [],
-    "test_mixing-adafd042": [
-      "2"
-    ],
+    "test_mixing-adafd042": [],
     "test_modularity-ce54d52d": [],
     "test_modularity_max-afe4e8e4": [],
     "test_modules-1697d710": [],
@@ -11561,15 +11213,9 @@
     "test_planarity-b989cfbe": [],
     "test_planar_drawing-5b3b63e8": [],
     "test_pocketfft-c9cf0eb2": [],
-    "test_polynomial-e381463b": [
-      "1",
-      "[1",
-      "1"
-    ],
+    "test_polynomial-e381463b": [],
     "test_polynomials-07bceb56": [],
-    "test_polyutils-e511d337": [
-      "[1, 2"
-    ],
+    "test_polyutils-e511d337": [],
     "test_printing-dbf9324f": [],
     "test_pydot-32584ecb": [],
     "test_pyf_src-b3ac9a10": [],
@@ -11585,14 +11231,9 @@
     "test_regression-b8bdf36a": [],
     "test_regular-ed059dd7": [],
     "test_return_character-f86cbe5a": [],
-    "test_return_complex-086cfc6e": [
-      "234"
-    ],
+    "test_return_complex-086cfc6e": [],
     "test_return_integer-9c712412": [],
-    "test_return_logical-62f773d5": [
-      "234",
-      "0"
-    ],
+    "test_return_logical-62f773d5": [],
     "test_return_real-70914ec9": [],
     "test_richclub-6c145aaa": [],
     "test_routines-59226448": [],
@@ -11601,20 +11242,8 @@
     "test_semicolon_split-ded8c5ad": [],
     "test_semiconnected-96c42da6": [],
     "test_similarity-0e072bee": [],
-    "test_simple_paths-c4e09ee8": [
-      "1",
-      "1",
-      "0",
-      "(0, 1), (1, 2)",
-      "0",
-      "0, 1, 2, 3",
-      "0, 1, 2, 3"
-    ],
-    "test_size-6a4f77c8": [
-      "1, 2",
-      "1, 2",
-      "1, 2"
-    ],
+    "test_simple_paths-c4e09ee8": [],
+    "test_size-6a4f77c8": [],
     "test_small-c7586517": [],
     "test_smallworld-fa331d5e": [],
     "test_smetric-61c6d66b": [],
@@ -11648,18 +11277,14 @@
     "test_typing-1e0dd1aa": [],
     "test_ufunclike-3c5b5ec1": [],
     "test_utils-524b7095": [],
-    "test_utils-e1070e98": [
-      "\"f1\", \"f3\""
-    ],
+    "test_utils-e1070e98": [],
     "test_value_attrspec-cfd8b417": [],
     "test_vertex_cover-d5c3f436": [],
     "test_vitality-1b13d177": [],
     "test_voronoi-8ced4518": [],
     "test_voterank-5231b5a1": [],
     "test_walks-2720233f": [],
-    "test_weakly_connected-0b78d587": [
-      "1, 2, 3"
-    ],
+    "test_weakly_connected-0b78d587": [],
     "test_wiener-7b7afb26": [],
     "test__datasource-26aba89f": [],
     "test__iotools-3d1d003f": [],
@@ -11694,9 +11319,7 @@
     "top_level-eb32c6e9": [],
     "top_level-ff0dfe5a": [],
     "trophic-6c41065a": [],
-    "typing_extensions-8cd2cf4f": [
-      "int, str, bool"
-    ],
+    "typing_extensions-8cd2cf4f": [],
     "ufunclike-fa2fa032": [],
     "ufuncs-3d5375d2": [],
     "ufuncs-a349fc13": [],
@@ -11737,9 +11360,7 @@
     "_appengine_environ-acc1a179": [],
     "_arraypad_impl-fc5d8eaf": [],
     "_arraysetops_impl-f70d49de": [],
-    "_arrayterator_impl-c27ccdd3": [
-      "[[0 1"
-    ],
+    "_arrayterator_impl-c27ccdd3": [],
     "_array_api_info-16281e6a": [],
     "_array_utils_impl-54e8c87d": [],
     "_backend-b387e9b2": [],
@@ -11758,24 +11379,11 @@
     "_envs-5c88c2df": [],
     "_expired_attrs_2_0-d4f1357b": [],
     "_format_impl-e8b4bc1f": [],
-    "_function_base_impl-5dbf3ad3": [
-      "-1,  2,  0, -2",
-      "0, 1, 2, 3",
-      "0. ,  0.5,  1.",
-      "0,2,4",
-      "7, 8, 9"
-    ],
+    "_function_base_impl-5dbf3ad3": [],
     "_globals-1a7ce363": [],
     "_helper-1d520c94": [],
     "_histograms_impl-68146026": [],
-    "_index_tricks_impl-26437f52": [
-      "2, 4",
-      "0, 1, 2, 3, 4",
-      "1, 2, 3, 4, 5, 6",
-      "1,2,3",
-      "4,5,6",
-      "1, 2, 3, ..., 4, 5, 6"
-    ],
+    "_index_tricks_impl-26437f52": [],
     "_initialize-ce8a0ea3": [],
     "_initialize_py-097557a3": [],
     "_inspect-93e7c6ed": [],
@@ -11785,9 +11393,7 @@
     "_isocbind-c72643d7": [],
     "_jaraco_text-17df6281": [],
     "_json-4f9b1fc1": [],
-    "_linalg-1512deb4": [
-      "x 1"
-    ],
+    "_linalg-1512deb4": [],
     "_log-d525aebd": [],
     "_mapping-6caa76eb": [],
     "_mapping-75b034b7": [],
@@ -11796,11 +11402,7 @@
     "_nanfunctions_impl-2e6d9645": [],
     "_nbit-70687e12": [],
     "_nbit_base-c44191c0": [],
-    "_nested_sequence-69fa91b9": [
-      "1.0",
-      "[1.0",
-      "[[1.0"
-    ],
+    "_nested_sequence-69fa91b9": [],
     "_npyio_impl-38f6d618": [],
     "_pep440-63a2df05": [],
     "_pocketfft-c859af4b": [],
@@ -11809,29 +11411,11 @@
     "_scalars-f1f9225d": [],
     "_scimath_impl-fbe9118a": [],
     "_shape-a9fc7d7f": [],
-    "_shape_base_impl-c43f7ea3": [
-      "1, 2",
-      "[1, 2",
-      "[1, 4",
-      "2, 5",
-      "3, 6",
-      "[0.,  1.",
-      "4.,  5.",
-      "[2.,  3.",
-      "6.,  7.",
-      "12., 13., 14., 15.",
-      "[0, 1, 2, 0, 1, 2",
-      "0, 1, 2, 0, 1, 2"
-    ],
+    "_shape_base_impl-c43f7ea3": [],
     "_src_pyf-d0c18eca": [],
-    "_stride_tricks_impl-1d48a365": [
-      "1,2,3"
-    ],
+    "_stride_tricks_impl-1d48a365": [],
     "_sysconfig-241c82a4": [],
-    "_twodim_base_impl-c469b36a": [
-      "0, -1",
-      "0, -1"
-    ],
+    "_twodim_base_impl-c469b36a": [],
     "_type_check_impl-21b93f6e": [],
     "_ufunc-30f69259": [],
     "_ufunclike_impl-42058c40": [],
@@ -11924,19 +11508,19 @@
     "__pip-runner__-bb553613": [],
     "__version__-1b689438": [],
     "__version__-cf7b49d0": [],
-    "Atomic-Note": [
-      "like-this"
-    ],
-    "Map-of-Content": [
-      "Topic-1",
-      "Topic-2",
-      "Topic-3",
-      "Related-MOC"
-    ],
-    "Project-Note": [
-      "task-name",
-      "Concept-Name"
-    ],
+    "Leads_Pipeline_Test": [],
+    "neo_config": [],
+    "Atomic-Note": [],
+    "Map-of-Content": [],
+    "Project-Note": [],
+    "README.ja": [],
+    "README.zh-CN": [],
+    "README-BPFCO": [],
+    "BPFCo_BUILD_CONTRACT": [],
+    "BPFCo_SESSION_START_PROMPT": [],
+    "CEO_Morning_Report": [],
+    "CEO_Work_Plan": [],
+    "SUPER_BRAIN_TARGET": [],
     "command-kilo": [],
     "skill-agents": [],
     "skill-aider": [],
@@ -11971,9 +11555,9 @@
     "update": []
   },
   "stats": {
-    "total_notes": 836,
-    "total_words": 942421,
+    "total_notes": 850,
+    "total_words": 946022,
     "connections": 0,
-    "unresolved_links": 221
+    "unresolved_links": 0
   }
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Claude Vault Indexer
@@ -43,12 +43,12 @@ class VaultIndexer:
         
     def index_vault(self, source_paths: List[str] = None) -> None:
         """Scan and index all markdown files in vault"""
-        print(f"📚 Indexing vault: {self.vault_path}")
+        print(f"ðŸ“š Indexing vault: {self.vault_path}")
         roots = [self.vault_path] + [Path(path).expanduser().resolve() for path in (source_paths or [])]
         seen_files = set()
         for root in roots:
             if not root.exists():
-                print(f"⚠ Source path not found: {root}")
+                print(f"âš  Source path not found: {root}")
                 continue
             for md_file in root.rglob("*.md"):
                 if md_file in seen_files:
@@ -60,7 +60,7 @@ class VaultIndexer:
                 self._index_file(md_file)
         
         self._build_graph()
-        print(f"✓ Indexed {len(self.notes)} notes")
+        print(f"âœ“ Indexed {len(self.notes)} notes")
     
     def _index_file(self, file_path: Path) -> None:
         """Index a single markdown file"""
@@ -92,7 +92,7 @@ class VaultIndexer:
             self._title_lookup[title.casefold()] = title
             
         except Exception as e:
-            print(f"⚠ Error indexing {file_path}: {e}")
+            print(f"âš  Error indexing {file_path}: {e}")
     
     def _parse_frontmatter(self, content: str) -> Dict:
         """Extract YAML frontmatter"""
@@ -114,10 +114,22 @@ class VaultIndexer:
         return {}
     
     def _extract_links(self, content: str) -> List[str]:
-        """Extract internal links [[like-this]]"""
-        pattern = r"\[\[([^\]]+)\]\]"
-        matches = re.findall(pattern, content)
-        return [m.split("|")[0] for m in matches]  # Handle [[link|alias]]
+        """Extract actual Obsidian wikilinks, ignoring Markdown code."""
+        # Obsidian does not resolve wikilinks inside fenced code blocks
+        # or inline code spans. Remove those regions before extraction.
+        text = re.sub(r"```[\s\S]*?```", "", content)
+        text = re.sub(r"`[^`\n]*`", "", text)
+
+        pattern = r"\[\[([^\]\r\n]+?)\]\]"
+        matches = re.findall(pattern, text)
+
+        links = []
+        for match in matches:
+            target = match.split("|", 1)[0].strip()
+            if target:
+                links.append(target)
+
+        return links
     
     def _build_graph(self) -> None:
         """Build bidirectional graph of note connections"""
@@ -138,7 +150,10 @@ class VaultIndexer:
                 if target is not None:
                     self.graph[title].add(target)
                 else:
-                    self.unresolved_links[title].append(link.strip())
+                    # Unresolved wikilinks inside Templates are examples/placeholders,
+                    # not broken knowledge-graph relationships.
+                    if str(note.folder).casefold() != "templates":
+                        self.unresolved_links[title].append(link.strip())
     
     def query(self, keyword: str, depth: int = 1) -> Dict:
         """
@@ -193,7 +208,7 @@ class VaultIndexer:
                 self._build_context(linked, context, visited, depth - 1)
     
     def _estimate_tokens(self, context: Dict) -> int:
-        """Rough token estimation (4 chars ≈ 1 token)"""
+        """Rough token estimation (4 chars â‰ˆ 1 token)"""
         content_str = json.dumps(context)
         return len(content_str) // 4
     
@@ -224,7 +239,7 @@ class VaultIndexer:
         }
         
         Path(output_path).write_text(json.dumps(index_data, indent=2))
-        print(f"✓ Index exported to {output_path}")
+        print(f"âœ“ Index exported to {output_path}")
     
     def print_stats(self) -> None:
         """Print vault statistics"""
@@ -232,7 +247,7 @@ class VaultIndexer:
         total_links = sum(len(links) for links in self.graph.values())
         unresolved = sum(len(links) for links in self.unresolved_links.values())
         
-        print("\n📊 Vault Statistics:")
+        print("\nðŸ“Š Vault Statistics:")
         print(f"  Notes: {len(self.notes)}")
         print(f"  Total words: {total_words:,}")
         print(f"  Total links: {total_links}")
@@ -256,9 +271,10 @@ def main():
     indexer.export_index(index_file)
     
     # Example query
-    print("\n🔍 Example query: 'Concept'")
+    print("\nðŸ” Example query: 'Concept'")
     result = indexer.query("Concept", depth=2)
     print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":
     main()
+
