@@ -170,9 +170,16 @@ def load_json(path, default):
     if not path.exists():
         return default
     try:
-        return json.loads(path.read_text(encoding="utf-8-sig"))
+        # Use a small retry loop for file locks
+        for _ in range(3):
+            try:
+                return json.loads(path.read_text(encoding="utf-8-sig"))
+            except IOError:
+                import time
+                time.sleep(0.01)
     except Exception:
-        return default
+        pass
+    return default
 
 
 @app.route("/")
@@ -336,7 +343,7 @@ def vault_index():
 @app.route("/vendor/d3.v7.min.js")
 def d3_asset():
     return send_file(ROOT / "Dashboard" / "vendor" / "d3.v7.min.js")
-# PRESENCE_V01
+# PRESENCE_V01 (Consolidated)
 PRESENCE_FILE = EXECUTIVE_DIR / "presence_state.json"
 
 @app.route("/api/presence", methods=["GET","POST"])
@@ -363,39 +370,12 @@ def presence():
         "event":event
     }
 
-    PRESENCE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    try:
+        PRESENCE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    except Exception as e:
+        return jsonify({"ok":False,"error":f"File lock: {e}"}), 500
+        
     return jsonify({"ok":True,"presence":state})
-# PRESENCE_API_V02
-PRESENCE_FILE = EXECUTIVE_DIR / "presence_state.json"
-
-@app.route("/api/presence", methods=["GET","POST"])
-def presence_api():
-    if request.method == "GET":
-        return jsonify(load_json(PRESENCE_FILE, {
-            "agent":"Fred",
-            "state":"IDLE",
-            "event":"none"
-        }))
-
-    data = request.get_json(silent=True) or {}
-    agent = str(data.get("agent","Fred")).strip()
-    state_name = str(data.get("state","PRESENT")).strip()
-    event = str(data.get("event","call")).strip()
-
-    if agent not in {"Fred","Bob","Cindy","Kai","Neo"}:
-        return jsonify({"ok":False,"error":"Unknown agent"}),400
-
-    presence = {
-        "agent": agent,
-        "state": state_name,
-        "event": event,
-    }
-
-    PRESENCE_FILE.write_text(
-        json.dumps(presence, indent=2),
-        encoding="utf-8"
-    )
-    return jsonify({"ok":True,"presence":presence})
 # PRESENCE_FRAME_API_V01
 @app.route("/api/presence/frame")
 def presence_frame():

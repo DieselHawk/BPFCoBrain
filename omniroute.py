@@ -199,10 +199,19 @@ class OmniRouter:
                 return answer
         except Exception as exc:
             print(f"[!] Local Ollama error: {type(exc).__name__}: {exc}")
+            # Check if user has explicitly disabled all outgoing traffic
             if os.environ.get("BPFCO_OFFLINE") == "1":
+                print("[!] BPFCO_OFFLINE is enabled. Blocking cloud fallback.")
                 return None
 
+
+
         # 3. Cloud Fallback (Anthropic)
+        # ONLY execute if BPFCO_OFFLINE is not set to "1"
+        if os.environ.get("BPFCO_OFFLINE") == "1":
+            print("[!] BPFCO_OFFLINE is enabled. Cloud fallback is disabled by choice.")
+            return None
+
         try:
             import anthropic
             client = anthropic.Anthropic()

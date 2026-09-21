@@ -1,32 +1,55 @@
 {
-  "generated_at": "2026-09-15T14:39:35.721292+00:00",
+  "generated_at": "2026-09-21T13:42:02.954256+00:00",
   "source_of_truth": "C:\\BPFCo\\BPFCoBrain",
   "persistent_memory_declared": true,
   "agents": {
     "CEO": {
-      "registered": true,
+      "registered": false,
       "workspace": "CEO",
       "files": []
     },
     "Bob_Finance": {
       "registered": true,
       "workspace": "Bob_Finance",
-      "files": []
+      "files": [
+        {
+          "name": "agent_config.json",
+          "path": "Bob_Finance\\agent_config.json",
+          "size": 257
+        }
+      ]
     },
     "Cindy_Secretary": {
       "registered": true,
       "workspace": "Cindy_Secretary",
-      "files": []
+      "files": [
+        {
+          "name": "agent_config.json",
+          "path": "Cindy_Secretary\\agent_config.json",
+          "size": 356
+        }
+      ]
     },
     "Kai_Legal": {
       "registered": true,
       "workspace": "Kai_Legal",
-      "files": []
+      "files": [
+        {
+          "name": "agent_config.json",
+          "path": "Kai_Legal\\agent_config.json",
+          "size": 277
+        }
+      ]
     },
     "Neo_Sales": {
       "registered": true,
       "workspace": "Neo_Sales",
       "files": [
+        {
+          "name": "agent_config.json",
+          "path": "Neo_Sales\\agent_config.json",
+          "size": 277
+        },
         {
           "name": "Leads_Pipeline_Test.md",
           "path": "Neo_Sales\\Leads_Pipeline_Test.md",
@@ -44,7 +67,7 @@
     {
       "name": "manifest.json",
       "path": "Shared_Context\\manifest.json",
-      "size": 201
+      "size": 202
     }
   ],
   "human_approval_file": {

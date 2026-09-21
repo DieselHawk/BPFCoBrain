@@ -1,6 +1,6 @@
 # CEO Work Plan
 
-**Generated:** 2026-09-16T08:58:23.745226+00:00
+**Generated:** 2026-09-21T13:42:03.613569+00:00
 
 ## Executive Direction
 
@@ -11,6 +11,10 @@ The CEO coordinates the specialist agents, reviews returned reports, prioritizes
 - Neo_Sales: report completed; next objective is active/queued ? Bridge task received and report returned to CEO.
 - Bob_Finance: report completed; next objective is active/queued ? Internal financial review completed; no external action executed.
 - Cindy_Secretary: report completed; next objective is active/queued ? Cindy_Secretary received task: Review administrative, communication, and scheduling items. Internal execution framework completed the worker handoff. No external action was executed.
+
+## Local CEO Reasoning
+
+Local CEO reasoning is only enabled in offline mode.
 
 ## Immediate Specialist Priorities
 
@@ -44,6 +48,15 @@ Role status: registered=True; directory=True
 - **Neo_Sales** — `20260916T074544673992Z-Neo_Sales` (queued)
 - **Bob_Finance** — `20260916T080749472755Z-Bob_Finance` (queued)
 - **Cindy_Secretary** — `20260916T082918526365Z-Cindy_Secretary` (queued)
+- **Bob_Finance** — `20260920T073657125986Z-Bob_Finance` (queued)
+- **Bob_Finance** — `20260920T074316476651Z-Bob_Finance` (queued)
+- **Bob_Finance** — `20260920T102238405095Z-Bob_Finance` (queued)
+- **Kai_Legal** — `20260920T102348930292Z-Kai_Legal` (queued)
+- **Neo_Sales** — `20260920T110854956320Z-Neo_Sales` (queued)
+- **Bob_Finance** — `20260921T094701633062Z-Bob_Finance` (queued)
+- **Cindy_Secretary** — `20260921T094821320898Z-Cindy_Secretary` (queued)
+- **Neo_Sales** — `20260921T095059735520Z-Neo_Sales` (queued)
+- **Cindy_Secretary** — `20260921T095604413089Z-Cindy_Secretary` (queued)
 
 ## Agent Reports
 
@@ -63,4 +76,4 @@ Role status: registered=True; directory=True
 
 - New tasks dispatched this cycle: 0
 - Reports assessed this cycle: 3
-- Current queued tasks: 4
+- Current queued tasks: 13

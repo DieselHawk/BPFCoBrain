@@ -58,9 +58,11 @@ def index_data():
             connections=len(edges)
 
     nodes=[]
-    arr=first_key(data,"notes")
-    if isinstance(arr,list):
-        for n in arr:
+    notes_dict=first_key(data,"notes")
+    if isinstance(notes_dict,dict):
+        nodes=list(notes_dict.keys())
+    elif isinstance(notes_dict,list):
+        for n in notes_dict:
             if isinstance(n,dict):
                 p=n.get("path") or n.get("file") or n.get("source") or n.get("title")
                 if p: nodes.append(Path(str(p)).stem)
@@ -68,6 +70,23 @@ def index_data():
                 nodes.append(Path(n).stem)
     nodes=list(dict.fromkeys(nodes))
 
+    edges=[]
+    if isinstance(notes_dict,dict):
+        for src_id,info in notes_dict.items():
+            if isinstance(info,dict):
+                links=info.get("links")
+                if isinstance(links,list):
+                    for target in links:
+                        edges.append({"source":src_id,"target":target})
+    elif isinstance(raw,list):
+        for e in raw:
+            if isinstance(e,dict):
+                a=e.get("source") or e.get("from") or e.get("from_note") or e.get("source_path")
+                b=e.get("target") or e.get("to") or e.get("to_note") or e.get("target_path")
+                if a and b: edges.append({"source":Path(str(a)).stem,"target":Path(str(b)).stem})
+            elif isinstance(e,(list,tuple)) and len(e)>=2:
+                edges.append({"source":Path(str(e[0])).stem,"target":Path(str(e[1])).stem})
+    
     return {
         "notes":int(notes) if str(notes).isdigit() else len(nodes),
         "words":int(words) if str(words).isdigit() else 0,
@@ -77,8 +96,6 @@ def index_data():
         "nodes":nodes[:250],
         "source":str(INDEX.relative_to(ROOT)).replace("\\","/")
     }
-
-def system():
     def exists(p): return (ROOT/p).exists()
     try:
         urllib.request.urlopen("http://127.0.0.1:11434/api/tags",timeout=1)
