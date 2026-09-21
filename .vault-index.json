@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-09-20T11:33:01.368985",
+  "timestamp": "2026-09-21T09:35:19.846736",
   "vault_path": "C:\\BPFCo\\BPFCoBrain",
-  "note_count": 850,
+  "note_count": 855,
   "notes": {
     "AGENTS": {
       "path": "AGENTS.md",
@@ -9566,6 +9566,41 @@
       "links": [],
       "frontmatter": {}
     },
+    "bob": {
+      "path": "Brain\\Executive\\Personas\\bob.md",
+      "folder": "Personas",
+      "word_count": 112,
+      "links": [],
+      "frontmatter": {}
+    },
+    "cindy": {
+      "path": "Brain\\Executive\\Personas\\cindy.md",
+      "folder": "Personas",
+      "word_count": 117,
+      "links": [],
+      "frontmatter": {}
+    },
+    "fred": {
+      "path": "Brain\\Executive\\Personas\\fred.md",
+      "folder": "Personas",
+      "word_count": 141,
+      "links": [],
+      "frontmatter": {}
+    },
+    "kai": {
+      "path": "Brain\\Executive\\Personas\\kai.md",
+      "folder": "Personas",
+      "word_count": 111,
+      "links": [],
+      "frontmatter": {}
+    },
+    "neo": {
+      "path": "Brain\\Executive\\Personas\\neo.md",
+      "folder": "Personas",
+      "word_count": 115,
+      "links": [],
+      "frontmatter": {}
+    },
     "command-kilo": {
       "path": "00-Inbox\\workspace\\.graphify-venv\\Lib\\site-packages\\graphify\\command-kilo.md",
       "folder": "graphify",
@@ -10669,6 +10704,11 @@
     "CEO_Morning_Report": [],
     "CEO_Work_Plan": [],
     "SUPER_BRAIN_TARGET": [],
+    "bob": [],
+    "cindy": [],
+    "fred": [],
+    "kai": [],
+    "neo": [],
     "command-kilo": [],
     "skill-agents": [],
     "skill-aider": [],
@@ -11521,6 +11561,11 @@
     "CEO_Morning_Report": [],
     "CEO_Work_Plan": [],
     "SUPER_BRAIN_TARGET": [],
+    "bob": [],
+    "cindy": [],
+    "fred": [],
+    "kai": [],
+    "neo": [],
     "command-kilo": [],
     "skill-agents": [],
     "skill-aider": [],
@@ -11555,8 +11600,8 @@
     "update": []
   },
   "stats": {
-    "total_notes": 850,
-    "total_words": 946022,
+    "total_notes": 855,
+    "total_words": 946618,
     "connections": 0,
     "unresolved_links": 0
   }
