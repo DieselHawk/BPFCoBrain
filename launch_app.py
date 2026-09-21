@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import subprocess
 import time
 import os
@@ -6,6 +6,15 @@ import sys
 
 ROOT = Path(r"C:\BPFCo\BPFCoBrain")
 PYTHON = sys.executable
+
+from boot_network import configure_environment
+
+BOOT_MODE = configure_environment()
+print(f"[BPFCoBrain] Network mode: {BOOT_MODE.upper()}")
+print(
+    "[BPFCoBrain] Online intelligence: "
+    + ("ENABLED" if BOOT_MODE == "online" else "DISABLED")
+)
 
 
 def run_step(script):
