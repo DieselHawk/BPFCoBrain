@@ -1,247 +1,354 @@
-﻿<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BPFCo Super Brain</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#070b10;color:#e9eff4;font:14px Segoe UI,Arial}
-header{height:64px;padding:12px 18px;border-bottom:1px solid #26323d;display:flex;align-items:center;justify-content:space-between}
-h1{margin:0;font-size:21px;letter-spacing:.07em}.muted{color:#82909d;font-size:12px}.ok{color:#64db97}.warn{color:#f0c26b}
-main{display:grid;grid-template-columns:210px 1fr;height:calc(100vh - 64px)}
-nav{background:#0d141b;border-right:1px solid #26323d;padding:12px}.nav{width:100%;text-align:left;margin:4px 0;padding:10px 12px;border:1px solid #202c36;border-radius:8px;background:#111a22;color:#dce5ec;cursor:pointer}.nav.active{border-color:#6cbfe8;background:#172631}
-.content{padding:14px;overflow:auto}.view{display:none}.view.active{display:block}.grid{display:grid;gap:12px}.g2{grid-template-columns:1.4fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
-.panel{background:#10171f;border:1px solid #27343f;border-radius:12px;padding:14px;margin-bottom:12px}.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.card{padding:11px;border:1px solid #293641;border-radius:9px;background:#0d141b}.face{width:42px;height:42px;border-radius:50%;background:linear-gradient(145deg,#294151,#13212b);display:grid;place-items:center;font-weight:800;font-size:20px;margin-bottom:7px}
-.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{padding:11px;border:1px solid #293641;border-radius:9px}.stat b{display:block;font-size:20px;margin-top:3px}
-.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #202b35}.row:last-child{border:0}
-button,input,select,textarea{font:inherit}.btn{padding:8px 11px;border:1px solid #2a3742;border-radius:8px;background:#17232d;color:#e7eef3;cursor:pointer}.btn:hover{filter:brightness(1.12)}textarea{width:100%;height:90px;background:#0b1117;color:#eef3f6;border:1px solid #2a3742;border-radius:8px;padding:9px}select{background:#0b1117;color:#eef3f6;border:1px solid #2a3742;border-radius:8px;padding:8px}
-pre{white-space:pre-wrap;background:#0a1016;border:1px solid #202b35;border-radius:8px;padding:10px;max-height:300px;overflow:auto}
-iframe{width:100%;height:72vh;border:0;border-radius:10px;background:#fff}
-.stage{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.person{text-align:center;padding:15px;border:1px solid #293640;border-radius:10px;background:#0d141b}.person.active{border-color:#6fc4ee}.portrait{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;margin:auto auto 8px;background:linear-gradient(145deg,#294151,#14212a);font-size:28px;font-weight:800}
-@media(max-width:1050px){main{grid-template-columns:1fr}nav{display:flex;gap:5px;overflow:auto}.nav{width:auto}.g2,.g3{grid-template-columns:1fr}.cards,.stage{grid-template-columns:repeat(2,1fr)}.statgrid{grid-template-columns:1fr 1fr}}
-</style></head><body>
-<header><div><div class=muted>BPFCo · LOCAL COMMAND CENTER</div><h1>SUPER BRAIN</h1></div><div class=muted><span class=ok>LOCAL</span> · <span id=clock></span></div></header>
-<main>
-<nav>
-<button class="nav active" onclick="show('overview',this)">◉ Overview</button>
-<button class=nav onclick="show('brain',this)">✦ Brain</button>
-<button class=nav onclick="show('agents',this)">◎ Agents</button>
-<button class=nav onclick="show('work',this)">▣ Work</button>
-<button class=nav onclick="show('security',this)">⚿ Security</button>
-<button class=nav onclick="show('meeting',this)">◌ Meeting</button>
-</nav>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>BPFCo Super Brain</title>
+    <style>
+        *{box-sizing:border-box}
+        body{margin:0;background:#070b10;color:#e9eff4;font:14px 'Segoe UI',Arial;overflow:hidden;height:100vh}
+        
+        /* EXTREME OVERLAY - NO CONFLICTS */
+        #brainDock {
+            position: fixed !important;
+            left: 20px !important;
+            top: 80px !important;
+            z-index: 999999 !important;
+            width: 280px !important;
+            background: #0d141b !important;
+            border: 3px solid #6cbfe8 !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            box-shadow: 0 0 20px #000 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        #brainDock.collapsed {
+            width: 50px !important;
+            height: 50px !important;
+            padding: 0 !important;
+            border-radius: 25px !important;
+            overflow: hidden !important;
+        }
+        #brainDock.collapsed h4, 
+        #brainDock.collapsed small, 
+        #brainDock.collapsed input, 
+        #brainDock.collapsed select, 
+        #brainDock.collapsed #domainButtons, 
+        #brainDock.collapsed .btn {
+            display: none !important;
+        }
+        #brainDock h4 {
+            margin: 0 0 8px 0;
+            color: #78c8ef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .dock-toggle {
+            background: #6cbfe8 !important;
+            color: #000 !important;
+            border: 2px solid #fff !important;
+            border-radius: 4px !important;
+            width: 24px !important;
+            height: 24px !important;
+            cursor: pointer !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        #brainDock input, #brainDock select {
+            width: 100%; margin: 6px 0; padding: 8px; background: #0b1218; color: #fff; border: 1px solid #30414d; border-radius: 5px;
+        }
+        #domainButtons { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0; }
+        .bd { padding: 3px 7px; background: #1a2533; color: #cddae3; border: 1px solid #30414d; border-radius: 10px; cursor: pointer; font-size: 10px; }
 
-<section class=content>
-<div id=overview class="view active">
-<div class="grid g2">
-<div class=panel><div class=head><b>Fred · CEO</b><span class=ok>ONLINE</span></div><div class=muted>Executive control plane</div><div id=agentMini style="margin-top:12px"></div></div>
-<div class=panel><div class=head><b>Brain Metrics</b><span class=muted>live</span></div><div class=statgrid id=metrics></div></div>
-</div>
-<div class=grid g3>
-<div class=panel><div class=head><b>System</b><span class=muted>local</span></div><div id=sys></div></div>
-<div class=panel><div class=head><b>Queue</b></div><pre id=q>Loading…</pre></div>
-<div class=panel><div class=head><b>Reports</b></div><pre id=r>Loading…</pre></div>
-</div>
-<div class=panel><div class=head><b>CEO Work Plan</b></div><pre id=p>Loading…</pre></div>
-</div>
+        /* HEADER */
+        header{height:64px;padding:0 18px;border-bottom:1px solid #26323d;display:flex;align-items:center;justify-content:space-between;background:#0d141b;position:relative;z-index:10}
+        h1{margin:0;font-size:20px;letter-spacing:.05em;color:#fff}
+        .muted{color:#82909d;font-size:11px}
+        .ok{color:#64db97}
+        .warn{color:#f0c26b}
 
-<div id=brain class=view style="position:relative">
-<!-- BPFCO_BRAIN_DOCK_V02 -->
-<style>
-#brainDock{position:absolute;left:16px;top:16px;z-index:20;width:280px;background:rgba(8,14,21,.94);border:1px solid #30414d;border-radius:12px;padding:12px;box-shadow:0 14px 35px rgba(0,0,0,.38)}
-#brainDock h4{margin:0 0 4px;color:#78c8ef}
-#brainDock input,#brainDock select{width:100%;margin:6px 0;padding:8px;background:#0b1218;color:#e7eef3;border:1px solid #2b3b47;border-radius:7px}
-#domainButtons{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
-.bd{padding:5px 8px;background:#14212a;color:#cddae3;border:1px solid #2b3d49;border-radius:999px;cursor:pointer;font-size:10px}
-</style>
+        /* MAIN LAYOUT */
+        main{display:grid;grid-template-columns:210px 1fr;height:calc(100vh - 64px)}
+        nav{background:#0d141b;border-right:1px solid #26323d;padding:12px}
+        .nav{width:100%;text-align:left;margin:4px 0;padding:10px 12px;border:1px solid #202c36;border-radius:8px;background:#111a22;color:#dce5ec;cursor:pointer}
+        .nav.active{border-color:#6cbfe8;background:#172631}
+        .content{padding:14px;overflow:auto;position:relative}
+        .view{display:none}
+        .view.active{display:block}
+        .grid{display:grid;gap:12px}
+        .g2{grid-template-columns:1.4fr 1fr}
+        .g3{grid-template-columns:repeat(3,1fr)}
+        .panel{background:#10171f;border:1px solid #27343f;border-radius:12px;padding:14px;margin-bottom:12px}
+        .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+        .stat{padding:11px;border:1px solid #293641;border-radius:9px}
+        .stat b{display:block;font-size:20px;margin-top:3px}
+        .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #202b35}
+        .btn{padding:8px 11px;border:1px solid #2a3742;border-radius:8px;background:#17232d;color:#e7eef3;cursor:pointer}
+        pre{white-space:pre-wrap;background:#0a1016;border:1px solid #202b35;border-radius:8px;padding:10px;max-height:300px;overflow:auto}
+        iframe{width:100%;height:70vh;border:0;border-radius:10px;background:#fff}
+    </style>
+</head>
+<body>
+
 <div id="brainDock">
-<h4>SUPER BRAIN</h4>
-<small>Real BPFCoBrain graph controls</small>
-<input id="brainSearch" placeholder="Search notes / concepts">
-<div id="domainButtons"></div>
-<select id="agentCall">
-<option value="">Call an agent…</option>
-<option>Fred</option><option>Bob</option><option>Cindy</option><option>Kai</option><option>Neo</option>
-</select>
-<button class="btn" style="width:100%" onclick="callBrainAgent()">Bring agent to presence</button>
-</div>
-<script>
-(function(){
-function frame(){return document.querySelector('iframe')}
-function doc(){const f=frame();return f&&f.contentDocument?f.contentDocument:null}
-window.bpfcoBrainSync=function(){
- const d=doc();if(!d)return;
- const ns=[...d.querySelectorAll('#graph circle')].map(x=>x.__data__).filter(Boolean);
- const domains=[...new Set(ns.map(n=>n.folder).filter(Boolean))].sort().slice(0,12);
- document.getElementById('domainButtons').innerHTML=domains.map(x=>'<button class="bd" onclick="filterBrainDomain('+JSON.stringify(x)+')">'+String(x).replace(/[&<>]/g,'')+'</button>').join('');
-};
-window.filterBrainDomain=function(x){
- const d=doc();if(!d)return;
- const i=d.getElementById('searchInput');if(i){i.value=x;i.dispatchEvent(new Event('input',{bubbles:true}))}
-};
-window.callBrainAgent=function(){
- const n=document.getElementById('agentCall').value;if(!n)return;
- const b=[...document.querySelectorAll('.nav')].find(x=>x.textContent.includes('Meeting'));
- if(b)show('meeting',b);
- if(typeof speaker==='function')speaker(n.toLowerCase());
-};
-setInterval(bpfcoBrainSync,3000);
-setTimeout(bpfcoBrainSync,500);
-})();
-</script>
-<div class=panel><div class=head><b>Knowledge Universe</b><span class=muted>existing BPFCoBrain graph</span></div><iframe src="/brain-graph"></iframe></div>
+    <h4 id="dockTitle" onclick="toggleDock()">SUPER BRAIN <button class="dock-toggle" onclick="toggleDock()">×</button></h4>
+    <small class="muted">Real BPFCoBrain graph controls</small>
+    <input id="brainSearch" placeholder="Search notes / concepts">
+    <div id="domainButtons"></div>
+    <select id="agentCall">
+        <option value="">Call an agent…</option>
+        <option>Fred</option><option>Bob</option><option>Cindy</option><option>Kai</option><option>Neo</option>
+    </select>
+    <button class="btn" style="width:100%" onclick="callBrainAgent()">Bring agent to presence</button>
 </div>
 
-<div id=agents class=view>
-<div class=panel><div class=head><b>Agent Fleet</b><span class=muted>live from CEO controller</span></div><div class=cards id=agentCards></div></div>
-<div class=panel><div class=head><b>Dispatch</b><span class=muted>uses existing AgentBridge</span></div>
-<select id=who><option value=Bob_Finance>Bob — Finance</option><option value=Cindy_Secretary>Cindy — Secretary</option><option value=Kai_Legal>Kai — Legal</option><option value=Neo_Sales>Neo — Sales</option></select>
-<textarea id=obj placeholder="Objective for the agent…"></textarea><button class=btn onclick=dispatch()>Queue task</button><pre id=dr></pre></div>
-</div>
-
-<div id=work class=view>
-<div class=grid g2><div class=panel><div class=head><b>Task Queue</b></div><pre id=q2>Loading…</pre></div><div class=panel><div class=head><b>Agent Reports</b></div><pre id=r2>Loading…</pre></div></div>
-<div class=panel><div class=head><b>Execution State</b></div><div class=muted>External execution remains approval-gated.</div></div>
-</div>
-
-<div id=security class=view>
-<div class=grid g2>
-<div class=panel><div class=head><b>Approval Gate</b><span class=warn>HUMAN REQUIRED</span></div><div class=muted>Terminal approval remains required for external actions.</div><div class=row><span>Current controller gate</span><b id=approvalState>Loading…</b></div><div class=row><span>USB crypto token</span><b class=warn>ADAPTER RESERVED</b></div><div class=row><span>Recovery key</span><b class=warn>NOT CONNECTED</b></div></div>
-<div class=panel><div class=head><b>Security Rules</b></div><div class=row><span>No USB</span><b class=warn>REJECT</b></div><div class=row><span>Invalid token</span><b class=warn>REJECT</b></div><div class=row><span>Valid token + Enter</span><b class=ok>ACCEPT</b></div></div>
-</div>
-</div>
-
-<div id=meeting class=view>
-<!-- PRESENCE_UI_V01 -->
-<style>
-.presence-room{
-display:grid;grid-template-columns:210px 1fr;gap:14px;
-background:radial-gradient(circle at 50% 35%,#1a3344,#0b1118 65%);
-border:1px solid #2b3d49;border-radius:12px;padding:15px
-}
-.presence-agent{
-padding:10px;border:1px solid #2a3944;border-radius:9px;
-background:#0d141b;cursor:pointer
-}
-.presence-agent.active{border-color:#6fc5ee;box-shadow:0 0 18px rgba(111,197,238,.12)}
-.presence-face{
-width:92px;height:92px;border-radius:50%;margin:20px auto 10px;
-display:grid;place-items:center;font-size:34px;font-weight:800;
-background:linear-gradient(145deg,#2d4b5e,#13212a)
-}
-.presence-main{text-align:center;border:1px solid #2a3944;border-radius:11px;padding:12px;min-height:230px}
-.presence-actions{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:10px}
-@media(max-width:800px){.presence-room{grid-template-columns:1fr}}
-</style>
-
-<div class="panel" id="presencePanel">
-  <div class="head">
-    <b>Presence Room</b>
-    <span class="muted">local adapter · VRM-ready</span>
-  </div>
-
-  <div class="presence-room">
-    <div id="presenceFleet"></div>
-
-    <div class="presence-main">
-      <div class="muted">CURRENT AGENT</div>
-      <div class="presence-face" id="presenceFace">F</div>
-      <h2 id="presenceName">Fred</h2>
-      <div class="muted" id="presenceRole">CEO</div>
-      <div class="presence-actions">
-        <button class="btn" onclick="presenceCall()">Call in</button>
-        <button class="btn" onclick="presenceSpeak()">Speak</button>
-        <button class="btn" onclick="presenceListen()">Listening</button>
-        <button class="btn" onclick="presenceClear()">Return</button>
-      </div>
-      <div class="notice" style="margin-top:12px">
-        Current voice = browser system voice. VRM + lip-sync adapter replaces this later.
-      </div>
+<header>
+    <div style="display:flex; align-items:center; gap:20px">
+        <div style="display:flex; flex-direction:column">
+            <div class="muted">BPFCo · LOCAL COMMAND CENTER</div>
+            <h1 style="margin:0">SUPER BRAIN <span style="font-size:11px; color:#64db97; margin-left:5px">[Hermes 3 Local]</span></h1>
+        </div>
+        <div id="headerDock" style="display:flex; align-items:center; gap:12px; background:rgba(0,0,0,0.3); padding:4px 12px; border-radius:15px; border:1px solid #30414d; height:32px; font-size:11px">
+        </div>
     </div>
-  </div>
-</div>
+    <div class="muted"><span class="ok">LOCAL</span> · <span id="clock"></span></div>
+</header>
+
+<main>
+    <nav>
+        <button class="nav active" onclick="show('overview',this)">◉ Overview</button>
+        <button class="nav" onclick="show('brain',this)">✦ Brain</button>
+        <button class="nav" onclick="show('agents',this)">◎ Agents</button>
+        <button class="nav" onclick="show('work',this)">▣ Work</button>
+        <button class="nav" onclick="show('security',this)">⚿ Security</button>
+        <button class="nav" onclick="show('meeting',this)">◌ Meeting</button>
+    </nav>
+
+    <section class="content">
+        <div id="overview" class="view active">
+            <div class="grid g2">
+                <div class="panel">
+                    <div class="head"><b>Fred · CEO</b><span class="ok">ONLINE</span></div>
+                    <div class="muted">Executive control plane</div>
+                    <div id="agentMini" style="margin-top:12px"></div>
+                </div>
+                <div class="panel">
+                    <div class="head"><b>Brain Metrics</b><span class="muted">live</span></div>
+                    <div class="statgrid" id="metrics"></div>
+                </div>
+            </div>
+            <div class="grid g3" style="margin-top:12px">
+                <div class="panel"><div class="head"><b>System</b></div><div id="sys"></div></div>
+                <div class="panel"><div class="head"><b>Queue</b></div><pre id="q">Loading...</pre></div>
+                <div class="panel"><div class="head"><b>Reports</b></div><pre id="r">Loading...</pre></div>
+            </div>
+            <div class="panel" style="margin-top:12px">
+                <div class="head"><b>CEO Work Plan</b></div>
+                <pre id="p">Loading...</pre>
+            </div>
+        </div>
+
+        <div id="brain" class="view">
+            <div class="panel">
+                <div class="head"><b>Knowledge Universe</b><span class="muted">existing BPFCoBrain graph</span></div>
+                <iframe src="/brain-graph"></iframe>
+            </div>
+        </div>
+
+        <div id="agents" class="view">
+            <div class="panel">
+                <div class="head"><b>Agent Fleet</b></div>
+                <div class="cards" id="agentCards" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px"></div>
+            </div>
+            <div class="panel">
+                <div class="head"><b>Dispatch</b></div>
+                <select id="who" style="width:100%; margin-bottom:10px; padding:8px; background:#0b1218; color:#fff; border:1px solid #30414d">
+                    <option value="Bob_Finance">Bob — Finance</option>
+                    <option value="Cindy_Secretary">Cindy — Secretary</option>
+                    <option value="Kai_Legal">Kai — Legal</option>
+                    <option value="Neo_Sales">Neo — Sales</option>
+                </select>
+                <textarea id="obj" style="width:100%; height:80px; background:#0b1218; color:#fff; border:1px solid #30414d; padding:8px; margin-bottom:10px" placeholder="Objective..."></textarea>
+                <button class="btn" onclick="dispatch()">Queue task</button>
+                <pre id="dr" style="margin-top:10px"></pre>
+            </div>
+        </div>
+
+        <div id="work" class="view">
+            <div class="grid g2">
+                <div class="panel"><div class="head"><b>Task Queue</b></div><pre id="q2">Loading...</pre></div>
+                <div class="panel"><div class="head"><b>Agent Reports</b></div><pre id="r2">Loading...</pre></div>
+            </div>
+            <div class="panel" style="margin-top:12px">
+                <div class="head"><b>Execution State</b></div>
+                <div class="muted">External execution remains approval-gated.</div>
+            </div>
+        </div>
+
+        <div id="security" class="view">
+            <div class="grid g2">
+                <div class="panel">
+                    <div class="head"><b>Approval Gate</b><span class="warn">HUMAN REQUIRED</span></div>
+                    <div class="row"><span>Current controller gate</span><b id="approvalState">Loading...</b></div>
+                </div>
+                <div class="panel">
+                    <div class="head"><b>Security Rules</b></div>
+                    <div class="row"><span>Valid token + Enter</span><b class="ok">ACCEPT</b></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="meeting" class="view">
+            <div class="panel">
+                <div class="head"><b>Presence Room</b></div>
+                <div style="display:grid; grid-template-columns:200px 1fr; gap:20px; background:#0a1016; padding:20px; border-radius:10px">
+                    <div id="presenceFleet"></div>
+                    <div style="text-align:center">
+                        <div id="presenceFace" style="width:80px; height:80px; background:#1a2533; border-radius:50%; margin:0 auto 10px; display:grid; place-items:center; font-size:30px; font-weight:bold">F</div>
+                        <h2 id="presenceName">Fred</h2>
+                        <div id="presenceRole" class="muted">CEO</div>
+                        <div style="margin-top:20px; display:flex; gap:10px; justify-content:center">
+                            <button class="btn" onclick="presenceCall()">Call in</button>
+                            <button class="btn" onclick="presenceSpeak()">Speak</button>
+                            <button class="btn" onclick="presenceClear()">Return</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
 
 <script>
-const presenceAgents={
- Fred:["Fred","CEO","F"],
- Bob:["Bob","Finance","B"],
- Cindy:["Cindy","Secretary","C"],
- Kai:["Kai","Legal","K"],
- Neo:["Neo","Sales","N"]
-};
-let presenceCurrent="Fred";
+    const $ = id => document.getElementById(id);
+    let currentAgent = 'fred';
 
-function renderPresence(){
- const list=document.getElementById("presenceFleet");
- list.innerHTML=Object.entries(presenceAgents).map(([n,v])=>
- `<div class="presence-agent ${n===presenceCurrent?'active':''}" onclick="selectPresence('${n}')">
-   <b>${n}</b><div class="muted">${v[1]}</div>
- </div>`).join("");
+    function show(id, btn) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
+        $(id).classList.add('active');
+        btn.classList.add('active');
+    }
 
- const v=presenceAgents[presenceCurrent];
- document.getElementById("presenceFace").textContent=v[2];
- document.getElementById("presenceName").textContent=v[0];
- document.getElementById("presenceRole").textContent=v[1];
-}
+    function toggleDock() {
+        const dock = $('brainDock');
+        if(!dock) return;
+        dock.classList.toggle('collapsed');
+        const title = $('dockTitle');
+        if(!title) return;
+        if (dock.classList.contains('collapsed')) {
+            title.innerHTML = '<button class="dock-toggle" onclick="toggleDock()">+</button>';
+        } else {
+            title.innerHTML = 'SUPER BRAIN <button class="dock-toggle" onclick="toggleDock()">×</button>';
+        }
+    }
 
-function selectPresence(n){
- presenceCurrent=n;
- renderPresence();
-}
+    async function get(u, opt = {}) {
+        const r = await fetch(u, opt);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+    }
 
-async function presenceEvent(state,event){
- await fetch("/api/presence",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({agent:presenceCurrent,state:event==="return"?"IDLE":state,event:event})
- });
- renderPresence();
-}
+    async function load() {
+        try {
+            const d = await get('/api/status');
+            
+            const headerDock = $('headerDock');
+            if (headerDock) {
+                headerDock.innerHTML = [
+                    {l:'Queue', v:d.queued_tasks},
+                    {l:'Reports', v:d.reports},
+                    {l:'Mem', v:d.persistent_memory?'OK':'OFF'}
+                ].map(i => `<div style="display:flex;gap:5px"><span style="color:#78c8ef;font-weight:bold;font-size:9px">${i.l}</span><b>${i.v}</b></div>`).join('');
+            }
 
-function presenceCall(){
- presenceEvent("PRESENT","call");
- speech(`${presenceCurrent} is joining the meeting.`);
-}
+            $('metrics').innerHTML = [['Queued',d.queued_tasks],['Reports',d.reports],['Approval',d.human_approval],['Memory',d.persistent_memory]].map(x => `<div class="stat"><span class="muted">${x[0]}</span><b>${x[1]}</b></div>`).join('');
+            $('sys').innerHTML = [['Controller',d.controller],['Memory',d.persistent_memory],['Approval',d.human_approval]].map(x => `<div class="row"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');
+            $('approvalState').textContent = d.human_approval ? 'ENABLED' : 'CHECK';
+            $('approvalState').className = d.human_approval ? 'ok' : 'warn';
 
-function presenceSpeak(){
- presenceEvent("SPEAKING","speak");
- speech(`${presenceCurrent} is speaking.`);
-}
+            const states = d.live_states || {};
+            $('agentCards').innerHTML = Object.entries(d.agents).map(([k,v]) => {
+                const s = states[k.split('_')[0]] || {state:'READY'};
+                return `<div class="panel" style="background:#0d141b; padding:10px; border-radius:8px">
+                    <div style="font-weight:bold">${k.replace('_',' ')}</div>
+                    <div class="muted">${v.role}</div>
+                    <div class="${s.state==='WORKING'?'ok':'muted'}">${s.state}</div>
+                </div>`;
+            }).join('');
+            
+            $('agentMini').innerHTML = Object.entries(d.agents).map(([k,v]) => {
+                const s = states[k.split('_')[0]] || {state:'READY'};
+                return `<div class="row"><span>${k.replace('_',' ')}</span><b class="${s.state==='WORKING'?'ok':'muted'}">${s.state}</b></div>`;
+            }).join('');
 
-function presenceListen(){
- presenceEvent("LISTENING","listen");
- speech(`${presenceCurrent} is listening.`);
-}
+            const q = await get('/api/queue'), r = await get('/api/reports'), p = await get('/api/plan');
+            $('q').textContent = $('q2').textContent = JSON.stringify(q, null, 2);
+            $('r').textContent = $('r2').textContent = JSON.stringify(r, null, 2);
+            $('p').textContent = p.content;
 
-function presenceClear(){
- presenceEvent("IDLE","return");
- speech(`${presenceCurrent} is returning to the room.`);
-}
+        } catch (e) {
+            console.error("Load error:", e);
+            if($('q')) $('q').textContent = "API Error: " + e.message;
+        }
+    }
 
-function speech(text){
- if(!("speechSynthesis" in window))return;
- window.speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);
- u.rate=.95;
- u.pitch=1;
- window.speechSynthesis.speak(u);
-}
+    async function dispatch() {
+        const obj = $('obj').value.trim();
+        if (!obj) return;
+        try {
+            const res = await get('/api/dispatch', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({agent: $('who').value, objective: obj, priority: 'normal'})
+            });
+            $('dr').textContent = JSON.stringify(res, null, 2);
+            $('obj').value = '';
+            load();
+        } catch(e) {
+            $('dr').textContent = "Dispatch failed: " + e.message;
+        }
+    }
 
-renderPresence();
+    (function() {
+        window.callBrainAgent = async function() {
+            const name = $('agentCall').value;
+            if (!name) return;
+            const nav = document.querySelector('.nav');
+            if (nav) show('meeting', nav);
+            if (typeof speaker === 'function') speaker(name.toLowerCase());
+        };
+
+        window.bpfcoBrainSync = function() {
+            const iframe = document.querySelector('iframe');
+            if (!iframe || !iframe.contentDocument) return;
+            const nodes = [...iframe.contentDocument.querySelectorAll('#graph circle')].map(x => x.__data__).filter(Boolean);
+            const domains = [...new Set(nodes.map(n => n.folder).filter(Boolean))].sort().slice(0,12);
+            const db = $('domainButtons');
+            if (db) db.innerHTML = domains.map(x => `<button class="bd" onclick="filterBrainDomain('${x}')">${x}</button>`).join('');
+        };
+
+        window.filterBrainDomain = function(val) {
+            const iframe = document.querySelector('iframe');
+            if (!iframe || !iframe.contentDocument) return;
+            const search = iframe.contentDocument.getElementById('brainSearch');
+            if (search) { search.value = val; search.dispatchEvent(new Event('input', {bubbles:true})); }
+        };
+
+        setInterval(bpfcoBrainSync, 3000);
+    })();
+
+    setInterval(() => { if($('clock')) $('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
+    load();
+    setInterval(load, 10000);
 </script>
-<div class=panel><div class=head><b>Staff Meeting Mode</b><span class=muted>five agents</span></div><div class=stage id=stage></div><div style="margin-top:12px"><button class=btn onclick=speaker('fred')>Fred speaks</button> <button class=btn onclick=speaker('bob')>Bob speaks</button> <button class=btn onclick=speaker('cindy')>Cindy speaks</button> <button class=btn onclick=speaker('kai')>Kai speaks</button> <button class=btn onclick=speaker('neo')>Neo speaks</button></div><div class=muted style="margin-top:10px">VRM / voice / lip-sync plugs into this interface later.</div></div>
-</div>
-</section></main>
-
-<script>
-let current='fred';const A={fred:['Fred','CEO','F'],bob:['Bob','Finance','B'],cindy:['Cindy','Secretary','C'],kai:['Kai','Legal','K'],neo:['Neo','Sales','N']};
-const $=x=>document.getElementById(x);
-function show(id,b){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
-function renderAgents(d){$('agentCards').innerHTML=Object.entries(d.agents).map(([k,v])=>`<div class=card><div class=face>${A[k.toLowerCase()]?.[2]||k[0]}</div><b>${k.replace('_',' ')}</b><div class=muted>${v.role}</div><div class=${v.registered?'ok':'warn'}>${v.registered?'REGISTERED':'NOT REGISTERED'}</div><div class=muted>workspace: ${v.workspace_files}</div></div>`).join('');$('agentMini').innerHTML=Object.entries(d.agents).map(([k,v])=>`<div class=row><span>${k.replace('_',' ')}</span><b class=${v.registered?'ok':'warn'}>${v.registered?'READY':'CHECK'}</b></div>`).join('')}
-async function get(u,o){return fetch(u,o).then(x=>x.json())}
-async function load(){try{let d=await get('/api/status');renderAgents(d);$('metrics').innerHTML=[['Queued',d.queued_tasks],['Reports',d.reports],['Approval',d.human_approval],['Memory',d.persistent_memory]].map(x=>`<div class=stat><span class=muted>${x[0]}</span><b>${x[1]}</b></div>`).join('');$('approvalState').textContent=d.human_approval?'ENABLED':'CHECK';$('approvalState').className=d.human_approval?'ok':'warn';$('sys').innerHTML=[['Controller',d.controller],['Persistent memory',d.persistent_memory],['Human approval',d.human_approval]].map(x=>`<div class=row><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');let q=await get('/api/queue'),r=await get('/api/reports'),p=await get('/api/plan');$('q').textContent=$('q2').textContent=JSON.stringify(q,null,2);$('r').textContent=$('r2').textContent=JSON.stringify(r,null,2);$('p').textContent=p.content}catch(e){$('q').textContent='Dashboard API unavailable: '+e}}
-async function dispatch(){let o=$('obj').value.trim();if(!o)return;$('dr').textContent=JSON.stringify(await get('/api/dispatch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:$('who').value,objective:o,priority:'normal'})}),null,2);$('obj').value='';load()}
-function speaker(id){current=id;renderStage();$('msg')?.textContent=''}
-function renderStage(){$('stage').innerHTML=Object.entries(A).map(([id,a])=>`<div class="person ${id===current?'active':''}"><div class=portrait>${a[2]}</div><b>${a[0]}</b><div class=muted>${a[1]}</div></div>`).join('')}
-setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);renderStage();load();setInterval(load,10000);
-</script></body></html>
-
-
-
+</body>
+</html>

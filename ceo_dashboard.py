@@ -330,7 +330,7 @@ def dispatch():
 # SUPER_BRAIN_ROUTES
 @app.route("/super")
 def super_dashboard():
-    return send_file(ROOT / "Dashboard" / "super_dashboard_v04.html")
+    return send_file(ROOT / "Dashboard" / "super_dashboard.html")
 
 @app.route("/brain-graph")
 def brain_graph():
