@@ -46,10 +46,10 @@ run_step("ceo_startup.py")
 # 5. Generate the CEO forward work plan.
 run_step("ceo_planner.py")
 
-# 6. Start the existing dashboard.
-print("[BPFCoBrain] Starting dashboard...")
-dashboard = subprocess.Popen(
-    [PYTHON, str(ROOT / "brain-dashboard.py")],
+# 6. Start the current CEO Super dashboard.
+print("[BPFCoBrain] Starting CEO Super dashboard on port 5001...")
+super_dashboard = subprocess.Popen(
+    [PYTHON, str(ROOT / "ceo_dashboard.py")],
     cwd=str(ROOT),
 )
 
@@ -58,13 +58,13 @@ brain_link = Path(r"C:\Users\Jaques\Desktop\TheBrain 15.lnk")
 if brain_link.exists():
     os.startfile(str(brain_link))
 
-# 8. Open the dashboard in Chrome.
+# 8. Open the current CEO Super interface in Chrome.
 time.sleep(2)
 chrome = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 if chrome.exists():
-    subprocess.Popen([str(chrome), "http://localhost:5000"])
+    subprocess.Popen([str(chrome), "http://127.0.0.1:5001/super"])
 
 print("")
-print("[BPFCoBrain] CEO startup sequence COMPLETE.")
+print("[BPFCoBrain] CEO startup sequence COMPLETE — Super dashboard on port 5001.")
 print("[BPFCoBrain] CEO state, shared context, morning report and work plan refreshed.")
 print("[BPFCoBrain] External execution remains BLOCKED pending user approval.")
