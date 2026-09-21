@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 
 from agent_bridge import AgentBridge
 from approval_gate import request, is_approved
+from Brain.Executive.experience_synthesizer import ExperienceSynthesizer
 
 
 class AgentRuntime:
@@ -26,6 +27,7 @@ class AgentRuntime:
         self.agent_name = agent_name
         self.role = role
         self.bridge = AgentBridge()
+        self.synthesizer = ExperienceSynthesizer(ROOT)
 
     def startup(self):
         return {
@@ -92,12 +94,15 @@ class AgentRuntime:
         Standard lifecycle wrapper.
 
         The specialist supplies `processor(task)`.
-        The runtime handles claim -> process -> report.
+        The runtime handles claim -> process -> report -> synthesize.
         """
         task = self.claim(task_id)
 
         try:
             report = processor(task)
+
+            # Synthesize experience into the Brain before reporting to CEO
+            self.synthesizer.synthesize(self.agent_name, task_id, report)
 
             return self.report_to_ceo(
                 task_id,
@@ -111,6 +116,9 @@ class AgentRuntime:
                 f"Task: {task_id}\n"
                 f"Error: {type(exc).__name__}: {exc}"
             )
+
+            # Even failures are experiences
+            self.synthesizer.synthesize(self.agent_name, task_id, error_report)
 
             return self.report_to_ceo(
                 task_id,
