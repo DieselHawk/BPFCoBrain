@@ -24,6 +24,11 @@ backdrop-filter:blur(5px)}
 #info{margin-top:6px}
 #selected{position:fixed;right:16px;top:16px;z-index:5;width:290px;
 padding:12px;background:rgba(6,12,18,.90);border:1px solid #29404d;border-radius:11px;display:none}
+#presence{position:fixed;left:16px;bottom:16px;z-index:6;padding:12px 14px;
+background:rgba(6,12,18,.9);border:1px solid #29404d;border-radius:11px}
+#presence button{margin:8px 5px 0 0;padding:6px 9px;color:#dcecf5;background:#102431;
+border:1px solid #31586d;border-radius:7px;cursor:pointer}
+#presence button.active{border-color:#79d5ff;box-shadow:0 0 12px rgba(121,213,255,.35)}
 </style>
 </head>
 <body>
@@ -42,8 +47,52 @@ padding:12px;background:rgba(6,12,18,.90);border:1px solid #29404d;border-radius
 <div id="selStats"></div>
 </div>
 
+<div id="presence">
+  <b id="presenceName">Fred · CEO</b>
+  <div class="muted" id="presenceState">IDLE · vrm</div>
+  <div id="presenceAgents"></div>
+</div>
+
 <script>
 (async function(){
+
+const agentRoles={Fred:"CEO",Bob:"Finance",Cindy:"Secretary",Kai:"Legal",Neo:"Sales"};
+const presenceAgents=document.getElementById("presenceAgents");
+
+async function setPresence(agent){
+  await fetch("/api/presence",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({agent,state:"PRESENT",event:"call"})
+  });
+  await refreshPresence();
+}
+
+async function refreshPresence(){
+  try{
+    const response=await fetch("/api/presence/frame",{cache:"no-store"});
+    const data=await response.json();
+    const frame=data.frame||{};
+    document.getElementById("presenceName").textContent=
+      `${frame.agent||"Fred"} · ${frame.role||"CEO"}`;
+    document.getElementById("presenceState").textContent=
+      `${frame.state||"IDLE"} · ${frame.renderer||"vrm"} · voice ${frame.voice||"default"}`;
+    [...presenceAgents.children].forEach(button=>
+      button.classList.toggle("active",button.dataset.agent===frame.agent));
+  }catch(error){
+    document.getElementById("presenceState").textContent="Presence unavailable";
+  }
+}
+
+Object.entries(agentRoles).forEach(([agent,role])=>{
+  const button=document.createElement("button");
+  button.dataset.agent=agent;
+  button.textContent=agent;
+  button.title=`Call ${agent} · ${role}`;
+  button.onclick=()=>setPresence(agent);
+  presenceAgents.appendChild(button);
+});
+await refreshPresence();
+setInterval(refreshPresence,3000);
 
 const response=await fetch("/api/brain-graph",{cache:"no-store"});
 const brain=await response.json();
