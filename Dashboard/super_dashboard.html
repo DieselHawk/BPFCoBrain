@@ -157,9 +157,18 @@
         </div>
 
         <div id="brain" class="view">
-            <div class="panel">
-                <div class="head"><b>Knowledge Universe</b><span class="muted">existing BPFCoBrain graph</span></div>
-                <iframe src="/brain-graph"></iframe>
+            <div class="panel" style="padding:0;overflow:hidden;height:calc(100vh - 120px)">
+                <div class="head" style="padding:12px 14px 0">
+                    <b>Knowledge Universe</b>
+                    <span class="muted">existing BPFCoBrain graph · 3D (loads on open)</span>
+                </div>
+                <div id="brainLoading" class="muted" style="padding:12px 14px;display:none">Loading 3D brain…</div>
+                <iframe
+                    id="brainGraphFrame"
+                    src="about:blank"
+                    title="BPFCo Super Brain 3D"
+                    style="width:100%;height:calc(100vh - 160px);border:0;border-radius:0 0 12px 12px;background:#02050a"
+                ></iframe>
             </div>
         </div>
 
@@ -230,13 +239,23 @@
 <script>
     const $ = id => document.getElementById(id);
     let currentAgent = 'fred';
-
     function show(id, btn) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
         $(id).classList.add('active');
         btn.classList.add('active');
+        if (id === 'brain') {
+            const frame = $('brainGraphFrame');
+            const loading = $('brainLoading');
+            if (frame && !frame.dataset.loaded) {
+                if (loading) loading.style.display = 'block';
+                frame.onload = function () { if (loading) loading.style.display = 'none'; };
+                frame.src = '/super-3d';
+                frame.dataset.loaded = '1';
+            }
+        }
     }
+
 
     function toggleDock() {
         const dock = $('brainDock');
