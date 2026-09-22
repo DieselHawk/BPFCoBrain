@@ -47,6 +47,9 @@ def configure_environment():
     os.environ["BPFCO_ONLINE_INTELLIGENCE"] = (
         "1" if mode == "online" else "0"
     )
+    # BPFCO_OFFLINE is the hard cloud-fallback block used by OmniRoute.
+    # Keep the flag synchronized with the selected boot preference.
+    os.environ["BPFCO_OFFLINE"] = "0" if mode == "online" else "1"
 
     return mode
 
