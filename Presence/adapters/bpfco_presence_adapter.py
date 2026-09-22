@@ -5,13 +5,14 @@
 from dataclasses import dataclass, asdict
 from pathlib import Path
 import json
+import os
 
 AGENTS = {
-    "Fred":  {"role":"CEO",       "voice":"male",   "renderer":"vrm"},
-    "Bob":   {"role":"Finance",   "voice":"male",   "renderer":"vrm"},
-    "Cindy": {"role":"Secretary", "voice":"female", "renderer":"vrm"},
-    "Kai":   {"role":"Legal",     "voice":"male",   "renderer":"vrm"},
-    "Neo":   {"role":"Sales",     "voice":"male",   "renderer":"vrm"},
+    "Fred":  {"role":"CEO",       "voice_env":"BPFCO_FRED_VOICE",  "voice":"male"},
+    "Bob":   {"role":"Finance",   "voice_env":"BPFCO_BOB_VOICE",   "voice":"male"},
+    "Cindy": {"role":"Secretary", "voice_env":"BPFCO_CINDY_VOICE", "voice":"female"},
+    "Kai":   {"role":"Legal",     "voice_env":"BPFCO_KAI_VOICE",   "voice":"male"},
+    "Neo":   {"role":"Sales",     "voice_env":"BPFCO_NEO_VOICE",   "voice":"male"},
 }
 
 STATES = {
@@ -71,8 +72,8 @@ def make_frame(agent, state="IDLE", event="none"):
         role=meta["role"],
         state=state,
         event=event,
-        voice=meta["voice"],
-        renderer=meta["renderer"],
+        voice=os.getenv(meta["voice_env"], meta["voice"]),
+        renderer=os.getenv("BPFCO_PRESENCE_RENDERER", "vrm"),
         lip_sync=(state == "SPEAKING"),
         motion=(state not in {"IDLE","READY"}),
         expression=expression,
