@@ -24,11 +24,19 @@ backdrop-filter:blur(5px)}
 #info{margin-top:6px}
 #selected{position:fixed;right:16px;top:16px;z-index:5;width:290px;
 padding:12px;background:rgba(6,12,18,.90);border:1px solid #29404d;border-radius:11px;display:none}
-#presence{position:fixed;left:16px;bottom:16px;z-index:6;padding:12px 14px;
-background:rgba(6,12,18,.9);border:1px solid #29404d;border-radius:11px}
-#presence button{margin:8px 5px 0 0;padding:6px 9px;color:#dcecf5;background:#102431;
-border:1px solid #31586d;border-radius:7px;cursor:pointer}
-#presence button.active{border-color:#79d5ff;box-shadow:0 0 12px rgba(121,213,255,.35)}
+#presence{position:fixed;left:16px;bottom:16px;z-index:6;width:min(620px,calc(100vw - 32px));padding:12px 14px;
+background:rgba(6,12,18,.92);border:1px solid #29404d;border-radius:14px;backdrop-filter:blur(8px)}
+#presenceHead{display:flex;align-items:center;gap:12px}.avatar{width:58px;height:58px;border-radius:50%;display:grid;
+place-items:center;font-size:25px;font-weight:700;background:radial-gradient(circle at 35% 25%,#fff4,transparent 28%),#173244;
+border:2px solid var(--agent,#78c8ef);box-shadow:0 0 18px color-mix(in srgb,var(--agent) 55%,transparent)}
+.avatar.speaking{animation:pulse .75s infinite alternate}.avatar.working,.avatar.thinking{animation:orbit 2s infinite linear}
+@keyframes pulse{to{transform:scale(1.08);box-shadow:0 0 30px var(--agent)}}@keyframes orbit{to{filter:hue-rotate(360deg)}}
+#presenceAgents{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+#presenceAgents button,.action{padding:7px 10px;color:#dcecf5;background:#102431;border:1px solid #31586d;border-radius:8px;cursor:pointer}
+#presenceAgents button.active{border-color:var(--agent,#79d5ff);box-shadow:0 0 12px color-mix(in srgb,var(--agent) 55%,transparent)}
+#taskBox{display:flex;gap:7px;margin-top:9px}#taskObjective{flex:1;min-width:0;padding:8px;color:#e8eef4;
+background:#07121b;border:1px solid #29404d;border-radius:8px}#runtimeTask{margin-top:5px;color:#b8c8d4}
+@media(max-width:700px){#selected{display:none!important}#presence{font-size:12px}.avatar{width:46px;height:46px}}
 </style>
 </head>
 <body>
@@ -48,16 +56,37 @@ border:1px solid #31586d;border-radius:7px;cursor:pointer}
 </div>
 
 <div id="presence">
-  <b id="presenceName">Fred · CEO</b>
-  <div class="muted" id="presenceState">IDLE · vrm</div>
+  <div id="presenceHead">
+    <div class="avatar" id="presenceAvatar">F</div>
+    <div>
+      <b id="presenceName">Fred · CEO</b>
+      <div class="muted" id="presenceState">CONNECTING · runtime</div>
+      <div id="runtimeTask">Waiting for CEO runtime…</div>
+    </div>
+  </div>
   <div id="presenceAgents"></div>
+  <div id="taskBox">
+    <input id="taskObjective" placeholder="Give the selected specialist an internal task">
+    <button class="action" id="dispatchButton">Assign</button>
+    <button class="action" id="speakButton">Speak</button>
+  </div>
 </div>
 
 <script>
 (async function(){
 
 const agentRoles={Fred:"CEO",Bob:"Finance",Cindy:"Secretary",Kai:"Legal",Neo:"Sales"};
+const runtimeNames={Bob:"Bob_Finance",Cindy:"Cindy_Secretary",Kai:"Kai_Legal",Neo:"Neo_Sales"};
 const presenceAgents=document.getElementById("presenceAgents");
+let activeFrame={agent:"Fred",role:"CEO",state:"READY",greeting:"Fred online."};
+
+function speak(text){
+  if(!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const utterance=new SpeechSynthesisUtterance(text);
+  utterance.rate=.95;
+  speechSynthesis.speak(utterance);
+}
 
 async function setPresence(agent){
   await fetch("/api/presence",{
@@ -65,6 +94,7 @@ async function setPresence(agent){
     body:JSON.stringify({agent,state:"PRESENT",event:"call"})
   });
   await refreshPresence();
+  speak(activeFrame.greeting||`${agent} online.`);
 }
 
 async function refreshPresence(){
@@ -72,10 +102,21 @@ async function refreshPresence(){
     const response=await fetch("/api/presence/frame",{cache:"no-store"});
     const data=await response.json();
     const frame=data.frame||{};
+    const runtime=data.runtime||{};
+    activeFrame=frame;
+    const avatar=document.getElementById("presenceAvatar");
+    avatar.textContent=(frame.agent||"Fred").slice(0,1);
+    avatar.style.setProperty("--agent",frame.color||"#78c8ef");
+    avatar.className=`avatar ${(frame.state||"idle").toLowerCase()}`;
+    document.getElementById("presence").style.setProperty("--agent",frame.color||"#78c8ef");
     document.getElementById("presenceName").textContent=
       `${frame.agent||"Fred"} · ${frame.role||"CEO"}`;
     document.getElementById("presenceState").textContent=
-      `${frame.state||"IDLE"} · ${frame.renderer||"vrm"} · voice ${frame.voice||"default"}`;
+      `${frame.state||"IDLE"} · RUNTIME ${runtime.connected?"CONNECTED":"OFFLINE"} · ${frame.expression||"neutral"}`;
+    const task=runtime.task;
+    document.getElementById("runtimeTask").textContent=task?.objective
+      ? `Current task: ${task.objective}`
+      : `${frame.personality||"Agent ready"}.`;
     [...presenceAgents.children].forEach(button=>
       button.classList.toggle("active",button.dataset.agent===frame.agent));
   }catch(error){
@@ -91,6 +132,20 @@ Object.entries(agentRoles).forEach(([agent,role])=>{
   button.onclick=()=>setPresence(agent);
   presenceAgents.appendChild(button);
 });
+document.getElementById("speakButton").onclick=()=>
+  speak(`${activeFrame.agent}. ${activeFrame.role}. ${activeFrame.state}. ${document.getElementById("runtimeTask").textContent}`);
+document.getElementById("dispatchButton").onclick=async()=>{
+  const agent=activeFrame.agent;
+  const objective=document.getElementById("taskObjective").value.trim();
+  if(agent==="Fred"){document.getElementById("runtimeTask").textContent="Fred coordinates specialists; select Bob, Cindy, Kai or Neo.";return}
+  if(!objective) return;
+  const response=await fetch("/api/dispatch",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({agent:runtimeNames[agent],objective,priority:"normal"})});
+  const result=await response.json();
+  document.getElementById("runtimeTask").textContent=result.ok?`Queued: ${objective}`:(result.error||"Dispatch failed");
+  if(result.ok){document.getElementById("taskObjective").value="";speak(`${agent}, your task is queued.`)}
+  await refreshPresence();
+};
 await refreshPresence();
 setInterval(refreshPresence,3000);
 
