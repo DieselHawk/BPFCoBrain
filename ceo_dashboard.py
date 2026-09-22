@@ -243,8 +243,15 @@ def live_agent_states():
                 }
             }
 
-    # Presence takes precedence over workload display.
-    if presence.get("agent") in states:
+    # Explicit speaking/listening presence wins. Active runtime work remains
+    # authoritative so the avatar reflects QUEUED/WORKING task state.
+    if (
+        presence.get("agent") in states
+        and (
+            states[presence["agent"]]["state"] == "READY"
+            or presence.get("state") in {"SPEAKING", "LISTENING", "THINKING"}
+        )
+    ):
         states[presence["agent"]] = {
             "state":presence.get("state","PRESENT"),
             "task":states[presence["agent"]].get("task")
@@ -398,15 +405,24 @@ def presence_frame():
     else:
         raw = {}
 
+    agent = raw.get("agent","Fred")
+    runtime = live_agent_states().get(agent, {})
+    state_name = runtime.get("state") or raw.get("state","IDLE")
+
     frame = make_frame(
-        raw.get("agent","Fred"),
-        raw.get("state","IDLE"),
+        agent,
+        state_name,
         raw.get("event","none")
     )
 
     return jsonify({
         "ok": True,
-        "frame": frame.__dict__
+        "frame": frame.__dict__,
+        "runtime": {
+            "state": state_name,
+            "task": runtime.get("task"),
+            "connected": True,
+        }
     })
 # BPFCO_ACTIVITY_V01
 def bpfco_activity():
@@ -502,8 +518,6 @@ def super_brain_3d():
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
-
-
 
 
 
