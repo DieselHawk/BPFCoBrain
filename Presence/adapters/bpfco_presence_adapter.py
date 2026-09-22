@@ -8,11 +8,11 @@ import json
 import os
 
 AGENTS = {
-    "Fred":  {"role":"CEO",       "voice_env":"BPFCO_FRED_VOICE",  "voice":"male"},
-    "Bob":   {"role":"Finance",   "voice_env":"BPFCO_BOB_VOICE",   "voice":"male"},
-    "Cindy": {"role":"Secretary", "voice_env":"BPFCO_CINDY_VOICE", "voice":"female"},
-    "Kai":   {"role":"Legal",     "voice_env":"BPFCO_KAI_VOICE",   "voice":"male"},
-    "Neo":   {"role":"Sales",     "voice_env":"BPFCO_NEO_VOICE",   "voice":"male"},
+    "Fred":  {"role":"CEO",       "voice_env":"BPFCO_FRED_VOICE",  "voice":"male",   "color":"#78c8ef", "personality":"calm strategic commander"},
+    "Bob":   {"role":"Finance",   "voice_env":"BPFCO_BOB_VOICE",   "voice":"male",   "color":"#65d6a6", "personality":"precise financial analyst"},
+    "Cindy": {"role":"Secretary", "voice_env":"BPFCO_CINDY_VOICE", "voice":"female", "color":"#ef8fcb", "personality":"warm organised coordinator"},
+    "Kai":   {"role":"Legal",     "voice_env":"BPFCO_KAI_VOICE",   "voice":"male",   "color":"#c7a3ff", "personality":"measured legal investigator"},
+    "Neo":   {"role":"Sales",     "voice_env":"BPFCO_NEO_VOICE",   "voice":"male",   "color":"#ffb45f", "personality":"energetic commercial scout"},
 }
 
 STATES = {
@@ -47,6 +47,9 @@ class PresenceFrame:
     lip_sync: bool
     motion: bool
     expression: str
+    color: str
+    personality: str
+    greeting: str
 
 def make_frame(agent, state="IDLE", event="none"):
     if agent not in AGENTS:
@@ -77,6 +80,9 @@ def make_frame(agent, state="IDLE", event="none"):
         lip_sync=(state == "SPEAKING"),
         motion=(state not in {"IDLE","READY"}),
         expression=expression,
+        color=meta["color"],
+        personality=meta["personality"],
+        greeting=f"{agent} online. {meta['role']} station ready.",
     )
 
 def write_frame(frame, path):
