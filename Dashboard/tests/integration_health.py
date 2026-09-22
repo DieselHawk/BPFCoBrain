@@ -16,6 +16,7 @@ checks = [
     ("/api/reports", "AGENT REPORTS"),
     ("/api/plan", "CEO PLAN"),
     ("/api/presence", "PRESENCE"),
+    ("/api/presence/frame", "RUNTIME PRESENCE FRAME"),
     ("/api/activity", "ACTIVITY"),
 ]
 
