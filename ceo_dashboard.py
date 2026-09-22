@@ -1,8 +1,10 @@
 ﻿import json
 from pathlib import Path
 from flask import Flask, jsonify, request, render_template_string, send_file
+from dotenv import load_dotenv
 
-ROOT = Path(r"C:\BPFCo\BPFCoBrain")
+ROOT = Path(__file__).resolve().parent
+load_dotenv(ROOT / ".env")
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
 TASK_DIR = EXECUTIVE_DIR / "tasks"
 REPORT_DIR = EXECUTIVE_DIR / "reports"
@@ -343,6 +345,10 @@ def vault_index():
 @app.route("/vendor/d3.v7.min.js")
 def d3_asset():
     return send_file(ROOT / "Dashboard" / "vendor" / "d3.v7.min.js")
+
+@app.route("/vendor/3d-force-graph.min.js")
+def force_graph_3d_asset():
+    return send_file(ROOT / "Dashboard" / "vendor" / "3d-force-graph.min.js")
 # PRESENCE_V01 (Consolidated)
 PRESENCE_FILE = EXECUTIVE_DIR / "presence_state.json"
 
@@ -496,8 +502,6 @@ def super_brain_3d():
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
-
-
 
 
 
