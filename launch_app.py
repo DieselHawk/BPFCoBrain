@@ -4,7 +4,10 @@ import time
 import os
 import sys
 
-ROOT = Path(r"C:\BPFCo\BPFCoBrain")
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parent
+load_dotenv(ROOT / ".env")
 PYTHON = sys.executable
 
 from boot_network import configure_environment
