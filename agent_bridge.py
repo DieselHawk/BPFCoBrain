@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from Brain.Executive.local_evidence import retrieve
 
 ROOT = Path(__file__).resolve().parent
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -10,6 +11,7 @@ QUEUE_FILE = EXECUTIVE_DIR / "queue.json"
 SHARED_CONTEXT_FILE = EXECUTIVE_DIR / "shared_context.json"
 
 AGENTS = {
+    "Fred",
     "Bob_Finance",
     "Cindy_Secretary",
     "Kai_Legal",
@@ -72,7 +74,7 @@ class AgentBridge:
         task = {
             "task_id": task_id,
             "created_at": now(),
-            "created_by": "CEO",
+            "created_by": "Human" if agent == "Fred" else "CEO",
             "agent": agent,
             "objective": objective,
             "priority": priority,
@@ -80,6 +82,7 @@ class AgentBridge:
             "approval_required_before_external_execution": bool(approval_required),
             "execution_mode": "internal_only",
             "shared_context": self._load_shared_context(),
+            "evidence": retrieve(objective),
         }
 
         (TASK_DIR / f"{task_id}.json").write_text(
@@ -119,7 +122,7 @@ class AgentBridge:
         )
         return task
 
-    def complete(self, task_id, agent, summary, status="complete"):
+    def complete(self, task_id, agent, summary, status="complete", sources=None):
         path = TASK_DIR / f"{task_id}.json"
 
         if not path.exists():
@@ -147,10 +150,12 @@ class AgentBridge:
             "reported_at": now(),
             "status": status,
             "summary": summary,
-            "returned_to": "CEO",
+            "returned_to": "Human" if agent == "Fred" else "CEO",
             "external_execution": "blocked_pending_user_approval",
             "shared_context_attached": bool(task.get("shared_context")),
         }
+        if sources is not None:
+            report["sources"] = sources
 
         (REPORT_DIR / f"{task_id}.json").write_text(
             json.dumps(report, indent=2),
