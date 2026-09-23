@@ -22,6 +22,17 @@ background:rgba(6,12,18,.86);border:1px solid #29404d;border-radius:11px;
 backdrop-filter:blur(5px)}
 #hud b{color:#78c8ef}.muted{color:#82909d;font-size:11px}
 #info{margin-top:6px}
+.panel-handle{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:grab;user-select:none;touch-action:none}
+.panel-handle:active{cursor:grabbing}.panel-toggle{width:25px;height:25px;padding:0;border:1px solid #36566a;border-radius:6px;
+background:#102431;color:#dcecf5;cursor:pointer;font-weight:800}.panel-collapsed{width:210px!important;height:42px!important;overflow:hidden!important}
+.panel-collapsed .panel-body{display:none!important}.panel-collapsed .panel-handle{height:100%}.panel-dragging{box-shadow:0 18px 50px #000c!important}
+#fsBtn{position:fixed;right:22px;bottom:22px;z-index:20;width:72px;height:72px;border:0;border-radius:50%;
+background:#e11d2e;color:#fff;font-size:30px;font-weight:800;cursor:pointer;
+box-shadow:0 0 0 5px rgba(225,29,46,.35),0 10px 28px rgba(0,0,0,.65);display:grid;place-items:center}
+#fsBtn:hover{background:#ff2438;transform:scale(1.08)}#fsBtn:active{transform:scale(.96)}
+#fsHint{position:fixed;right:22px;bottom:104px;z-index:20;padding:6px 10px;border-radius:8px;
+background:rgba(0,0,0,.75);color:#f3c1c6;font-size:11px;opacity:0;transition:opacity .2s;pointer-events:none}
+#fsBtn:hover+#fsHint{opacity:1}
 #selected{position:fixed;right:16px;top:16px;z-index:5;width:290px;
 padding:12px;background:rgba(6,12,18,.90);border:1px solid #29404d;border-radius:11px;display:none}
 #presence{position:fixed;left:16px;bottom:16px;z-index:6;width:min(620px,calc(100vw - 32px));padding:12px 14px;
@@ -42,33 +53,43 @@ background:#07121b;border:1px solid #29404d;border-radius:8px}#runtimeTask{margi
 <body>
 <div id="graph"></div>
 <div id="stars"></div>
+<button id="fsBtn" type="button" title="Fullscreen (Esc to exit)" aria-label="Enter fullscreen">⛶</button>
+<div id="fsHint">Fullscreen · Esc to exit</div>
 
 <div id="hud">
-<b>BPFCo SUPER BRAIN · 3D</b>
-<div class="muted">Existing brain graph data · 3D renderer</div>
-<div id="info">Loading brain…</div>
+<div class="panel-handle" id="hudHandle"><b>BPFCo SUPER BRAIN · 3D</b><button class="panel-toggle" type="button" aria-label="Collapse Brain information">−</button></div>
+<div class="panel-body">
+  <div class="muted">Existing brain graph data · 3D renderer</div>
+  <div class="muted">Left-drag rotate · Right-drag pan · Wheel zoom</div>
+  <div id="info">Loading brain…</div>
+</div>
 </div>
 
 <div id="selected">
-<b id="selTitle">Node</b>
-<div class="muted" id="selPath"></div>
-<div id="selStats"></div>
+<div class="panel-handle" id="selectedHandle"><b id="selTitle">Node</b><button class="panel-toggle" type="button" aria-label="Collapse selected-node information">−</button></div>
+<div class="panel-body">
+  <div class="muted" id="selPath"></div>
+  <div id="selStats"></div>
+</div>
 </div>
 
 <div id="presence">
-  <div id="presenceHead">
-    <div class="avatar" id="presenceAvatar">F</div>
-    <div>
-      <b id="presenceName">Fred · CEO</b>
-      <div class="muted" id="presenceState">CONNECTING · runtime</div>
-      <div id="runtimeTask">Waiting for CEO runtime…</div>
+  <div class="panel-handle" id="presenceHandle"><b>AGENT PRESENCE</b><button class="panel-toggle" type="button" aria-label="Collapse agent presence">−</button></div>
+  <div class="panel-body">
+    <div id="presenceHead">
+      <div class="avatar" id="presenceAvatar">F</div>
+      <div>
+        <b id="presenceName">Fred · CEO</b>
+        <div class="muted" id="presenceState">CONNECTING · runtime</div>
+        <div id="runtimeTask">Waiting for CEO runtime…</div>
+      </div>
     </div>
-  </div>
-  <div id="presenceAgents"></div>
-  <div id="taskBox">
-    <input id="taskObjective" placeholder="Give the selected specialist an internal task">
-    <button class="action" id="dispatchButton">Assign</button>
-    <button class="action" id="speakButton">Speak</button>
+    <div id="presenceAgents"></div>
+    <div id="taskBox">
+      <input id="taskObjective" placeholder="Give the selected specialist an internal task">
+      <button class="action" id="dispatchButton">Assign</button>
+      <button class="action" id="speakButton">Speak</button>
+    </div>
   </div>
 </div>
 
@@ -79,6 +100,86 @@ const agentRoles={Fred:"CEO",Bob:"Finance",Cindy:"Secretary",Kai:"Legal",Neo:"Sa
 const runtimeNames={Bob:"Bob_Finance",Cindy:"Cindy_Secretary",Kai:"Kai_Legal",Neo:"Neo_Sales"};
 const presenceAgents=document.getElementById("presenceAgents");
 let activeFrame={agent:"Fred",role:"CEO",state:"READY",greeting:"Fred online."};
+
+function setupFloatingPanel(panelId,handleId){
+  const panel=document.getElementById(panelId);
+  const handle=document.getElementById(handleId);
+  const toggle=handle&&handle.querySelector(".panel-toggle");
+  if(!panel||!handle||!toggle) return;
+  const storageKey=`bpfco.brain3d.panel.${panelId}`;
+  const clamp=()=>{
+    const width=Math.min(panel.offsetWidth,innerWidth);
+    const height=Math.min(panel.offsetHeight,innerHeight);
+    panel.style.left=`${Math.max(0,Math.min(innerWidth-width,panel.offsetLeft))}px`;
+    panel.style.top=`${Math.max(0,Math.min(innerHeight-height,panel.offsetTop))}px`;
+    panel.style.right="auto";
+    panel.style.bottom="auto";
+  };
+  const save=()=>localStorage.setItem(storageKey,JSON.stringify({
+    left:panel.offsetLeft,top:panel.offsetTop,collapsed:panel.classList.contains("panel-collapsed")
+  }));
+  try{
+    const saved=JSON.parse(localStorage.getItem(storageKey));
+    if(saved){
+      panel.style.left=`${saved.left}px`;panel.style.top=`${saved.top}px`;
+      panel.style.right="auto";panel.style.bottom="auto";
+      panel.classList.toggle("panel-collapsed",Boolean(saved.collapsed));
+      toggle.textContent=saved.collapsed?"+":"−";
+      clamp();
+    }
+  }catch(_){localStorage.removeItem(storageKey)}
+  toggle.onclick=event=>{
+    event.stopPropagation();
+    panel.classList.toggle("panel-collapsed");
+    const collapsed=panel.classList.contains("panel-collapsed");
+    toggle.textContent=collapsed?"+":"−";
+    toggle.setAttribute("aria-label",collapsed?"Restore panel":"Collapse panel");
+    clamp();save();
+  };
+  let drag=null;
+  handle.addEventListener("pointerdown",event=>{
+    if(event.target.closest("button")) return;
+    const box=panel.getBoundingClientRect();
+    drag={x:event.clientX-box.left,y:event.clientY-box.top};
+    panel.classList.add("panel-dragging");
+    handle.setPointerCapture(event.pointerId);
+  });
+  handle.addEventListener("pointermove",event=>{
+    if(!drag) return;
+    panel.style.left=`${event.clientX-drag.x}px`;panel.style.top=`${event.clientY-drag.y}px`;
+    panel.style.right="auto";panel.style.bottom="auto";clamp();
+  });
+  handle.addEventListener("pointerup",()=>{
+    if(!drag) return;drag=null;panel.classList.remove("panel-dragging");save();
+  });
+  addEventListener("resize",clamp);
+}
+
+setupFloatingPanel("hud","hudHandle");
+setupFloatingPanel("selected","selectedHandle");
+setupFloatingPanel("presence","presenceHandle");
+
+const fsBtn=document.getElementById("fsBtn");
+const isFullscreen=()=>document.fullscreenElement||document.webkitFullscreenElement;
+fsBtn.onclick=async()=>{
+  try{
+    if(isFullscreen()){
+      if(document.exitFullscreen) await document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }else{
+      const root=document.documentElement;
+      if(root.requestFullscreen) await root.requestFullscreen();
+      else if(root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+    }
+  }catch(error){console.error("Fullscreen unavailable",error)}
+};
+const syncFullscreen=()=>{
+  const active=Boolean(isFullscreen());
+  fsBtn.textContent=active?"×":"⛶";
+  fsBtn.setAttribute("aria-label",active?"Exit fullscreen":"Enter fullscreen");
+};
+document.addEventListener("fullscreenchange",syncFullscreen);
+document.addEventListener("webkitfullscreenchange",syncFullscreen);
 
 function speak(text){
   if(!("speechSynthesis" in window)) return;
@@ -155,24 +256,44 @@ const brain=await response.json();
 const allNodes=brain.nodes||[];
 const allLinks=brain.links||[];
 
-document.getElementById("info").textContent=
-  `${brain.stats?.notes||allNodes.length} nodes · `+
-  `${brain.stats?.resolved_links||allLinks.length} resolved links`;
-
 const score=n=>Number(n.connection_count||0);
 
 const chosen=[...allNodes]
   .sort((a,b)=>score(b)-score(a))
-  .slice(0,160);
+  .slice(0,200);
 
 const chosenIds=new Set(chosen.map(n=>String(n.id)));
 
-const links=allLinks.filter(l=>
+let links=allLinks.filter(l=>
   chosenIds.has(String(l.source)) &&
   chosenIds.has(String(l.target))
 );
 
+let fallback=false;
+if(links.length<5&&chosen.length>1){
+  const byFolder=new Map();
+  chosen.forEach(node=>{
+    const folder=node.folder||"root";
+    if(!byFolder.has(folder)) byFolder.set(folder,[]);
+    byFolder.get(folder).push(node);
+  });
+  const extra=[];
+  byFolder.forEach(group=>{
+    for(let i=1;i<group.length&&i<8;i++) extra.push({source:group[0].id,target:group[i].id});
+  });
+  links=links.concat(extra).slice(0,400);
+  fallback=extra.length>0;
+}
+
+const info=document.getElementById("info");
+const setInfo=(nodes,visibleLinks,filter="")=>{
+  const total=brain.stats?.notes||allNodes.length;
+  info.textContent=`${nodes.length}/${total} nodes · ${visibleLinks.length} links${fallback?" · folder fallback":""}${filter?` · filter: ${filter}`:""}`;
+};
+setInfo(chosen,links);
+
 const elem=document.getElementById("graph");
+elem.addEventListener("contextmenu",event=>event.preventDefault());
 
 const Graph=new ForceGraph3D(elem,{
   controlType:"orbit",
@@ -184,8 +305,8 @@ const Graph=new ForceGraph3D(elem,{
   links:links
 })
 .nodeLabel(n=>
-  `${n.label||n.id}<br>`+
-  `${n.folder||""}<br>`+
+  `${String(n.label||n.id).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]))}<br>`+
+  `${String(n.folder||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]))}<br>`+
   `links: ${n.connection_count||0}`
 )
 .nodeAutoColorBy(n=>n.folder||"BPFCo")
@@ -206,6 +327,40 @@ const Graph=new ForceGraph3D(elem,{
     1200
   );
 });
+
+const resizeGraph=()=>{
+  const width=elem.clientWidth||innerWidth;
+  const height=elem.clientHeight||innerHeight;
+  Graph.width(width).height(height);
+};
+addEventListener("resize",resizeGraph);
+document.addEventListener("fullscreenchange",()=>requestAnimationFrame(resizeGraph));
+document.addEventListener("webkitfullscreenchange",()=>requestAnimationFrame(resizeGraph));
+resizeGraph();
+
+const domains=[...new Set(chosen.map(node=>node.folder).filter(Boolean))].sort();
+const filterGraph=value=>{
+  const query=String(value||"").trim().toLowerCase();
+  if(!query){
+    Graph.graphData({nodes:chosen,links});
+    setInfo(chosen,links);
+    return;
+  }
+  const nodes=chosen.filter(node=>
+    [node.label,node.folder,node.path,node.id].some(field=>String(field||"").toLowerCase().includes(query))
+  );
+  const ids=new Set(nodes.map(node=>String(node.id)));
+  const visibleLinks=links.filter(link=>{
+    const source=typeof link.source==="object"?link.source.id:link.source;
+    const target=typeof link.target==="object"?link.target.id:link.target;
+    return ids.has(String(source))&&ids.has(String(target));
+  });
+  Graph.graphData({nodes,links:visibleLinks});
+  setInfo(nodes,visibleLinks,value);
+  if(nodes.length) setTimeout(()=>Graph.zoomToFit(500,30),50);
+};
+
+window.bpfcoBrain3D={domains,filter:filterGraph,reset:()=>filterGraph(""),graph:Graph};
 
 })();
 </script>

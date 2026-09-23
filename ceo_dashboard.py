@@ -18,6 +18,9 @@ from agent_bridge import AgentBridge
 app = Flask(__name__)
 bridge = AgentBridge()
 
+from Dashboard.agent_terminal_routes import agent_terminal_bp
+app.register_blueprint(agent_terminal_bp)
+
 AGENTS = {
     "Bob_Finance": "Finance, accounting and billing",
     "Cindy_Secretary": "Secretary and administration",
@@ -339,7 +342,20 @@ def dispatch():
 # SUPER_BRAIN_ROUTES
 @app.route("/super")
 def super_dashboard():
-    return send_file(ROOT / "Dashboard" / "super_dashboard.html")
+    dashboard_path = ROOT / "Dashboard" / "super_dashboard.html"
+    # Mount the terminal on the canonical /super page.
+    html = dashboard_path.read_text(encoding="utf-8-sig")
+    html = html.replace(
+        "</head>",
+        '<link rel="stylesheet" href="/agent-terminal/terminal.css">\n</head>',
+        1,
+    )
+    html = html.replace(
+        "</body>",
+        '<script src="/agent-terminal/terminal.js"></script>\n</body>',
+        1,
+    )
+    return html
 
 @app.route("/brain-graph")
 def brain_graph():
@@ -518,11 +534,6 @@ def super_brain_3d():
 if __name__ == "__main__":
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
-
-
-
-
-
 
 
 
