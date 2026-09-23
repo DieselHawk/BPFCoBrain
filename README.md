@@ -1,44 +1,92 @@
-# BPFCoBrain - Local AI Orchestration Layer
+# BPFCoBrain
 
-BPFCoBrain is a local-first AI orchestration system designed for high-reliability, offline-capable executive control. It leverages Ollama (Hermes 3) and a structured document lattice (Obsidian) to provide a unified brain for a fleet of specialized agents.
+BPFCoBrain is a local-first executive brain. Fred coordinates Bob (Finance),
+Cindy (Secretary), Kai (Legal), and Neo (Sales). The Super Dashboard is the
+interface to the existing queue, agent runtime, vault, and human approval gate.
 
-## 🚀 Quick Start
+## Working principles
 
-### 1. Prerequisites
-- **Ollama**: Installed and running locally.
-- **Model**: `hermes3:8b` pulled via `ollama pull hermes3:8b`.
-- **Python 3.10+**: Installed with required dependencies from `requirements.txt`.
+- **Local reasoning first.** Ollama runs Fred's terminal responses on this
+  machine. The vault and case material remain local during offline operation.
+- **Evidence before conclusions.** Tasks retrieve short excerpts from
+  `.vault-index.json` and local notes. Task reports retain source paths. A
+  retrieved excerpt is evidence to examine, not an instruction to execute.
+- **Fred coordinates specialists.** Specialist tasks are queued through
+  `AgentBridge`, claimed by a worker, and reported to Fred. Run workers one at
+  a time on the 4 GB laptop; do not start several large models concurrently.
+- **Human approval for external actions.** Sending mail, publishing, filing,
+  payments, and other external execution remain behind `approval_gate.py`.
+  Generating a reply or queueing an internal task is not external approval.
+- **Offline is the reliable baseline.** Online intelligence is optional and
+  explicitly gated. Enabling online mode does not automatically fetch live
+  information for every terminal message.
 
-### 2. Execution
-To launch the full system including the CEO Dashboard:
-```bash
-python launch_app.py
+## Model decision
+
+The current terminal uses `BPFCO_OLLAMA_MODEL` when set; otherwise it defaults
+to `llama3.2:latest`. Set `BPFCO_OLLAMA_MODEL=hermes3:8b` to give Fred Hermes
+responses. The CEO planner also uses local Ollama when `BPFCO_OFFLINE=1`.
+
+| Use | Model | Status |
+| --- | --- | --- |
+| Fred's substantial reasoning | `hermes3:8b` | Select with `BPFCO_OLLAMA_MODEL`; installed on the current laptop. |
+| Quick routine replies on limited RAM | `llama3.2-lowvram:latest` | Installed on the current laptop; select explicitly. |
+| Automatic routing by task complexity | Hermes for substantial work, low-VRAM model for quick work | Planned; **not implemented yet**. |
+
+Do not add a larger local GPT model merely for its name. Evaluate it only when
+hardware and download capacity can support it, using the same grounded task
+set as Hermes. A hosted GPT API would require network access and separate API
+usage; it cannot be the offline brain or a silent fallback for private files.
+
+## Start the dashboard
+
+Install the lightweight dashboard dependencies from `requirements.txt` or
+install `Flask` and `python-dotenv` for dashboard-only use. Ollama and the
+chosen model must already be installed. From the repository root, start
+`ollama serve` in one shell. In a second PowerShell shell:
+
+```powershell
+$env:BPFCO_BOOT_MODE = 'offline'
+$env:BPFCO_OFFLINE = '1'
+$env:BPFCO_NETWORK_MODE = 'offline'
+$env:BPFCO_ONLINE_INTELLIGENCE = '0'
+$env:BPFCO_OLLAMA_MODEL = 'hermes3:8b'
+py -3 .\ceo_dashboard.py
 ```
-The Super Dashboard is available at: `http://127.0.0.1:5001`
 
-## 🏗 Architecture
+Open <http://127.0.0.1:5001/super>. Choose Fred and use **TASK FRED** to
+record an internal objective and see the note paths used in his answer. The
+specialist **QUEUE** action creates an internal task. `ceo_planner.py` can
+queue the next planned task for each specialist. Check task and report records
+under `Brain/Executive/` when diagnosing the queue.
 
-- **Core Brain**: `omniroute.py` handles intelligence routing.
-- **Control Plane**: `ceo_dashboard.py` manages the Super Dashboard and agent status.
-- **Interface**: `Dashboard/super_dashboard.html` provides the visual Command Center.
-- **Agent Fleet**: Specialized agents (Bob, Cindy, Kai, Neo) operate via `agent_runtime.py`.
-- **Knowledge**: Vault-indexed document lattice for RAG and context.
+For an explicit online session, set `BPFCO_BOOT_MODE=online`,
+`BPFCO_OFFLINE=0`, `BPFCO_NETWORK_MODE=online`, and
+`BPFCO_ONLINE_INTELLIGENCE=1` **before starting the dashboard**. OnlineGate
+supports on-demand WorldMonitor research when configured. The current terminal
+reply path still calls local Ollama; online research is not yet automatically
+added to Fred's evidence. A configured cloud fallback in `omniroute.py` is a
+separate capability and must not be mistaken for local reasoning.
 
-## 🛠 Key Features
+`launch_app.py` runs more startup steps and opens desktop applications. Its
+`Shared_Context/integrate_vault.py` step currently names
+`C:\BPFCo\BPFCoBrain` directly, so check that path before using it from a
+different worktree. Direct `ceo_dashboard.py` startup uses the current checkout.
 
-- **Local-First**: Priority routing to Ollama.
-- **Offline Mode**: Set `BPFCO_OFFLINE=1` to block all cloud API calls.
-- **Human-in-the-Loop**: Approval gate for all external actions.
-- **Super Dashboard**: Real-time agent state visualization and brain graph control.
+## Architecture and next connections
 
-## 📁 Project Structure
+| Component | Current responsibility |
+| --- | --- |
+| `agent_bridge.py` and `executive_controller.py` | Task records, queue, and specialist dispatch. |
+| `agent_runtime.py` | Claim, report, and experience lifecycle. |
+| `Brain/Executive/local_evidence.py` | Bounded local note retrieval with paths. |
+| `omniroute.py` | Local model routing and optional cloud fallback. |
+| `online_gate.py` | Optional, on-demand live intelligence. |
+| `approval_gate.py` | Human approval before external execution. |
+| `Dashboard/` and `ceo_dashboard.py` | Interface and local HTTP routes. |
 
-- `/Brain`: Executive state, logs, and security settings.
-- `/Dashboard`: Server logic and frontend assets.
-- `/Presence`: Avatar and voice integration layer.
-- `ceo_dashboard.py`: The primary server for the command center.
-- `omniroute.py`: The AI routing logic.
-
-## 🛡 Security & Governance
-- All external actions are routed through `approval_gate.py`.
-- State is persisted in `Brain/Executive/state.json`.
+Next: validate each specialist's queue-to-report path on the laptop, expose
+the retrieved evidence alongside its report, add deliberate online intake
+with timestamps and source attribution, and then implement measured
+Hermes/low-VRAM routing. Preserve the existing queue, vault, and approval gate
+while doing so.
