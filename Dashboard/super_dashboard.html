@@ -8,11 +8,10 @@
         body{margin:0;background:#070b10;color:#e9eff4;font:14px 'Segoe UI',Arial;overflow:hidden;height:100vh}
         
         /* EXTREME OVERLAY - NO CONFLICTS */
-        #brainDock {
+        #brainDock{z-index:900001 !important;
             position: fixed !important;
-            left: 20px !important;
-            top: 80px !important;
-            z-index: 999999 !important;
+            left: 16px;
+            top: 80px;
             width: 280px !important;
             background: #0d141b !important;
             border: 3px solid #6cbfe8 !important;
@@ -30,14 +29,11 @@
             border-radius: 25px !important;
             overflow: hidden !important;
         }
-        #brainDock.collapsed h4, 
-        #brainDock.collapsed small, 
-        #brainDock.collapsed input, 
-        #brainDock.collapsed select, 
-        #brainDock.collapsed #domainButtons, 
-        #brainDock.collapsed .btn {
+        #brainDock.collapsed .dock-content {
             display: none !important;
         }
+        #brainDock.collapsed h4 { margin: 0; width: 100%; height: 100%; justify-content: center; }
+        #brainDock.collapsed h4 span { display: none; }
         #brainDock h4 {
             margin: 0 0 8px 0;
             color: #78c8ef;
@@ -45,8 +41,11 @@
             justify-content: space-between;
             align-items: center;
             font-size: 14px;
-            cursor: pointer;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
         }
+        #brainDock.dragging h4 { cursor: grabbing; }
         .dock-toggle {
             background: #6cbfe8 !important;
             color: #000 !important;
@@ -68,7 +67,7 @@
         .bd { padding: 3px 7px; background: #1a2533; color: #cddae3; border: 1px solid #30414d; border-radius: 10px; cursor: pointer; font-size: 10px; }
 
         /* HEADER */
-        header{height:64px;padding:0 18px;border-bottom:1px solid #26323d;display:flex;align-items:center;justify-content:space-between;background:#0d141b;position:relative;z-index:10}
+        body > header{height:64px;padding:0 18px;border-bottom:1px solid #26323d;display:flex;align-items:center;justify-content:space-between;background:#0d141b;position:relative;z-index:10}
         h1{margin:0;font-size:20px;letter-spacing:.05em;color:#fff}
         .muted{color:#82909d;font-size:11px}
         .ok{color:#64db97}
@@ -76,7 +75,7 @@
 
         /* MAIN LAYOUT */
         main{display:grid;grid-template-columns:210px 1fr;height:calc(100vh - 64px)}
-        nav{background:#0d141b;border-right:1px solid #26323d;padding:12px}
+        main > nav{background:#0d141b;border-right:1px solid #26323d;padding:12px}
         .nav{width:100%;text-align:left;margin:4px 0;padding:10px 12px;border:1px solid #202c36;border-radius:8px;background:#111a22;color:#dce5ec;cursor:pointer}
         .nav.active{border-color:#6cbfe8;background:#172631}
         .content{padding:14px;overflow:auto;position:relative}
@@ -95,20 +94,21 @@
         pre{white-space:pre-wrap;background:#0a1016;border:1px solid #202b35;border-radius:8px;padding:10px;max-height:300px;overflow:auto}
         iframe{width:100%;height:70vh;border:0;border-radius:10px;background:#fff}
     </style>
-  <script src="/vendor/d3.v7.min.js"></script>
 </head>
 <body>
 
 <div id="brainDock">
-    <h4 id="dockTitle" onclick="toggleDock()">SUPER BRAIN <button class="dock-toggle" onclick="toggleDock()">×</button></h4>
-    <small class="muted">Real BPFCoBrain graph controls</small>
-    <input id="brainSearch" placeholder="Search notes / concepts">
-    <div id="domainButtons"></div>
-    <select id="agentCall">
-        <option value="">Call an agent…</option>
-        <option>Fred</option><option>Bob</option><option>Cindy</option><option>Kai</option><option>Neo</option>
-    </select>
-    <button class="btn" style="width:100%" onclick="callBrainAgent()">Bring agent to presence</button>
+    <h4 id="dockTitle"><span>SUPER BRAIN</span><button type="button" id="dockToggle" class="dock-toggle" aria-label="Collapse Super Brain controls">−</button></h4>
+    <div class="dock-content">
+        <small class="muted">Real BPFCoBrain graph controls</small>
+        <input id="brainSearch" placeholder="Search notes / concepts">
+        <div id="domainButtons"></div>
+        <select id="agentCall">
+            <option value="">Call an agent…</option>
+            <option>Fred</option><option>Bob</option><option>Cindy</option><option>Kai</option><option>Neo</option>
+        </select>
+        <button class="btn" style="width:100%" onclick="callBrainAgent()">Bring agent to presence</button>
+    </div>
 </div>
 
 <header>
@@ -158,17 +158,14 @@
         </div>
 
         <div id="brain" class="view">
-            <div class="panel" style="padding:0;overflow:hidden;height:calc(100vh - 120px)">
-                <div class="head" style="padding:12px 14px 0">
-                    <b>Knowledge Universe</b>
-                    <span class="muted">existing BPFCoBrain graph · 3D (loads on open)</span>
-                </div>
-                <div id="brainLoading" class="muted" style="padding:12px 14px;display:none">Loading 3D brain…</div>
+            <div class="panel" style="padding:0;margin:0;height:calc(100vh - 96px);overflow:hidden;position:relative;z-index:1">
                 <iframe
                     id="brainGraphFrame"
                     src="about:blank"
                     title="BPFCo Super Brain 3D"
-                    style="width:100%;height:calc(100vh - 160px);border:0;border-radius:0 0 12px 12px;background:#02050a"
+                    allowfullscreen
+                    allow="fullscreen"
+                    style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#0a1016;z-index:2"
                 ></iframe>
             </div>
         </div>
@@ -243,33 +240,88 @@
     function show(id, btn) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
-        $(id).classList.add('active');
-        btn.classList.add('active');
-        if (id === 'brain') {
-            const frame = $('brainGraphFrame');
-            const loading = $('brainLoading');
-            if (frame && !frame.dataset.loaded) {
-                if (loading) loading.style.display = 'block';
-                frame.onload = function () { if (loading) loading.style.display = 'none'; };
-                frame.src = '/super-3d';
-                frame.dataset.loaded = '1';
-            }
+        const el = document.getElementById(id);
+        if (el) el.classList.add('active');
+        if (btn) btn.classList.add('active');
+        const dock = document.getElementById('brainDock');
+        if (dock) {
+          if (id === 'brain') dock.classList.add('collapsed');
+        }
+        const frame = document.getElementById('brainGraphFrame');
+        if (id === 'brain' && frame && !frame.dataset.loaded) {
+            frame.src = '/super-3d';
+            frame.dataset.loaded = '1';
         }
     }
 
 
-    function toggleDock() {
+    function toggleDock(event) {
+        if (event) event.stopPropagation();
         const dock = $('brainDock');
         if(!dock) return;
         dock.classList.toggle('collapsed');
-        const title = $('dockTitle');
-        if(!title) return;
-        if (dock.classList.contains('collapsed')) {
-            title.innerHTML = '<button class="dock-toggle" onclick="toggleDock()">+</button>';
-        } else {
-            title.innerHTML = 'SUPER BRAIN <button class="dock-toggle" onclick="toggleDock()">×</button>';
+        const toggle = $('dockToggle');
+        const collapsed = dock.classList.contains('collapsed');
+        if (toggle) {
+            toggle.textContent = collapsed ? '+' : '−';
+            toggle.setAttribute('aria-label', collapsed ? 'Restore Super Brain controls' : 'Collapse Super Brain controls');
         }
+        saveDock();
     }
+
+    function saveDock() {
+        const dock = $('brainDock');
+        if (!dock) return;
+        localStorage.setItem('bpfco.superBrainDock', JSON.stringify({
+            left: dock.offsetLeft,
+            top: dock.offsetTop,
+            collapsed: dock.classList.contains('collapsed')
+        }));
+    }
+
+    function setupDock() {
+        const dock = $('brainDock');
+        const handle = $('dockTitle');
+        const toggle = $('dockToggle');
+        if (!dock || !handle || !toggle) return;
+
+        try {
+            const saved = JSON.parse(localStorage.getItem('bpfco.superBrainDock'));
+            if (saved) {
+                dock.style.left = `${Math.max(0, Math.min(innerWidth - 50, saved.left || 0))}px`;
+                dock.style.top = `${Math.max(0, Math.min(innerHeight - 50, saved.top || 0))}px`;
+                dock.classList.toggle('collapsed', Boolean(saved.collapsed));
+                toggle.textContent = saved.collapsed ? '+' : '−';
+            }
+        } catch (_) {
+            localStorage.removeItem('bpfco.superBrainDock');
+        }
+
+        toggle.addEventListener('click', toggleDock);
+        let drag = null;
+        handle.addEventListener('pointerdown', event => {
+            if (event.target.closest('button')) return;
+            const box = dock.getBoundingClientRect();
+            drag = { x: event.clientX - box.left, y: event.clientY - box.top };
+            dock.classList.add('dragging');
+            handle.setPointerCapture(event.pointerId);
+        });
+        handle.addEventListener('pointermove', event => {
+            if (!drag) return;
+            const width = dock.offsetWidth;
+            const height = dock.offsetHeight;
+            dock.style.left = `${Math.max(0, Math.min(innerWidth - width, event.clientX - drag.x))}px`;
+            dock.style.top = `${Math.max(0, Math.min(innerHeight - height, event.clientY - drag.y))}px`;
+        });
+        handle.addEventListener('pointerup', () => {
+            if (!drag) return;
+            drag = null;
+            dock.classList.remove('dragging');
+            saveDock();
+        });
+    }
+
+    setupDock();
 
     async function get(u, opt = {}) {
         const r = await fetch(u, opt);
@@ -348,20 +400,31 @@
         };
 
         window.bpfcoBrainSync = function() {
-            const iframe = document.querySelector('iframe');
-            if (!iframe || !iframe.contentDocument) return;
-            const nodes = [...iframe.contentDocument.querySelectorAll('#graph circle')].map(x => x.__data__).filter(Boolean);
-            const domains = [...new Set(nodes.map(n => n.folder).filter(Boolean))].sort().slice(0,12);
+            const iframe = $('brainGraphFrame');
+            const api = iframe && iframe.contentWindow && iframe.contentWindow.bpfcoBrain3D;
+            if (!api) return;
+            const domains = (api.domains || []).slice(0,12);
             const db = $('domainButtons');
-            if (db) db.innerHTML = domains.map(x => `<button class="bd" onclick="filterBrainDomain('${x}')">${x}</button>`).join('');
+            if (db) {
+                db.replaceChildren();
+                domains.forEach(domain => {
+                    const button = document.createElement('button');
+                    button.className = 'bd';
+                    button.textContent = domain;
+                    button.onclick = () => filterBrainDomain(domain);
+                    db.appendChild(button);
+                });
+            }
         };
 
         window.filterBrainDomain = function(val) {
-            const iframe = document.querySelector('iframe');
-            if (!iframe || !iframe.contentDocument) return;
-            const search = iframe.contentDocument.getElementById('brainSearch');
-            if (search) { search.value = val; search.dispatchEvent(new Event('input', {bubbles:true})); }
+            const iframe = $('brainGraphFrame');
+            const api = iframe && iframe.contentWindow && iframe.contentWindow.bpfcoBrain3D;
+            if (api) api.filter(val);
         };
+
+        const search = $('brainSearch');
+        if (search) search.addEventListener('input', event => filterBrainDomain(event.target.value));
 
         setInterval(bpfcoBrainSync, 3000);
     })();
@@ -369,94 +432,6 @@
     setInterval(() => { if($('clock')) $('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
     load();
     setInterval(load, 10000);
-</script>
-<script>
-(function () {
-  let built = false;
-  async function insertBrainGraph() {
-    if (built) return;
-    const svgEl = document.getElementById("brainGraphSvg");
-    const status = document.getElementById("brainGraphStatus");
-    if (!svgEl) return;
-    if (typeof d3 === "undefined") {
-      if (status) status.textContent = " D3 not loaded (/vendor/d3.v7.min.js)";
-      return;
-    }
-    if (status) status.textContent = " Loading…";
-    try {
-      const brain = await fetch("/api/brain-graph", { cache: "no-store" }).then(r => r.json());
-      let nodes = (brain.nodes || []).map(n => ({
-        id: String(n.id),
-        label: n.label || n.title || String(n.id),
-        folder: n.folder || "",
-        connection_count: +n.connection_count || 0
-      }));
-      nodes.sort((a, b) => b.connection_count - a.connection_count);
-      nodes = nodes.slice(0, 180);
-      const ids = new Set(nodes.map(n => n.id));
-      const links = (brain.links || [])
-        .map(l => ({ source: String(l.source), target: String(l.target) }))
-        .filter(l => ids.has(l.source) && ids.has(l.target));
-
-      if (status) status.textContent = " " + nodes.length + " nodes · " + links.length + " links";
-
-      const w = svgEl.clientWidth || 900;
-      const h = svgEl.clientHeight || 560;
-      const svg = d3.select(svgEl).attr("viewBox", [0, 0, w, h]);
-      svg.selectAll("*").remove();
-      const g = svg.append("g");
-      svg.call(d3.zoom().scaleExtent([0.2, 4]).on("zoom", e => g.attr("transform", e.transform)));
-
-      const color = d3.scaleOrdinal(d3.schemeTableau10);
-      const sim = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id).distance(50))
-        .force("charge", d3.forceManyBody().strength(-100))
-        .force("center", d3.forceCenter(w / 2, h / 2))
-        .force("collide", d3.forceCollide(12));
-
-      const link = g.append("g").attr("stroke", "#48606e").attr("stroke-opacity", 0.6)
-        .selectAll("line").data(links).join("line");
-
-      const node = g.append("g").selectAll("g").data(nodes).join("g")
-        .call(d3.drag()
-          .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-          .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
-          .on("end", (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
-
-      node.append("circle")
-        .attr("r", d => 4 + Math.min(10, Math.sqrt(d.connection_count + 1)))
-        .attr("fill", d => color(d.folder || "x"))
-        .append("title").text(d => d.label + "\n" + d.folder);
-
-      node.append("text").text(d => d.label.slice(0, 16))
-        .attr("x", 8).attr("y", 3).attr("fill", "#c5d3dc").attr("font-size", 9);
-
-      sim.on("tick", () => {
-        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-        node.attr("transform", d => "translate(" + d.x + "," + d.y + ")");
-      });
-
-      built = true;
-    } catch (e) {
-      if (status) status.textContent = " Error: " + e.message;
-      console.error(e);
-    }
-  }
-
-  const _show = window.show;
-  window.show = function (id, btn) {
-    if (typeof _show === "function") _show(id, btn);
-    else {
-      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-      document.querySelectorAll(".nav").forEach(n => n.classList.remove("active"));
-      const el = document.getElementById(id);
-      if (el) el.classList.add("active");
-      if (btn) btn.classList.add("active");
-    }
-    if (id === "brain") insertBrainGraph();
-  };
-})();
 </script>
 </body>
 </html>

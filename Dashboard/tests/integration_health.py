@@ -18,6 +18,10 @@ checks = [
     ("/api/presence", "PRESENCE"),
     ("/api/presence/frame", "RUNTIME PRESENCE FRAME"),
     ("/api/activity", "ACTIVITY"),
+    ("/agent-terminal/terminal.css", "AGENT TERMINAL STYLES"),
+    ("/agent-terminal/terminal.js", "AGENT TERMINAL CONTROLLER"),
+    ("/api/agent-terminal/status", "AGENT TERMINAL STATUS"),
+    ("/agent-terminal/avatar/fred.webp", "OFFLINE AGENT AVATARS"),
 ]
 
 passed = 0
