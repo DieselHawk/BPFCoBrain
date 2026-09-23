@@ -11,7 +11,6 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request, send_file
 from agent_bridge import AgentBridge
-from Brain.Executive.local_evidence import retrieve
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -116,7 +115,7 @@ def fred_task():
     write_presence("Fred", "THINKING", "think")
     evidence = []
     try:
-        evidence = retrieve(objective)
+        evidence = task.get("evidence", [])
         answer = local_reply("Fred", objective, evidence)
         if not answer:
             raise ValueError("Local model returned no response")

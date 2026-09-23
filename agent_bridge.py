@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from Brain.Executive.local_evidence import retrieve
 
 ROOT = Path(__file__).resolve().parent
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -81,6 +82,7 @@ class AgentBridge:
             "approval_required_before_external_execution": bool(approval_required),
             "execution_mode": "internal_only",
             "shared_context": self._load_shared_context(),
+            "evidence": retrieve(objective),
         }
 
         (TASK_DIR / f"{task_id}.json").write_text(

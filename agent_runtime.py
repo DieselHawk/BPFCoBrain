@@ -59,16 +59,17 @@ class AgentRuntime:
     def approved(self, approval_id):
         return is_approved(approval_id)
 
-    def complete(self, task_id, report, status="complete"):
+    def complete(self, task_id, report, status="complete", sources=None):
         return self.bridge.complete(
             task_id,
             self.agent_name,
             report,
             status=status,
+            sources=sources,
         )
 
-    def report_to_ceo(self, task_id, report, status="complete"):
-        result = self.complete(task_id, report, status=status)
+    def report_to_ceo(self, task_id, report, status="complete", sources=None):
+        result = self.complete(task_id, report, status=status, sources=sources)
 
         return {
             "agent": self.agent_name,
@@ -100,6 +101,10 @@ class AgentRuntime:
 
         try:
             report = processor(task)
+            sources = [item["path"] for item in task.get("evidence", [])]
+            if sources:
+                report += "\n\nRetrieved local evidence (review before relying on it):\n"
+                report += "\n".join(f"- {path}" for path in sources)
 
             # Synthesize experience into the Brain before reporting to CEO
             self.synthesizer.synthesize(self.agent_name, task_id, report)
@@ -108,6 +113,7 @@ class AgentRuntime:
                 task_id,
                 report,
                 status="complete",
+                sources=sources,
             )
 
         except Exception as exc:
