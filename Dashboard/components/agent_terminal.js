@@ -29,12 +29,29 @@
   function save(){if(panel.classList.contains("at-collapsed"))return;localStorage.setItem("bpfco.agentTerminal.overlay",JSON.stringify({left:panel.offsetLeft,top:panel.offsetTop,width:panel.offsetWidth,height:panel.offsetHeight}))}
   function restore(){try{const g=JSON.parse(localStorage.getItem("bpfco.agentTerminal.overlay"));if(!g)return;panel.style.left=`${g.left}px`;panel.style.top=`${g.top}px`;panel.style.right="auto";panel.style.bottom="auto";panel.style.width=`${g.width}px`;panel.style.height=`${g.height}px`;clamp()}catch(_){localStorage.removeItem("bpfco.agentTerminal.overlay")}}
   function state(value){$("atState").textContent=value;$("atAvatar").className=`at-avatar ${value.toLowerCase()}`}
-  function choose(name){selected=name;panel.style.setProperty("--at-accent",agents[name].color);document.querySelectorAll(".at-agent").forEach(b=>b.classList.toggle("active",b.dataset.agent===name));$("atName").textContent=name;$("atRole").textContent=agents[name].role;$("atInitial").textContent=name[0];$("atPortrait").src=agents[name].avatar;$("atPortrait").alt=`${name} portrait`;state("READY")}
+  function choose(name){selected=name;panel.style.setProperty("--at-accent",agents[name].color);document.querySelectorAll(".at-agent").forEach(b=>b.classList.toggle("active",b.dataset.agent===name));$("atName").textContent=name;$("atRole").textContent=agents[name].role;$("atInitial").textContent=name[0];$("atPortrait").src=agents[name].avatar;$("atPortrait").alt=`${name} portrait`;$("atSend").textContent=name==="Fred"?"TASK FRED":"SEND";$("atInput").placeholder=name==="Fred"?"Give Fred an internal objective…":"Speak to the selected agent…";state("READY")}
   function message(kind,text){const p=document.createElement("p");p.className=`at-message ${kind}`;p.textContent=text;$("atLog").appendChild(p);$("atLog").scrollTop=$("atLog").scrollHeight}
   async function api(url,options={}){const response=await fetch(url,options),data=await response.json();if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`);return data}
 
   Object.entries(agents).forEach(([name,meta])=>{const button=document.createElement("button");button.type="button";button.className="at-agent";button.dataset.agent=name;button.textContent=name;button.style.setProperty("--agent",meta.color);button.onclick=()=>choose(name);$("atAgents").appendChild(button)});
-  $("atForm").addEventListener("submit",async event=>{event.preventDefault();const text=$("atInput").value.trim();if(!text)return;message("user",text);$("atInput").value="";$("atSend").disabled=true;state("THINKING");$("atStatus").textContent=`${selected} is thinking through local Ollama…`;try{const result=await api("/api/agent-terminal/interact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({agent:selected,message:text})});message("reply",`${selected}: ${result.response}`);state("SPEAKING");$("atStatus").textContent=`${selected} · local response`}catch(error){message("system",error.message);state("READY");$("atStatus").textContent="Local interaction unavailable"}finally{$("atSend").disabled=false}});
+  $("atForm").addEventListener("submit",async event=>{
+    event.preventDefault();const objective=$("atInput").value.trim();if(!objective)return;
+    const agent=selected,isFred=agent==="Fred";
+    message("user",objective);$("atInput").value="";$("atSend").disabled=true;
+    state("THINKING");$("atStatus").textContent=`${agent} is thinking through local Ollama…`;
+    try{
+      const route=isFred?"/api/agent-terminal/fred-task":"/api/agent-terminal/interact";
+      const body=isFred?{objective}:{agent,message:objective};
+      const result=await api(route,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      message("reply",`${agent}: ${result.response}`);
+      if(isFred){
+        const paths=(result.sources||[]).map(source=>source.path);
+        message("system",`Task ${result.task_id} · Evidence: ${paths.length?paths.join(", "):"no matching local notes"}`);
+      }
+      state("SPEAKING");$("atStatus").textContent=`${agent} · local response`;
+    }catch(error){message("system",error.message);state("READY");$("atStatus").textContent="Local interaction unavailable"}
+    finally{$("atSend").disabled=false}
+  });
   $("atCollapse").addEventListener("click",event=>{event.stopPropagation();panel.classList.toggle("at-collapsed");event.currentTarget.textContent=panel.classList.contains("at-collapsed")?"+":"−";event.currentTarget.setAttribute("aria-label",panel.classList.contains("at-collapsed")?"Restore terminal":"Collapse terminal");clamp()});
 
   const handle=$("atHandle");handle.addEventListener("pointerdown",event=>{if(event.target.closest("button"))return;const box=panel.getBoundingClientRect();drag={x:event.clientX-box.left,y:event.clientY-box.top};panel.classList.add("at-dragging");handle.setPointerCapture(event.pointerId)});handle.addEventListener("pointermove",event=>{if(!drag)return;panel.style.left=`${event.clientX-drag.x}px`;panel.style.top=`${event.clientY-drag.y}px`;panel.style.right="auto";panel.style.bottom="auto";clamp()});handle.addEventListener("pointerup",()=>{drag=null;panel.classList.remove("at-dragging");save()});
