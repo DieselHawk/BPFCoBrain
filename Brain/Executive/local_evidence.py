@@ -1,5 +1,6 @@
 """Bounded local evidence lookup over indexed notes and an optional document folder."""
 
+import heapq
 import json
 import os
 import re
@@ -33,6 +34,18 @@ def _external_files():
             if path.suffix.lower() in {".md", ".txt"} and not path.is_symlink():
                 yield path
 
+def _experience_files():
+    folder = ROOT / "Brain" / "Executive" / "Experience"
+    if not folder.is_dir():
+        return []
+    try:
+        with os.scandir(folder) as entries:
+            paths = (Path(entry.path) for entry in entries
+                     if entry.is_file(follow_symlinks=False) and entry.name.endswith(".md"))
+            return heapq.nlargest(200, paths, key=lambda path: path.stat().st_mtime_ns)
+    except OSError:
+        return []
+
 def retrieve(objective, limit=4):
     """Return bounded excerpts with source paths; never execute source content."""
     terms = set(re.findall(r"[\w-]{4,}", objective.casefold())) - STOP
@@ -54,9 +67,9 @@ def retrieve(objective, limit=4):
         path = (ROOT / relative).resolve()
         if path.is_relative_to(ROOT.resolve()) and path.suffix.lower() == ".md":
             indexed.append((path, str(title), relative))
-    for path, title, display in indexed + [
-        (p, p.stem, str(p)) for p in _external_files()
-    ]:
+    experience = [(p, p.stem, str(p.relative_to(ROOT))) for p in _experience_files()]
+    external = [(p, p.stem, str(p)) for p in _external_files()]
+    for path, title, display in indexed + experience + external:
         if path in seen_paths:
             continue
         seen_paths.add(path)
