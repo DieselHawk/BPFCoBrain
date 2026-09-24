@@ -532,6 +532,8 @@ def brain_graph_api():
 def super_brain_3d():
     return send_file(ROOT / "Dashboard" / "super_brain_3d.html")
 if __name__ == "__main__":
+    from boot_network import configure_environment
+    print(f"[BPFCoBrain] Network mode: {configure_environment().upper()}")
     print("[BPFCoBrain] Starting CEO Executive Dashboard...")
     app.run(host="127.0.0.1", port=5001, debug=False)
 
