@@ -51,8 +51,23 @@ $samples | Group-Object Extension | Sort-Object Name | ForEach-Object { Write-Ho
 if ($supported -eq 0) { throw 'No supported document in the sample. No preview files changed.' }
 $origin = git -C $preview remote get-url origin
 if ($LASTEXITCODE -ne 0 -or $origin -notmatch 'DieselHawk/BPFCoBrain(\.git)?$') { throw "Unexpected preview origin: $origin" }
+if (-not $AlreadyFetched) {
+    git -C $preview fetch --no-tags origin $branch
+    if ($LASTEXITCODE -ne 0) { throw 'Git fetch failed; preview unchanged' }
+}
 $dirty = @(git -C $preview status --porcelain -- $files)
-if ($dirty.Count) { throw "Preview graph files have local changes; no files were replaced: $($dirty -join ', ')" }
+if ($dirty.Count) {
+    foreach ($file in $files) {
+        $localFile = Join-Path $preview $file
+        if (-not (Test-Path $localFile)) { continue }
+        $localBlob = (git -C $preview hash-object -- $file).Trim()
+        $draftBlob = (git -C $preview rev-parse "FETCH_HEAD`:$file" 2>$null).Trim()
+        if ($localBlob -ne $draftBlob) {
+            throw "Preview has an unreviewed change in $file; existing file left intact"
+        }
+    }
+    Write-Host 'Existing graph files match the fetched draft exactly; preserving their Git staging state.'
+}
 $route = Join-Path $preview 'ceo_dashboard.py'
 $routeText = [System.IO.File]::ReadAllText($route)
 $old = 'return jsonify(add_provenance_edges(build_brain_graph(), ROOT))'
@@ -60,10 +75,6 @@ $newer = 'return jsonify(add_note_edges(add_provenance_edges(build_brain_graph()
 $plain = 'return jsonify(build_brain_graph())'
 if (-not ($routeText.Contains($old) -or $routeText.Contains($newer) -or $routeText.Contains($plain) -or $routeText.Contains('graph = add_document_edges(graph, ROOT)'))) {
     throw 'The preview graph route differs from known versions; leave it intact for reconciliation.'
-}
-if (-not $AlreadyFetched) {
-    git -C $preview fetch --no-tags origin $branch
-    if ($LASTEXITCODE -ne 0) { throw 'Git fetch failed; preview unchanged' }
 }
 foreach ($file in $files) {
     git -C $preview cat-file -e "FETCH_HEAD`:$file" 2>$null
@@ -78,8 +89,16 @@ if ($listener) {
 }
 $backup = Join-Path $env:TEMP ('fred-preview-route-' + [guid]::NewGuid().ToString('N') + '.py')
 Copy-Item $route $backup
-git -C $preview restore --source=FETCH_HEAD --worktree -- $files
-if ($LASTEXITCODE -ne 0) { throw 'File restore failed; server has not been stopped' }
+foreach ($file in $files) {
+    $localFile = Join-Path $preview $file
+    if (Test-Path $localFile) {
+        $localBlob = (git -C $preview hash-object -- $file).Trim()
+        $draftBlob = (git -C $preview rev-parse "FETCH_HEAD`:$file").Trim()
+        if ($localBlob -eq $draftBlob) { continue }
+    }
+    git -C $preview restore --source=FETCH_HEAD --worktree -- $file
+    if ($LASTEXITCODE -ne 0) { throw "File restore failed for $file; server has not been stopped" }
+}
 if (-not $routeText.Contains('graph = add_document_edges(graph, ROOT)')) {
     foreach ($line in @('    from Dashboard.adapters.provenance_edges import add_provenance_edges',
                        '    from Dashboard.adapters.note_edges import add_note_edges',
