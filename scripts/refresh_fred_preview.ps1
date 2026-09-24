@@ -44,10 +44,11 @@ if (-not $documents) {
 if (-not (Test-Path $documents -PathType Container)) { throw "Document source unavailable: $documents" }
 $documents = (Resolve-Path $documents).Path
 $samples = @(Get-ChildItem $documents -Recurse -File -ErrorAction Stop | Select-Object -First 201)
-$supported = @($samples | Where-Object { $_.Extension -in @('.md', '.txt') }).Count
-Write-Host "Documents sampled: $($samples.Count) (200+ if 201); Markdown/text: $supported"
+Write-Host "Document source: $documents"
+$supported = @($samples | Where-Object { $_.Extension -in @('.md', '.txt', '.docx', '.pdf') }).Count
+Write-Host "Documents sampled: $($samples.Count) (200+ if 201); supported text/DOCX/PDF: $supported"
 $samples | Group-Object Extension | Sort-Object Name | ForEach-Object { Write-Host "  $($_.Name): $($_.Count)" }
-if ($supported -eq 0) { throw 'No Markdown/text source in the sample. PDF/DOCX require a separate offline parser.' }
+if ($supported -eq 0) { throw 'No supported document in the sample. No preview files changed.' }
 $origin = git -C $preview remote get-url origin
 if ($LASTEXITCODE -ne 0 -or $origin -notmatch 'DieselHawk/BPFCoBrain(\.git)?$') { throw "Unexpected preview origin: $origin" }
 $dirty = @(git -C $preview status --porcelain -- $files)
@@ -114,7 +115,7 @@ for ($attempt = 0; $attempt -lt 9; $attempt++) {
     Start-Sleep -Seconds 5
     try {
         $graph = Invoke-RestMethod 'http://127.0.0.1:5002/api/brain-graph' -TimeoutSec 5
-        Write-Host "Live graph: notes=$($graph.stats.notes) documents=$($graph.stats.document_sources) note-links=$($graph.stats.scanned_note_links) document-links=$($graph.stats.document_links) provenance=$($graph.stats.provenance_links)"
+        Write-Host "Live graph: notes=$($graph.stats.notes) documents=$($graph.stats.document_sources) exact-copy-groups=$($graph.stats.exact_duplicate_groups) suppressed-copies=$($graph.stats.document_duplicates_suppressed) hash-pending=$($graph.stats.document_unverified_hashes) extract-pending=$($graph.stats.document_pending) note-links=$($graph.stats.scanned_note_links) document-links=$($graph.stats.document_links) provenance=$($graph.stats.provenance_links)"
         $ready = $true
         break
     } catch { if ($started.HasExited) { break } }
