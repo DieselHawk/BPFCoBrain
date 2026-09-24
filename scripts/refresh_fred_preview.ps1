@@ -1,7 +1,7 @@
-param([switch]$AlreadyFetched)
+param([switch]$AlreadyFetched, [string]$DocumentsPath)
 $ErrorActionPreference = 'Stop'
 $preview = 'C:\BPFCo\FredPreview'
-$documents = 'C:\Documents\New All Docs'
+$documents = $DocumentsPath
 $branch = 'fix/fred-shared-memory-backup'
 $files = @(
     'Dashboard/adapters/note_edges.py',
@@ -11,7 +11,29 @@ $files = @(
     'run_fred_preview.py'
 )
 if (-not (Test-Path "$preview\.git")) { throw "Preview worktree unavailable: $preview" }
+if (-not $documents) {
+    $roots = @('C:\Documents', (Join-Path $env:USERPROFILE 'Documents'),
+               (Join-Path $env:USERPROFILE 'OneDrive'), $env:OneDrive,
+               $env:OneDriveCommercial) | Where-Object { $_ -and (Test-Path $_ -PathType Container) } | Select-Object -Unique
+    $folderCandidates = @($roots | ForEach-Object {
+        $root = $_
+        Get-ChildItem $root -Directory -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -in @('New All Docs', 'AllNew Docs', 'AllNew_Docs') }
+    } | Select-Object -ExpandProperty FullName -Unique)
+    if ($folderCandidates.Count -eq 0) {
+        $folderCandidates = @('C:\BPFCo\BPFCoBrain\AllNew_Docs',
+                              'C:\BPFCo\BPFCoBrain-layering\AllNew_Docs') |
+            Where-Object { Test-Path $_ -PathType Container }
+    }
+    if ($folderCandidates.Count -ne 1) {
+        Write-Host 'Candidate document folders:'
+        $folderCandidates | ForEach-Object { Write-Host "  $_" }
+        throw 'Provide the exact document path with -DocumentsPath. No preview files changed.'
+    }
+    $documents = $folderCandidates[0]
+}
 if (-not (Test-Path $documents -PathType Container)) { throw "Document source unavailable: $documents" }
+$documents = (Resolve-Path $documents).Path
 $indexPath = Join-Path $preview '.vault-index.json'
 if (-not (Test-Path $indexPath)) { throw 'Preview vault index unavailable' }
 $index = Get-Content $indexPath -Raw | ConvertFrom-Json
