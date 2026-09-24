@@ -90,6 +90,66 @@ def build_brain_graph():
     # Reset duplicate-protection between calls.
     build_brain_graph._seen = set()
 
+    # Executive records have explicit task and agent IDs. Keep these edges
+    # distinct from the note links inferred from the vault index.
+    executive = ROOT / "Brain" / "Executive"
+    agent_ids = set()
+    task_ids = set()
+    report_count = 0
+    executive_links = 0
+
+    def connect(source, target, relationship):
+        nonlocal executive_links
+        links.append({"source": source, "target": target,
+                      "strength": 1, "relationship": relationship,
+                      "unresolved": False})
+        executive_links += 1
+
+    def agent_node(name):
+        if not name or name in agent_ids:
+            return
+        agent_ids.add(name)
+        nodes.append({"id": f"agent:{name}", "label": name,
+                      "title": name, "folder": "Executive / Agents",
+                      "path": "", "word_count": 0, "connection_count": 2,
+                      "links": [], "content": "", "frontmatter": {},
+                      "kind": "agent"})
+
+    for folder, kind in (("tasks", "task"), ("reports", "report")):
+        for path in sorted((executive / folder).glob("*.json")):
+            try:
+                record = json.loads(path.read_text(encoding="utf-8-sig"))
+            except (OSError, ValueError):
+                continue
+            if not isinstance(record, dict):
+                continue
+            task_id = record.get("task_id")
+            agent = record.get("agent")
+            if not isinstance(task_id, str) or not task_id or not isinstance(agent, str) or not agent:
+                continue
+            agent_node(agent)
+            if kind == "task":
+                task_ids.add(task_id)
+            else:
+                report_count += 1
+            node_id = f"{kind}:{task_id}"
+            nodes.append({"id": node_id,
+                          "label": (record.get("objective") or task_id) if kind == "task" else f"Report: {agent}",
+                          "title": task_id, "path": str(path.relative_to(ROOT)),
+                          "folder": f"Executive / {folder.title()}",
+                          "word_count": 0, "connection_count": 1,
+                          "links": [], "content": "", "frontmatter": {},
+                          "kind": kind, "status": record.get("status", "")})
+            if kind == "task":
+                connect(f"agent:{agent}", node_id, "assigned")
+            elif task_id in task_ids:
+                connect(f"task:{task_id}", node_id, "reported")
+            else:
+                connect(f"agent:{agent}", node_id, "reported")
+
+    # If report files sort before their task files on a future refactor,
+    # the task loop above still runs first by design.
+
     stats = index.get("stats", {})
     if not isinstance(stats, dict):
         stats = {}
@@ -107,6 +167,8 @@ def build_brain_graph():
             "words": int(total_words or 0),
             "indexed_connections": int(indexed_connections or 0),
             "resolved_links": sum(1 for x in links if not x["unresolved"]),
-            "unresolved_links": sum(1 for x in links if x["unresolved"])
+            "unresolved_links": sum(1 for x in links if x["unresolved"]),
+            "executive_reports": report_count,
+            "executive_links": executive_links
         }
     }
