@@ -160,6 +160,12 @@ source before changing files. The user observed 780 source files and nine
 SHA-256-identical groups containing 27 files; this count covers all file
 types, while graph duplicate statistics cover only supported graph files.
 The script and real document graph still need a Windows run before merging.
+The preview reconciliation helper accepts only three verified earlier blob IDs
+(renderer, provenance adapter, and dashboard route), backs up their exact
+bytes outside the preview, then advances those files and the new modules.
+It refuses unfamiliar local changes and leaves Git staging untouched. The
+Windows restart script accepts byte-identical draft files even when Git marks
+them as deleted or untracked in the preview worktree.
 
 The `/super-3d` view refreshes the API every 15 seconds while visible and
 keeps positions for unchanged nodes. It displays the 350 most connected nodes
