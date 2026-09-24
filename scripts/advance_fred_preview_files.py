@@ -33,7 +33,7 @@ def git(repo, *args):
     return subprocess.check_output(['git', '-C', str(repo), *args], stderr=subprocess.PIPE)
 
 
-def advance(repo, ref):
+def advance(repo, ref, check_only=False):
     if not (repo / '.git').exists():
         raise ValueError('Expected an isolated Git worktree')
     origin = git(repo, 'remote', 'get-url', 'origin').decode().strip()
@@ -45,12 +45,15 @@ def advance(repo, ref):
         fetched = git(repo, 'show', f'{ref}:{relative}')
         wanted = blob_id(fetched)
         current = destination.read_bytes() if destination.exists() else None
-        previous = blob_id(current) if current is not None else None
+        previous = git(repo, 'hash-object', '--', relative).decode().strip() if current is not None else None
         if current is not None and previous not in (wanted, ALLOWED_OLD.get(relative)):
-            raise ValueError(f'Unrecognized local change; left intact: {relative} {previous}')
+            raise ValueError(f'Unrecognized local change; left intact: {relative}; local={previous}; draft={wanted}; accepted_old={ALLOWED_OLD.get(relative)}')
         if current is None and relative in ALLOWED_OLD:
             raise ValueError(f'Expected known preview file is missing: {relative}')
         operations.append((relative, destination, current, fetched, previous, wanted))
+    if check_only:
+        print('All six preview files are recognized; no files changed.')
+        return None
     backup = Path(tempfile.mkdtemp(prefix='fred-preview-reconcile-'))
     for relative, _, current, _, _, _ in operations:
         if current is not None:
@@ -93,5 +96,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('preview', type=Path)
     parser.add_argument('--ref', default='FETCH_HEAD')
+    parser.add_argument('--check-only', action='store_true')
     args = parser.parse_args()
-    advance(args.preview.resolve(), args.ref)
+    advance(args.preview.resolve(), args.ref, args.check_only)
