@@ -163,7 +163,7 @@ The script and real document graph still need a Windows run before merging.
 The preview reconciliation helper accepts only three verified earlier blob IDs
 (renderer, provenance adapter, and dashboard route), backs up their exact
 bytes outside the preview, then advances those files and the new modules.
-It refuses unfamiliar local changes and leaves Git staging untouched. The
+It refuses unfamiliar local changes and leaves Git staging untouched. Its `--check-only` preflight uses Git's own blob calculation and changes no files. The
 Windows restart script accepts byte-identical draft files even when Git marks
 them as deleted or untracked in the preview worktree.
 
