@@ -230,6 +230,10 @@
                     </div>
                 </div>
             </div>
+            <div class="panel" id="meetingTaskPanel">
+                <div class="head"><b>Agent Tasks</b><span class="muted" id="meetingTaskCount">Loading…</span></div>
+                <div id="meetingTaskList" aria-live="polite">Loading tasks…</div>
+            </div>
         </div>
     </section>
 </main>
@@ -428,6 +432,39 @@
 
         setInterval(bpfcoBrainSync, 3000);
     })();
+
+    async function refreshMeetingTasks() {
+        const list = $('meetingTaskList');
+        if (!list) return;
+        try {
+            const data = await get('/api/meeting-tasks');
+            $('meetingTaskCount').textContent = data.count + ' active';
+            list.replaceChildren();
+            if (!data.tasks.length) {
+                list.textContent = 'No active tasks.';
+                return;
+            }
+            data.tasks.forEach(task => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.style.cssText = 'display:grid;grid-template-columns:125px 105px minmax(0,1fr);gap:12px;align-items:start';
+                for (const value of [task.agent, task.status, task.objective || task.task_id]) {
+                    const cell = document.createElement('span');
+                    cell.textContent = value;
+                    cell.style.overflowWrap = 'anywhere';
+                    row.appendChild(cell);
+                }
+                list.appendChild(row);
+            });
+        } catch (error) {
+            $('meetingTaskCount').textContent = 'Unavailable';
+            list.textContent = 'Task list unavailable.';
+        }
+    }
+    refreshMeetingTasks();
+    setInterval(() => {
+        if ($('meeting')?.classList.contains('active')) refreshMeetingTasks();
+    }, 5000);
 
     setInterval(() => { if($('clock')) $('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
     load();

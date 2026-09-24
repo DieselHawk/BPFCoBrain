@@ -11,8 +11,8 @@
   panel.setAttribute("aria-label","BPFCo agent terminal");
   panel.innerHTML=`
     <header class="at-header" id="atHandle">
-      <div class="at-heading"><i class="at-orb"></i><span class="at-title">AGENT TERMINAL</span><span class="at-mode" id="atMode">LOCAL · 2D</span></div>
-      <div class="at-controls"><button type="button" id="atCollapse" aria-label="Collapse terminal">−</button></div>
+      <div class="at-heading"><i class="at-orb"></i><span class="at-title">AGENT TERMINAL</span></div>
+      <div class="at-controls"><button type="button" class="at-mode" id="atMode" aria-label="Switch network mode" title="Switch online or offline">OFFLINE</button><button type="button" id="atCollapse" aria-label="Collapse terminal">−</button></div>
     </header>
     <section class="at-body">
       <nav class="at-agents" id="atAgents" aria-label="Select agent"></nav>
@@ -32,6 +32,30 @@
   function choose(name){selected=name;panel.style.setProperty("--at-accent",agents[name].color);document.querySelectorAll(".at-agent").forEach(b=>b.classList.toggle("active",b.dataset.agent===name));$("atName").textContent=name;$("atRole").textContent=agents[name].role;$("atInitial").textContent=name[0];$("atPortrait").src=agents[name].avatar;$("atPortrait").alt=`${name} portrait`;$("atSend").textContent=name==="Fred"?"TASK FRED":"SEND";$("atQueue").hidden=name==="Fred";$("atForm").classList.toggle("at-fred",name==="Fred");$("atInput").placeholder=name==="Fred"?"Give Fred an internal objective…":"Speak to the selected agent…";state("READY")}
   function message(kind,text){const p=document.createElement("p");p.className=`at-message ${kind}`;p.textContent=text;$("atLog").appendChild(p);$("atLog").scrollTop=$("atLog").scrollHeight}
   async function api(url,options={}){const response=await fetch(url,options),data=await response.json();if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`);return data}
+
+  let networkMode="offline";
+  function showNetworkMode(mode){
+    networkMode=mode==="online"?"online":"offline";
+    $("atMode").textContent=networkMode.toUpperCase();
+    $("atMode").setAttribute("aria-label",`Network mode ${networkMode}; switch mode`);
+    $("atMode").title=`Switch to ${networkMode==="online"?"offline":"online"}`;
+  }
+  api("/api/agent-terminal/status").then(data=>showNetworkMode(data.network_mode))
+    .catch(()=>showNetworkMode("offline"));
+  $("atMode").addEventListener("pointerdown",event=>event.stopPropagation());
+  $("atMode").addEventListener("click",async event=>{
+    event.stopPropagation();
+    const target=networkMode==="online"?"offline":"online";
+    $("atMode").disabled=true;
+    try{
+      const data=await api("/api/agent-terminal/network-mode",{
+        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:target})
+      });
+      showNetworkMode(data.network_mode);
+      message("system",`Network mode: ${target}. Existing workers need restart to inherit it.`);
+    }catch(error){message("system",error.message)}
+    finally{$("atMode").disabled=false}
+  });
 
   Object.entries(agents).forEach(([name,meta])=>{const button=document.createElement("button");button.type="button";button.className="at-agent";button.dataset.agent=name;button.textContent=name;button.style.setProperty("--agent",meta.color);button.onclick=()=>choose(name);$("atAgents").appendChild(button)});
   $("atForm").addEventListener("submit",async event=>{

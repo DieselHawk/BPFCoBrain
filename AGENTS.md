@@ -48,3 +48,30 @@ Build style:
 
 When work is resumed:
 continue the planned build from the repository state instead of restarting the project.
+
+## Current-build comparison gate
+
+Before deciding that a new edit is needed, compare the proposal with the
+currently running checkout and its uncommitted files. Read the caller and
+downstream effects as well as the target file. A clean draft branch or
+mergeable PR does not establish compatibility with a dirty live worktree.
+If local edits are unavailable, keep the change in a draft and request only
+the relevant patch before integration.
+
+For every online/offline edit, trace separate permissions for:
+- local Ollama reasoning;
+- read-only online research;
+- hosted model fallback;
+- external actions behind the hardware-backed human approval gate.
+
+Network availability never grants hosted model fallback or permission to
+send private prompts. Test Ollama failure while online to verify this.
+Agents may converse, research, draft and learn internally without approval.
+Do not add paid dependencies or make the core depend on an online service.
+
+Use actual task/report copies in an isolated worktree when available. Compare
+API counts and the visible dashboard with the baseline, and preserve a
+reversible path for any preview mutation. Keep graph/Meeting work separate
+from unfinished connectors. Do not merge until the uncommitted executive
+graph adapter is reviewed and the integrated branch reproduces the verified
+executive and provenance links.

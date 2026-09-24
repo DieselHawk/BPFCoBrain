@@ -1,58 +1,96 @@
-"""Small, offline evidence lookup over the existing vault index."""
+"""Bounded local evidence lookup over indexed notes and an optional document folder."""
 
+import heapq
 import json
+import os
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 INDEX = ROOT / ".vault-index.json"
-STOP = {"about", "after", "from", "have", "into", "what", "when", "where", "with", "your", "that", "this", "then", "please", "could", "would", "should", "task", "fred", "and", "the"}
-EXCLUDED_PARTS = {".git", ".venv", "venv", "node_modules", "site-packages", "vendor"}
+STOP = {"about", "after", "from", "have", "into", "what", "when", "where", "with", "your", "that", "this", "then", "please", "could", "would", "should", "task", "fred", "and", "the", "ingest", "overview"}
+EXCLUDED_PARTS = {".git", ".venv", "venv", "node_modules", "site-packages", "vendor", "backups"}
+MAX_SOURCE_FILES = 200
+MAX_BYTES = 1_000_000
 
+def _external_files():
+    configured = os.environ.get("BPFCO_DOCUMENTS_ROOT", "").strip()
+    if not configured:
+        return
+    source = Path(configured).expanduser().resolve()
+    if not source.is_dir():
+        return
+    seen = 0
+    for folder, dirs, files in os.walk(source, followlinks=False):
+        current = Path(folder)
+        depth = len(current.relative_to(source).parts)
+        dirs[:] = sorted(d for d in dirs if d.casefold() not in EXCLUDED_PARTS
+                         and depth < 3 and not (current / d).is_symlink())
+        for name in sorted(files):
+            seen += 1
+            if seen > MAX_SOURCE_FILES:
+                return
+            path = current / name
+            if path.suffix.lower() in {".md", ".txt"} and not path.is_symlink():
+                yield path
+
+def _experience_files():
+    folder = ROOT / "Brain" / "Executive" / "Experience"
+    if not folder.is_dir():
+        return []
+    try:
+        with os.scandir(folder) as entries:
+            paths = (Path(entry.path) for entry in entries
+                     if entry.is_file(follow_symlinks=False) and entry.name.endswith(".md"))
+            return heapq.nlargest(200, paths, key=lambda path: path.stat().st_mtime_ns)
+    except OSError:
+        return []
 
 def retrieve(objective, limit=4):
-    """Return short excerpts with paths; never execute content from notes."""
-    try:
-        index = json.loads(INDEX.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError):
-        return []
+    """Return bounded excerpts with source paths; never execute source content."""
     terms = set(re.findall(r"[\w-]{4,}", objective.casefold())) - STOP
     if not terms:
         return []
-
+    try:
+        index = json.loads(INDEX.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        index = {}
     candidates = []
+    seen_paths = set()
+    indexed = []
     for title, meta in index.get("notes", {}).items():
-        if not isinstance(meta, dict):
+        if not isinstance(meta, dict) or not isinstance(meta.get("path"), str):
             continue
-        path = meta.get("path", "")
-        if not isinstance(path, str) or not path:
+        relative = meta["path"].replace("\\", "/")
+        if EXCLUDED_PARTS.intersection(relative.casefold().split("/")):
             continue
-        normalized_path = path.replace("\\", "/")
-        if EXCLUDED_PARTS.intersection(normalized_path.casefold().split("/")):
+        path = (ROOT / relative).resolve()
+        if path.is_relative_to(ROOT.resolve()) and path.suffix.lower() == ".md":
+            indexed.append((path, str(title), relative))
+    experience = [(p, p.stem, str(p.relative_to(ROOT))) for p in _experience_files()]
+    external = [(p, p.stem, str(p)) for p in _external_files()]
+    for path, title, display in indexed + experience + external:
+        if path in seen_paths:
             continue
-        file_path = (ROOT / normalized_path).resolve()
-        if not file_path.is_relative_to(ROOT.resolve()) or file_path.suffix.lower() != ".md":
-            continue
+        seen_paths.add(path)
         try:
-            if file_path.stat().st_size > 1_000_000:
+            if path.stat().st_size > MAX_BYTES:
                 continue
-            content = file_path.read_text(encoding="utf-8-sig", errors="replace")
+            content = path.read_text(encoding="utf-8-sig", errors="replace")
         except OSError:
             continue
         haystack = content.casefold()
-        hits = {term for term in terms if term in haystack}
+        heading = (title + " " + display).casefold()
+        hits = {term for term in terms if term in haystack or term in heading}
         if not hits:
             continue
-        heading = (str(title) + " " + path).casefold()
+        content_hits = [haystack.find(term) for term in hits if term in haystack]
+        start = max(0, min(content_hits) - 120) if content_hits else 0
+        excerpt = " ".join(content[start:start + 650].split())[:650]
         score = len(hits) + 5 * sum(term in heading for term in hits)
-        first = min(haystack.find(term) for term in hits)
-        start = max(0, first - 120)
-        excerpt = " ".join(content[start:first + 520].split())[:650]
-        candidates.append((score, str(title), normalized_path, excerpt))
-
+        candidates.append((score, title, display, excerpt))
     candidates.sort(key=lambda item: (-item[0], item[2]))
     return [
-        {"title": title, "path": path, "excerpt": excerpt}
-        for _, title, path, excerpt in candidates[:limit]
+        {"title": title, "path": display, "excerpt": excerpt}
+        for _, title, display, excerpt in candidates[:max(0, min(limit, 20))]
     ]

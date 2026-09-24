@@ -64,3 +64,8 @@ Brain/Executive/LinkRepair/link_repair_report.json
 
 # Temporary pre-repair index backup
 .vault-index.before-linkfix.json
+
+# Local network preference and Microsoft OAuth cache
+Brain/Executive/network_mode.json
+onedrive_token.json
+*.msalcache

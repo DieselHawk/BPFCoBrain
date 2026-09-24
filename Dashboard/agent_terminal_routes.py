@@ -8,9 +8,13 @@ import os
 import urllib.error
 import urllib.request
 from pathlib import Path
+from threading import Lock
 
 from flask import Blueprint, jsonify, request, send_file
 from agent_bridge import AgentBridge
+from boot_network import set_mode
+from executive_controller import CEOController
+from online_requests import ResearchRequests
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +33,21 @@ AGENTS = {
 AVATAR_DIR = ROOT / "Dashboard" / "assets" / "agents"
 
 agent_terminal_bp = Blueprint("agent_terminal", __name__)
+
+worker_lock = Lock()
+
+@agent_terminal_bp.route("/api/agent-terminal/run-next", methods=["POST"])
+def run_next_specialist():
+    if not worker_lock.acquire(blocking=False):
+        return jsonify({"ok": False, "error": "A specialist is already running"}), 409
+    try:
+        result = CEOController().dispatch_one()
+    finally:
+        worker_lock.release()
+    return jsonify({"ok": result["status"] in {"idle", "dispatched"}, **result}), (
+        200 if result["status"] in {"idle", "dispatched"} else 503
+    )
+
 
 
 def write_presence(agent, state, event):
@@ -150,6 +169,50 @@ def agent_terminal_avatar(agent):
     if name not in AGENTS:
         return jsonify({"ok": False, "error": "Unknown agent"}), 404
     return send_file(AVATAR_DIR / f"{name.lower()}.webp", mimetype="image/webp")
+
+
+@agent_terminal_bp.route("/api/agent-terminal/research-requests", methods=["GET", "POST"])
+def agent_terminal_research_requests():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify({"ok": False, "error": "Local access only"}), 403
+    requests = ResearchRequests()
+    if request.method == "GET":
+        return jsonify({"ok": True, "requests": requests.list()})
+    data = request.get_json(silent=True) or {}
+    try:
+        record = requests.create(data.get("agent"), data.get("query", ""),
+                                 data.get("task_id", ""))
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    return jsonify({"ok": True, "request": record}), 201
+
+
+@agent_terminal_bp.route("/api/agent-terminal/research-requests/<request_id>/guide", methods=["POST"])
+def agent_terminal_guide_research(request_id):
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify({"ok": False, "error": "Local access only"}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        record = ResearchRequests().guide(request_id, data.get("guidance", ""))
+    except (ValueError, FileNotFoundError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    return jsonify({"ok": True, "request": record})
+
+
+@agent_terminal_bp.route("/api/agent-terminal/network-mode", methods=["POST"])
+def agent_terminal_network_mode():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify({"ok": False, "error": "Local access only"}), 403
+    data = request.get_json(silent=True) or {}
+    mode = data.get("mode")
+    if mode not in {"online", "offline"}:
+        return jsonify({"ok": False, "error": "Choose online or offline"}), 400
+    try:
+        set_mode(mode)
+    except OSError:
+        return jsonify({"ok": False, "error": "Could not save network preference"}), 500
+    return jsonify({"ok": True, "network_mode": mode,
+                    "note": "Existing child workers need restart to inherit the change."})
 
 
 @agent_terminal_bp.route("/api/agent-terminal/status")
