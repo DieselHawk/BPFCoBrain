@@ -132,6 +132,25 @@ access-controlled destination, keep a separate backup of source documents,
 and test a restore before treating this as recovery-ready. Avoid placing
 archives inside any indexed or synced Brain directory.
 
+## Live Brain graph in the draft preview
+
+The `/api/brain-graph` endpoint can scan up to 1,500 indexed Markdown files,
+2 MB per note and 150 explicit links per note. It resolves local wikilinks and
+Markdown links only when a destination is unique; ambiguous and missing targets
+are not invented as connections. Source files are read only; their modification
+times cache extracted links between requests. This scan supplements existing
+index, task, report and experience links. The API reports `scanned_note_links`,
+`ambiguous_note_links` and `notes_scanned` for inspection.
+
+The `/super-3d` view refreshes the API every 15 seconds while visible and
+keeps positions for unchanged nodes. It displays the 350 most connected nodes
+and only real recorded edges; a new edge pulses briefly when first observed.
+Those pulses indicate new graph data, **not agent thought or live network
+traffic**. Further traffic visualization needs timestamped runtime events.
+The bounded scan and browser script passed isolated fixture and syntax checks;
+run it against the real preview vault and measure counts and latency before
+merging. The preview's local executive adapter remains a separate merge blocker.
+
 ## Isolated preview checks and merge gate
 
 As observed in the isolated preview on 24 September 2026, the graph had 855
