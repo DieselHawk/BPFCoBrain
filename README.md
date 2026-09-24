@@ -111,3 +111,13 @@ Check `/api/brain-graph` for `notes`, `executive_links`,
 `document_unverified_hashes` before integrating a changed checkout. The
 Meeting view shows queued and in-progress tasks from the existing queue and
 task files.
+## Automatic internal specialist queue
+
+Starting `ceo_dashboard.py` directly on port 5001 binds the server first,
+then runs one queued specialist at a time in a background thread. The terminal
+`RUN NEXT` button remains available when Fred is selected. Both use the same
+lock, so a manual request returns a busy response while a specialist runs.
+The queue pauses on worker failure for review. Preview launchers that import
+only the Flask app do not start automatic dispatch. The workers' existing
+approval checks still govern external actions. Task and report records stay
+under the existing Executive directories.
