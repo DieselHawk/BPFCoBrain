@@ -112,10 +112,11 @@ automatically ingest either account, or grant Fred live access to them.
 `gmail_hunt.py` requires a Google Desktop OAuth `credentials.json` and
 `token.json`. `ondrive_hunt.py` requires an Azure app client ID and a valid
 Microsoft login; its existing token implementation needs a refresh and search
-repair before relying on it. Keep OAuth tokens outside commits. Local
-`C:\documents` is likewise not presently an indexed source. Review that
-folder's scope before adding it to the vault index; do not copy its full contents
-into the repository. Outbound actions remain subject to the approval gate.
+repair before relying on it. Keep OAuth tokens outside commits. For a bounded, read-only local source, set
+`BPFCO_DOCUMENTS_ROOT` to the desired folder before startup. The retriever
+visits at most 200 entries and three subfolder levels, and reads only Markdown
+or text files smaller than 1 MB. It keeps source paths and short excerpts; it
+does not copy files into the vault. PDF and DOCX ingestion is not included. Outbound actions remain subject to the approval gate.
 
 For a verified backup of executive runtime state (queue, reports, experiences,
 shared context and index), choose a destination outside the checkout, ideally
