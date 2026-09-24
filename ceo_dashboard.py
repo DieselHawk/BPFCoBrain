@@ -571,8 +571,10 @@ def brain_graph_api():
     from Dashboard.adapters.provenance_edges import add_provenance_edges
     from Dashboard.adapters.note_edges import add_note_edges
     from Dashboard.adapters.document_edges import add_document_edges
+    from Dashboard.adapters.source_edges import add_source_edges
     graph = add_note_edges(build_brain_graph(), ROOT)
     graph = add_document_edges(graph, ROOT)
+    graph = add_source_edges(graph, ROOT)
     return jsonify(add_provenance_edges(graph, ROOT))
 
 @app.route("/super-3d")
@@ -615,7 +617,6 @@ if __name__ == "__main__":
         server.serve_forever()
     finally:
         server.server_close()
-
 
 
 

@@ -106,6 +106,14 @@ fall over several refreshes. PDF text needs an already installed offline
 extractor. Missing or ambiguous references remain unlinked. Network mode does
 not control local document reading.
 
+Without an explicit setting, local source selection checks
+`C:\Documents\New All Docs`, then the current user's OneDrive
+`Documents\New All Docs`; only the first available folder is used. Fred's
+task evidence lookup reads up to 100 supported files per task (at most eight
+PDFs) and cites matching excerpts. The graph draws task and report links to
+the exact document paths Fred used. Additional online feeds can be added as
+separate source adapters later; they are not connected by this local setting.
+
 Check `/api/brain-graph` for `notes`, `executive_links`,
 `provenance_links`, `document_pending` and
 `document_unverified_hashes` before integrating a changed checkout. The

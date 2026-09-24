@@ -108,7 +108,8 @@ def _references(path, signature):
 
 def add_document_edges(graph, root, documents_root=None):
     """One node per confirmed identical file; preserve all cited file paths."""
-    source = documents_root or os.environ.get('BPFCO_DOCUMENTS_ROOT', '')
+    from Brain.Executive.source_registry import documents_root as configured_documents
+    source = documents_root or configured_documents()
     if not source:
         return graph
     folder = Path(source).expanduser().resolve()
