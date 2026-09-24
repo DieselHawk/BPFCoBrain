@@ -8,10 +8,12 @@ import os
 import urllib.error
 import urllib.request
 from pathlib import Path
+from threading import Lock
 
 from flask import Blueprint, jsonify, request, send_file
 from agent_bridge import AgentBridge
 from boot_network import set_mode
+from executive_controller import CEOController
 from online_requests import ResearchRequests
 
 
@@ -31,6 +33,21 @@ AGENTS = {
 AVATAR_DIR = ROOT / "Dashboard" / "assets" / "agents"
 
 agent_terminal_bp = Blueprint("agent_terminal", __name__)
+
+worker_lock = Lock()
+
+@agent_terminal_bp.route("/api/agent-terminal/run-next", methods=["POST"])
+def run_next_specialist():
+    if not worker_lock.acquire(blocking=False):
+        return jsonify({"ok": False, "error": "A specialist is already running"}), 409
+    try:
+        result = CEOController().dispatch_one()
+    finally:
+        worker_lock.release()
+    return jsonify({"ok": result["status"] in {"idle", "dispatched"}, **result}), (
+        200 if result["status"] in {"idle", "dispatched"} else 503
+    )
+
 
 
 def write_presence(agent, state, event):
