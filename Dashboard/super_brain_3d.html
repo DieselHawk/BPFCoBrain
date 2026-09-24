@@ -318,16 +318,25 @@ const filterGraph=value=>{
     setInfo(chosen,links);
     return;
   }
-  const nodes=chosen.filter(node=>
+  const matches=brain.nodes.filter(node=>
     [node.label,node.folder,node.path,node.id].some(field=>String(field||"").toLowerCase().includes(query))
-  );
+  ).slice(0,250);
+  const matchedIds=new Set(matches.map(node=>String(node.id)));
+  const neighbors=new Set();
+  brain.links.forEach(link=>{
+    const source=endpoint(link.source),target=endpoint(link.target);
+    if(matchedIds.has(source)) neighbors.add(target);
+    if(matchedIds.has(target)) neighbors.add(source);
+  });
+  const nodes=matches.concat(brain.nodes.filter(node=>
+    neighbors.has(String(node.id))&&!matchedIds.has(String(node.id))).slice(0,350-matches.length));
   const ids=new Set(nodes.map(node=>String(node.id)));
-  const visibleLinks=links.filter(link=>{
+  const visibleLinks=brain.links.filter(link=>{
     const source=typeof link.source==="object"?link.source.id:link.source;
     const target=typeof link.target==="object"?link.target.id:link.target;
     return ids.has(String(source))&&ids.has(String(target));
   });
-  Graph.graphData({nodes,links:visibleLinks});
+  Graph.graphData({nodes,links:visibleLinks.map(link=>({...link,source:endpoint(link.source),target:endpoint(link.target)}))});
   setInfo(nodes,visibleLinks,value);
   if(nodes.length) setTimeout(()=>Graph.zoomToFit(500,30),50);
 };
