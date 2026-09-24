@@ -1,43 +1,40 @@
+"""Store agent outcomes in the one shared executive experience directory."""
+
 from pathlib import Path
 from datetime import datetime, timezone
-import json
+import hashlib
 import os
-
-ROOT = Path(__file__).resolve().parent
+import re
 
 class ExperienceSynthesizer:
-    """
-    Translates agent task outcomes into structured knowledge nodes.
-    """
     def __init__(self, vault_path: Path):
-        self.vault_path = vault_path
-        self.memory_folder = vault_path / "Brain" / "Executive" / "Experience"
+        self.vault_path = Path(vault_path).resolve()
+        self.memory_folder = self.vault_path / "Brain" / "Executive" / "Experience"
         self.memory_folder.mkdir(parents=True, exist_ok=True)
 
     def synthesize(self, agent_name, task_id, report):
-        """
-        Analyze a report and create a knowledge node if an insight is found.
-        """
-        # In a full implementation, this would call an LLM to extract 
-        # 'Permanent Knowledge' vs 'Transient Data'.
-        # For now, we create a structured experience log.
-        
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
-        filename = f"EXP_{agent_name}_{timestamp}.md"
-        filepath = self.memory_folder / filename
-        
+        """Keep one record per agent/task without overwriting older experiences."""
+        safe_agent = re.sub(r"[^A-Za-z0-9_-]", "_", str(agent_name))[:48]
+        key = hashlib.sha256(f"{agent_name}\0{task_id}".encode("utf-8")).hexdigest()[:16]
+        filepath = self.memory_folder / f"EXP_{safe_agent}_{key}.md"
+        if filepath.exists():
+            return filepath
+        timestamp = datetime.now(timezone.utc).isoformat()
         content = (
             f"# Experience Insight: {agent_name}\n"
             f"**Task ID**: {task_id}\n"
-            f"**Timestamp**: {datetime.now(timezone.utc).isoformat()}\n\n"
+            f"**Timestamp**: {timestamp}\n\n"
             f"## Outcome\n{report}\n\n"
             f"---\n"
-            f"Tags: #experience #agent_{agent_name.lower()} #synthesis"
+            f"Tags: #experience #agent_{safe_agent.lower()} #synthesis"
         )
-        
         try:
-            filepath.write_text(content, encoding="utf-8")
+            # Exclusive create protects a task written by another worker.
+            with filepath.open("x", encoding="utf-8") as stream:
+                stream.write(content)
             return filepath
-        except Exception as e:
-            print(f"Synthesis failed: {e}")
+        except FileExistsError:
+            return filepath
+        except OSError as exc:
+            print(f"Synthesis failed: {exc}")
             return None
