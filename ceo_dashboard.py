@@ -1,5 +1,6 @@
 ﻿import json
 from pathlib import Path
+from threading import Event, Thread
 from flask import Flask, jsonify, request, render_template_string, send_file
 from dotenv import load_dotenv
 
@@ -18,7 +19,8 @@ from agent_bridge import AgentBridge
 app = Flask(__name__)
 bridge = AgentBridge()
 
-from Dashboard.agent_terminal_routes import agent_terminal_bp
+from Dashboard.agent_terminal_routes import agent_terminal_bp, worker_lock
+from executive_controller import CEOController
 app.register_blueprint(agent_terminal_bp)
 
 AGENTS = {
@@ -576,9 +578,43 @@ def brain_graph_api():
 @app.route("/super-3d")
 def super_brain_3d():
     return send_file(ROOT / "Dashboard" / "super_brain_3d.html")
+def run_queued_specialists():
+    """Dispatch one internal specialist at a time; pause on worker failures."""
+    controller = CEOController()
+    stop = Event()
+    while True:
+        if not worker_lock.acquire(blocking=False):
+            stop.wait(2)
+            continue
+        try:
+            result = controller.dispatch_one()
+        except Exception as exc:
+            print(f"[BPFCoBrain] Automatic queue paused: {exc}", flush=True)
+            return
+        finally:
+            worker_lock.release()
+        status = result.get("status")
+        if status == "dispatched":
+            print(f"[BPFCoBrain] Specialist reported: {result.get('task_id')}", flush=True)
+            continue
+        if status != "idle":
+            print(f"[BPFCoBrain] Automatic queue paused for review: {result}", flush=True)
+            return
+        stop.wait(2)
+
+
 if __name__ == "__main__":
-    print("[BPFCoBrain] Starting CEO Executive Dashboard...")
-    app.run(host="127.0.0.1", port=5001, debug=False)
+    from werkzeug.serving import make_server
+
+    # Bind before starting the worker. A second dashboard must not dispatch
+    # queued tasks when another process already owns port 5001.
+    server = make_server("127.0.0.1", 5001, app, threaded=True)
+    print("[BPFCoBrain] Starting CEO Executive Dashboard...", flush=True)
+    Thread(target=run_queued_specialists, name="bpfco-queue", daemon=True).start()
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()
 
 
 

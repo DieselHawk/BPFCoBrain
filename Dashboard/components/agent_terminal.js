@@ -18,7 +18,7 @@
       <nav class="at-agents" id="atAgents" aria-label="Select agent"></nav>
       <div class="at-presence"><div class="at-avatar" id="atAvatar"><img id="atPortrait" alt="Fred portrait" decoding="async"><span id="atInitial">F</span></div><div class="at-identity"><strong id="atName">Fred</strong><small id="atRole">CEO</small></div><div class="at-state" id="atState">READY</div></div>
       <div class="at-log" id="atLog" aria-live="polite"><p class="at-message system">Super Brain local channel ready.</p></div>
-      <form class="at-compose" id="atForm"><textarea id="atInput" maxlength="4000" placeholder="Speak to the selected agent…" required></textarea><button id="atSend" type="submit">SEND</button><button id="atQueue" type="button" title="Queue an internal task for this specialist">QUEUE</button></form>
+      <form class="at-compose" id="atForm"><textarea id="atInput" maxlength="4000" placeholder="Speak to the selected agent…" required></textarea><button id="atSend" type="submit">SEND</button><button id="atQueue" type="button" title="Queue an internal task for this specialist">QUEUE</button><button id="atRunNext" type="button" title="Run the next queued internal specialist">RUN NEXT</button></form>
       <div class="at-status" id="atStatus">External actions remain approval-gated</div>
     </section>
     ${edges.map(edge=>`<i class="at-resize at-resize-${edge}" data-at-resize="${edge}"></i>`).join("")}`;
@@ -29,7 +29,7 @@
   function save(){if(panel.classList.contains("at-collapsed"))return;localStorage.setItem("bpfco.agentTerminal.overlay",JSON.stringify({left:panel.offsetLeft,top:panel.offsetTop,width:panel.offsetWidth,height:panel.offsetHeight}))}
   function restore(){try{const g=JSON.parse(localStorage.getItem("bpfco.agentTerminal.overlay"));if(!g)return;panel.style.left=`${g.left}px`;panel.style.top=`${g.top}px`;panel.style.right="auto";panel.style.bottom="auto";panel.style.width=`${g.width}px`;panel.style.height=`${g.height}px`;clamp()}catch(_){localStorage.removeItem("bpfco.agentTerminal.overlay")}}
   function state(value){$("atState").textContent=value;$("atAvatar").className=`at-avatar ${value.toLowerCase()}`}
-  function choose(name){selected=name;panel.style.setProperty("--at-accent",agents[name].color);document.querySelectorAll(".at-agent").forEach(b=>b.classList.toggle("active",b.dataset.agent===name));$("atName").textContent=name;$("atRole").textContent=agents[name].role;$("atInitial").textContent=name[0];$("atPortrait").src=agents[name].avatar;$("atPortrait").alt=`${name} portrait`;$("atSend").textContent=name==="Fred"?"TASK FRED":"SEND";$("atQueue").hidden=name==="Fred";$("atForm").classList.toggle("at-fred",name==="Fred");$("atInput").placeholder=name==="Fred"?"Give Fred an internal objective…":"Speak to the selected agent…";state("READY")}
+  function choose(name){selected=name;panel.style.setProperty("--at-accent",agents[name].color);document.querySelectorAll(".at-agent").forEach(b=>b.classList.toggle("active",b.dataset.agent===name));$("atName").textContent=name;$("atRole").textContent=agents[name].role;$("atInitial").textContent=name[0];$("atPortrait").src=agents[name].avatar;$("atPortrait").alt=`${name} portrait`;$("atSend").textContent=name==="Fred"?"TASK FRED":"SEND";$("atQueue").hidden=name==="Fred";$("atRunNext").hidden=name!=="Fred";$("atForm").classList.toggle("at-fred",name==="Fred");$("atInput").placeholder=name==="Fred"?"Give Fred an internal objective…":"Speak to the selected agent…";state("READY")}
   function message(kind,text){const p=document.createElement("p");p.className=`at-message ${kind}`;p.textContent=text;$("atLog").appendChild(p);$("atLog").scrollTop=$("atLog").scrollHeight}
   async function api(url,options={}){const response=await fetch(url,options),data=await response.json();if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`);return data}
 
@@ -63,6 +63,14 @@
       $("atInput").value="";$("atStatus").textContent="Internal task queued for CEO orchestration";
     }catch(error){message("system",error.message)}
     finally{$("atQueue").disabled=false}
+  });
+  $("atRunNext").addEventListener("click",async()=>{
+    $("atRunNext").disabled=true;
+    try{
+      const result=await api("/api/agent-terminal/run-next",{method:"POST"});
+      message("system",result.status==="idle"?"Queue is empty.":`Specialist reported: ${result.agent} · ${result.task_id}`);
+    }catch(error){message("system",error.message)}
+    finally{$("atRunNext").disabled=false}
   });
   $("atCollapse").addEventListener("click",event=>{event.stopPropagation();panel.classList.toggle("at-collapsed");event.currentTarget.textContent=panel.classList.contains("at-collapsed")?"+":"−";event.currentTarget.setAttribute("aria-label",panel.classList.contains("at-collapsed")?"Restore terminal":"Collapse terminal");clamp()});
 
