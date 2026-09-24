@@ -1,98 +1,240 @@
-"""Expose bounded, read-only document sources and explicit links in the graph."""
+"""Bounded offline document graph: exact-copy aliases and explicit citations only."""
+import hashlib
 import os
+import shutil
+import subprocess
+import threading
+import zipfile
+from collections import defaultdict
 from pathlib import Path
+from xml.etree import ElementTree
 
 from Dashboard.adapters.note_edges import _key, _targets
 
-MAX_DOCUMENTS = 200
-MAX_BYTES = 1_000_000
-MAX_DEPTH = 3
+MAX_DOCUMENTS = 1000
+MAX_DEPTH = 5
+MAX_FILE_BYTES = 100_000_000
+MAX_HASH_BYTES_PER_REQUEST = 300_000_000
+MAX_EXTRACT_PER_REQUEST = 8
 MAX_LINKS = 100
-EXTENSIONS = {".md", ".txt"}
+MAX_TEXT = 150_000
+EXTENSIONS = {'.md', '.txt', '.docx', '.pdf'}
+_W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+_hash_cache = {}
+_target_cache = {}
+_lock = threading.Lock()
+
+
+def _signature(path):
+    stat = path.stat()
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+def _digest(path, signature):
+    saved = _hash_cache.get(path)
+    if saved and saved[0] == signature:
+        return saved[1]
+    h = hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            h.update(chunk)
+    digest = h.hexdigest()
+    _hash_cache[path] = (signature, digest)
+    return digest
+
+
+def _docx_text(path):
+    with zipfile.ZipFile(path) as archive:
+        xml = archive.getinfo('word/document.xml')
+        if xml.file_size > 4_000_000:
+            return ''
+        tree = ElementTree.fromstring(archive.read(xml))
+        lines = []
+        for paragraph in tree.iter(_W + 'p'):
+            lines.append(''.join(n.text or '' for n in paragraph.iter(_W + 't')))
+            if sum(map(len, lines)) >= MAX_TEXT:
+                break
+        return '\n'.join(lines)[:MAX_TEXT]
+
+
+def _pdf_text(path):
+    executable = shutil.which('pdftotext')
+    if executable:
+        result = subprocess.run([executable, '-f', '1', '-l', '5', '-enc', 'UTF-8',
+                                 str(path), '-'], capture_output=True,
+                                timeout=5, check=False)
+        if result.returncode == 0:
+            return result.stdout.decode('utf-8', errors='replace')[:MAX_TEXT]
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        return None
+    with path.open('rb') as stream:
+        reader = PdfReader(stream, strict=False)
+        return '\n'.join((page.extract_text() or '')[:MAX_TEXT]
+                         for page in reader.pages[:5])[:MAX_TEXT]
+
+
+def _references(path, signature):
+    cached = _target_cache.get(path)
+    if cached and cached[0] == signature:
+        return cached[1]
+    try:
+        if path.suffix.lower() == '.docx':
+            text = _docx_text(path)
+        elif path.suffix.lower() == '.pdf':
+            text = _pdf_text(path)
+        else:
+            text = path.read_text(encoding='utf-8-sig', errors='replace')[:MAX_TEXT]
+        if text is None:
+            _target_cache[path] = (signature, None)
+            return None
+        refs = list(_targets(text))[:MAX_LINKS]
+    except (OSError, ValueError, zipfile.BadZipFile, ElementTree.ParseError,
+            subprocess.TimeoutExpired, KeyError):
+        refs = []
+    _target_cache[path] = (signature, refs)
+    return refs
 
 
 def add_document_edges(graph, root, documents_root=None):
-    """Connect only cited sources and unambiguous links; never infer by folder."""
-    source = documents_root or os.environ.get("BPFCO_DOCUMENTS_ROOT", "")
+    """One node per confirmed identical file; preserve all cited file paths."""
+    source = documents_root or os.environ.get('BPFCO_DOCUMENTS_ROOT', '')
     if not source:
         return graph
     folder = Path(source).expanduser().resolve()
     if not folder.is_dir():
-        graph.setdefault("stats", {})["document_error"] = "Documents folder unavailable"
+        graph.setdefault('stats', {})['document_error'] = 'Documents folder unavailable'
         return graph
-    nodes, links = graph.get("nodes"), graph.get("links")
-    if not isinstance(nodes, list) or not isinstance(links, list):
+    nodes, edges = graph.get('nodes'), graph.get('links')
+    if not isinstance(nodes, list) or not isinstance(edges, list):
         return graph
-    by_path = {_key(n.get("path")): str(n["id"]) for n in nodes
-               if isinstance(n, dict) and n.get("path")}
-    discovered = []
-    for current, directories, files in os.walk(folder, followlinks=False):
+    with _lock:
+        return _build(graph, folder)
+
+
+def _build(graph, folder):
+    nodes, edges = graph['nodes'], graph['links']
+    files = []
+    for current, directories, names in os.walk(folder, followlinks=False):
         depth = len(Path(current).relative_to(folder).parts)
         directories[:] = sorted(d for d in directories if not (Path(current) / d).is_symlink()) if depth < MAX_DEPTH else []
-        for name in sorted(files):
-            if len(discovered) >= MAX_DOCUMENTS:
+        for name in sorted(names):
+            if len(files) >= MAX_DOCUMENTS:
                 break
             path = Path(current) / name
             try:
-                if path.suffix.lower() not in EXTENSIONS or path.is_symlink() or path.stat().st_size > MAX_BYTES:
+                signature = _signature(path)
+                if (path.suffix.lower() not in EXTENSIONS or path.is_symlink()
+                        or signature[1] > MAX_FILE_BYTES or not path.resolve().is_relative_to(folder)):
                     continue
-                if not path.resolve().is_relative_to(folder):
-                    continue
+                files.append((path, signature))
             except OSError:
                 continue
-            discovered.append(path)
-        if len(discovered) >= MAX_DOCUMENTS:
+        if len(files) >= MAX_DOCUMENTS:
             break
+    by_size = defaultdict(list)
+    for path, signature in files:
+        by_size[signature[1]].append((path, signature))
+    confirmed = defaultdict(list)
+    hash_budget = MAX_HASH_BYTES_PER_REQUEST
+    unverified = 0
+    for path, signature in files:
+        if len(by_size[signature[1]]) == 1:
+            identity = 'single:' + _key(path)
+        elif path in _hash_cache and _hash_cache[path][0] == signature:
+            identity = 'sha256:' + _hash_cache[path][1]
+        elif hash_budget >= signature[1]:
+            try:
+                identity = 'sha256:' + _digest(path, signature)
+                hash_budget -= signature[1]
+            except OSError:
+                identity = 'unverified:' + _key(path)
+                unverified += 1
+        else:
+            identity = 'unverified:' + _key(path)
+            unverified += 1
+        confirmed[identity].append((path, signature))
+    by_path = {_key(n.get('path')): str(n['id']) for n in nodes
+               if isinstance(n, dict) and n.get('path')}
+    canonical = []
     new_nodes = 0
-    for path in discovered:
-        key = _key(path)
-        if key in by_path:
-            continue
-        relative = path.relative_to(folder).as_posix()
-        node_id = "document:" + relative.casefold()
-        if any(str(node.get("id")) == node_id for node in nodes if isinstance(node, dict)):
-            continue
-        nodes.append({"id": node_id, "label": path.stem, "title": path.stem,
-                      "path": str(path), "folder": "Documents / " + str(path.relative_to(folder).parent),
-                      "word_count": 0, "connection_count": 0, "links": [], "content": "", "frontmatter": {}})
-        by_path[key] = node_id
-        new_nodes += 1
-    unique_names = {}
+    for members in confirmed.values():
+        path, signature = members[0]
+        aliases = [str(item[0]) for item in members]
+        node_id = by_path.get(_key(path))
+        if node_id is None:
+            relative = path.relative_to(folder).as_posix()
+            node_id = 'document:' + relative.casefold()
+            if any(str(n.get('id')) == node_id for n in nodes if isinstance(n, dict)):
+                continue
+            nodes.append({'id': node_id, 'label': path.stem, 'title': path.stem,
+                          'path': str(path), 'aliases': aliases,
+                          'duplicate_count': len(aliases),
+                          'folder': 'Documents / ' + str(path.relative_to(folder).parent),
+                          'word_count': 0, 'connection_count': 0,
+                          'links': [], 'content': '', 'frontmatter': {}})
+            new_nodes += 1
+        else:
+            for node in nodes:
+                if isinstance(node, dict) and str(node.get('id')) == node_id:
+                    node['aliases'] = list(dict.fromkeys([str(node['path'])] + aliases))
+                    node['duplicate_count'] = len(node['aliases'])
+                    break
+        for alias in aliases:
+            by_path[_key(alias)] = node_id
+        canonical.append((path, signature, node_id))
+    names = defaultdict(set)
     for node in nodes:
-        if not isinstance(node, dict) or not node.get("path"):
+        if isinstance(node, dict) and node.get('path'):
+            stem = Path(str(node['path'])).stem.casefold()
+            if stem:
+                names[stem].add(str(node['id']))
+    seen = {(str(e.get('source')), str(e.get('target'))) for e in edges if isinstance(e, dict)}
+    added = 0
+    extracted = 0
+    pending = 0
+    unavailable = 0
+    for path, signature, source_id in canonical:
+        cached = _target_cache.get(path)
+        if not cached or cached[0] != signature:
+            if extracted >= MAX_EXTRACT_PER_REQUEST:
+                pending += 1
+                continue
+            extracted += 1
+        refs = _references(path, signature)
+        if refs is None:
+            unavailable += 1
             continue
-        path = Path(str(node["path"]))
-        if path.suffix.lower() in EXTENSIONS:
-            unique_names.setdefault(path.stem.casefold(), set()).add(str(node["id"]))
-    seen = {(str(e.get("source")), str(e.get("target"))) for e in links if isinstance(e, dict)}
-    new_edges = 0
-    for path in discovered:
-        source_id = by_path.get(_key(path))
-        try:
-            raw = path.read_text(encoding="utf-8-sig", errors="replace")
-        except OSError:
-            continue
-        for target, relationship in list(_targets(raw))[:MAX_LINKS]:
+        for target, relationship in refs:
             target = target.strip()
             if not target:
                 continue
-            candidates = set()
             candidate = (path.parent / target).resolve()
-            candidates.update([by_path[_key(candidate)]] if _key(candidate) in by_path else [])
-            if not candidates and "/" not in target and "\\" not in target:
-                candidates = unique_names.get(Path(target).stem.casefold(), set())
+            candidates = set()
+            if _key(candidate) in by_path:
+                candidates.add(by_path[_key(candidate)])
+            if not candidates and '/' not in target and '\\' not in target:
+                candidates = names.get(Path(target).stem.casefold(), set())
             if len(candidates) != 1:
                 continue
             target_id = next(iter(candidates))
             if source_id == target_id or (source_id, target_id) in seen:
                 continue
             seen.add((source_id, target_id))
-            links.append({"source": source_id, "target": target_id,
-                          "relationship": "document_" + relationship,
-                          "strength": 1, "unresolved": False})
-            new_edges += 1
-    graph.setdefault("stats", {})["document_sources"] = len(discovered)
-    graph["stats"]["document_nodes"] = new_nodes
-    graph["stats"]["document_links"] = new_edges
-    graph["stats"]["resolved_links"] = sum(1 for e in links if isinstance(e, dict) and not e.get("unresolved"))
+            edges.append({'source': source_id, 'target': target_id,
+                          'relationship': 'document_' + relationship,
+                          'strength': 1, 'unresolved': False})
+            added += 1
+    stats = graph.setdefault('stats', {})
+    stats['document_sources'] = len(files)
+    stats['document_nodes'] = new_nodes
+    stats['exact_duplicate_groups'] = sum(len(members) > 1 for members in confirmed.values())
+    stats['exact_duplicate_files'] = sum(len(members) for members in confirmed.values() if len(members) > 1)
+    stats['document_duplicates_suppressed'] = len(files) - len(confirmed)
+    stats['document_unverified_hashes'] = unverified
+    stats['document_links'] = added
+    stats['document_pending'] = pending
+    stats['document_extractor_unavailable'] = unavailable
+    stats['resolved_links'] = sum(1 for edge in edges if isinstance(edge, dict) and not edge.get('unresolved'))
     return graph
