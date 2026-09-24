@@ -39,3 +39,17 @@ process. Existing separate worker processes need a restart to inherit it.
 An explicit `BPFCO_BOOT_MODE=online` or `offline` at startup overrides
 the saved preference; `auto` uses the saved preference first. Offline
 sets `BPFCO_OFFLINE=1` and disables the online intelligence gate.
+
+## Agent autonomy and graph provenance
+
+Kai and the other specialists may research, discuss, draft, challenge each
+other, and record internal experiences without an approval step. The existing
+human gate continues to govern sends, filings, publication, payments, and
+other external execution.
+
+The Brain API now adds edges from each task's existing `evidence[].path` and
+each report's `sources[]` to a matching indexed note node. It reads records
+without changing them, requires an exact path match, and ignores unmatched
+paths. These are evidence provenance links, not newly inferred note-to-note
+wikilinks. They are added only when the graph adapter already exposes task,
+report, and note nodes with paths.
