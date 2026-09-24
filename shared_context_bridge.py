@@ -74,7 +74,11 @@ class SharedContextBridge:
 
         snapshot = {
             "generated_at": now(),
-            "source_of_truth": "C:\\BPFCo\\BPFCoBrain",
+            "source_of_truth": str(ROOT),
+            "vault_index": {
+                "path": ".vault-index.json",
+                "exists": (ROOT / ".vault-index.json").is_file(),
+            },
             "persistent_memory_declared": bool(manifest.get("persistent_memory", False)),
             "agents": agents,
             "shared_context_files": shared_files,
