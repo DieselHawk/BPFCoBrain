@@ -176,6 +176,17 @@ It refuses unfamiliar local changes and leaves Git staging untouched. Its `--che
 Windows restart script accepts byte-identical draft files even when Git marks
 them as deleted or untracked in the preview worktree.
 
+For quick inspection, the isolated preview has a document-scan panel with
+counts for supported sources, pending extractions, links, and exact-copy
+groups. The Documents focus searches the full graph while rendering at most
+350 nodes; opening a document shows its path and recorded relationship types.
+The panel labels older duplicate totals as unresolved. The dedicated
+`scripts/update_fred_preview_view.py` checks the known HTML blob, saves an
+earlier copy outside the checkout, and updates only the served HTML. Reload
+the browser to see it; a dashboard process restart is unnecessary for HTML.
+The source-snapshot row requires the updated document adapter and a later
+restart.
+
 The `/super-3d` view refreshes the API every 15 seconds while visible and
 keeps positions for unchanged nodes. It displays the 350 most connected nodes
 and only real recorded edges; a new edge pulses briefly when first observed.
