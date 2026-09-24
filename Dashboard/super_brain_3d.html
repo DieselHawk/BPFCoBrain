@@ -250,54 +250,17 @@ document.getElementById("dispatchButton").onclick=async()=>{
 await refreshPresence();
 setInterval(refreshPresence,3000);
 
-const response=await fetch("/api/brain-graph",{cache:"no-store"});
-const brain=await response.json();
-
-const allNodes=brain.nodes||[];
-const allLinks=brain.links||[];
-
 const endpoint=value=>String(value&&typeof value==="object"?value.id:value);
-const degrees=new Map();
-allLinks.forEach(link=>{
-  const source=endpoint(link.source),target=endpoint(link.target);
-  degrees.set(source,(degrees.get(source)||0)+1);
-  degrees.set(target,(degrees.get(target)||0)+1);
-});
-const score=n=>degrees.get(String(n.id))||0;
-
-const chosen=[...allNodes]
-  .sort((a,b)=>score(b)-score(a)||String(a.id).localeCompare(String(b.id)))
-  .slice(0,200);
-
-const chosenIds=new Set(chosen.map(n=>String(n.id)));
-
-let links=allLinks.filter(l=>
-  chosenIds.has(String(l.source)) &&
-  chosenIds.has(String(l.target))
-);
-
-let fallback=false;
-if(allLinks.length===0&&chosen.length>1){
-  const byFolder=new Map();
-  chosen.forEach(node=>{
-    const folder=node.folder||"root";
-    if(!byFolder.has(folder)) byFolder.set(folder,[]);
-    byFolder.get(folder).push(node);
-  });
-  const extra=[];
-  byFolder.forEach(group=>{
-    for(let i=1;i<group.length&&i<8;i++) extra.push({source:group[0].id,target:group[i].id});
-  });
-  links=links.concat(extra).slice(0,400);
-  fallback=extra.length>0;
-}
-
 const info=document.getElementById("info");
+let brain={nodes:[],links:[],stats:{}};
+let chosen=[],links=[],degrees=new Map(),signature="",activeFilter="",refreshing=false;
+let freshEdges=new Set(),freshTimer=null;
+const edgeKey=l=>`${endpoint(l.source)}>${endpoint(l.target)}:${l.relationship||""}:${Boolean(l.unresolved)}`;
+const score=n=>degrees.get(String(n.id))||0;
 const setInfo=(nodes,visibleLinks,filter="")=>{
-  const total=brain.stats?.notes||allNodes.length;
-  info.textContent=`${nodes.length}/${total} nodes · ${visibleLinks.length} links${fallback?" · folder fallback":""}${filter?` · filter: ${filter}`:""}`;
+  const total=brain.stats?.notes||brain.nodes.length;
+  info.textContent=`${nodes.length}/${total} shown · ${visibleLinks.length} recorded links · ${brain.links.length} total${filter?` · filter: ${filter}`:""} · live`;
 };
-setInfo(chosen,links);
 
 const elem=document.getElementById("graph");
 elem.addEventListener("contextmenu",event=>event.preventDefault());
@@ -307,10 +270,7 @@ const Graph=new ForceGraph3D(elem,{
   backgroundColor:"#02050a",
   showNavInfo:false
 })
-.graphData({
-  nodes:chosen,
-  links:links
-})
+.graphData({nodes:[],links:[]})
 .nodeLabel(n=>
   `${String(n.label||n.id).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]))}<br>`+
   `${String(n.folder||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]))}<br>`+
@@ -318,15 +278,20 @@ const Graph=new ForceGraph3D(elem,{
 )
 .nodeAutoColorBy(n=>n.folder||"BPFCo")
 .nodeVal(n=>Math.max(1,Math.log2(score(n)+2)))
-.linkDirectionalParticles(2)
+.linkDirectionalParticles(link=>freshEdges.has(edgeKey(link))?2:0)
+.linkDirectionalParticleColor(link=>link.relationship?.startsWith("experience")?"#f7b267":link.relationship?.includes("source")||link.relationship?.includes("evidence")?"#68e0c1":"#73aaff")
 .linkDirectionalParticleWidth(.8)
 .linkOpacity(.35)
+.linkColor(link=>link.unresolved?"#e36666":link.relationship?.startsWith("experience")?"#f7b267":"#4baac0")
 .onNodeClick(node=>{
   document.getElementById("selected").style.display="block";
   document.getElementById("selTitle").textContent=node.label||node.id;
   document.getElementById("selPath").textContent=node.path||node.folder||"";
   document.getElementById("selStats").textContent=
-    `Words: ${node.word_count||0} · Connections: ${score(node)}`;
+    `Words: ${node.word_count||0} · Connections: ${score(node)} · `+
+    Object.entries(links.filter(link=>endpoint(link.source)===String(node.id)||endpoint(link.target)===String(node.id))
+      .reduce((counts,link)=>{const kind=link.relationship||"note link";counts[kind]=(counts[kind]||0)+1;return counts},{}))
+      .map(([kind,count])=>`${kind}: ${count}`).join(" · ");
 
   Graph.cameraPosition(
     {x:node.x+40,y:node.y+40,z:node.z+40},
@@ -345,8 +310,8 @@ document.addEventListener("fullscreenchange",()=>requestAnimationFrame(resizeGra
 document.addEventListener("webkitfullscreenchange",()=>requestAnimationFrame(resizeGraph));
 resizeGraph();
 
-const domains=[...new Set(chosen.map(node=>node.folder).filter(Boolean))].sort();
 const filterGraph=value=>{
+  activeFilter=String(value||"");
   const query=String(value||"").trim().toLowerCase();
   if(!query){
     Graph.graphData({nodes:chosen,links});
@@ -367,7 +332,46 @@ const filterGraph=value=>{
   if(nodes.length) setTimeout(()=>Graph.zoomToFit(500,30),50);
 };
 
-window.bpfcoBrain3D={domains,filter:filterGraph,reset:()=>filterGraph(""),graph:Graph};
+async function refreshGraph(){
+  if(refreshing||document.hidden) return;
+  refreshing=true;
+  try{
+    const response=await fetch("/api/brain-graph",{cache:"no-store"});
+    if(!response.ok) throw Error(`Graph HTTP ${response.status}`);
+    const next=await response.json();
+    if(!Array.isArray(next.nodes)||!Array.isArray(next.links)) throw Error("Invalid graph");
+    const nextSignature=next.nodes.map(n=>String(n.id)).sort().join("\n")+"|"+
+      next.links.map(edgeKey).sort().join("\n");
+    if(nextSignature===signature) return;
+    const previous=new Set(brain.links.map(edgeKey));
+    freshEdges=new Set(signature?next.links.map(edgeKey).filter(key=>!previous.has(key)):[]);
+    clearTimeout(freshTimer);
+    freshTimer=setTimeout(()=>{freshEdges.clear();Graph.linkDirectionalParticles(link=>0)},8000);
+    signature=nextSignature;brain=next;
+    degrees=new Map();
+    next.links.forEach(link=>{
+      const source=endpoint(link.source),target=endpoint(link.target);
+      degrees.set(source,(degrees.get(source)||0)+1);
+      degrees.set(target,(degrees.get(target)||0)+1);
+    });
+    const positions=new Map(Graph.graphData().nodes.map(n=>[String(n.id),n]));
+    chosen=[...next.nodes].sort((a,b)=>score(b)-score(a)||String(a.id).localeCompare(String(b.id)))
+      .slice(0,350).map(n=>{
+        const old=positions.get(String(n.id));
+        return old?{...n,x:old.x,y:old.y,z:old.z,vx:old.vx,vy:old.vy,vz:old.vz}:n;
+      });
+    const ids=new Set(chosen.map(n=>String(n.id)));
+    links=next.links.filter(l=>ids.has(endpoint(l.source))&&ids.has(endpoint(l.target)))
+      .map(l=>({...l,source:endpoint(l.source),target:endpoint(l.target)}));
+    filterGraph(activeFilter);
+    Graph.linkDirectionalParticles(link=>freshEdges.has(edgeKey(link))?2:0);
+    window.bpfcoBrain3D.domains=[...new Set(chosen.map(n=>n.folder).filter(Boolean))].sort();
+  }catch(error){info.textContent=`Graph refresh unavailable: ${error.message}`}
+  finally{refreshing=false}
+}
+window.bpfcoBrain3D={domains:[],filter:filterGraph,reset:()=>filterGraph(""),graph:Graph,refresh:refreshGraph};
+await refreshGraph();
+setInterval(refreshGraph,15000);
 
 })();
 </script>
