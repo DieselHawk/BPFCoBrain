@@ -121,3 +121,12 @@ The queue pauses on worker failure for review. Preview launchers that import
 only the Flask app do not start automatic dispatch. The workers' existing
 approval checks still govern external actions. Task and report records stay
 under the existing Executive directories.
+## Read-only live comparison
+
+Use `scripts/run_fred_compare.py --live <running-checkout> --documents
+<document-folder>` from an isolated worktree to display the merged dashboard
+on port 5002 with the running checkout's index and Executive records. The
+preview serves its own dashboard files, reads the existing documents in place,
+blocks all HTTP write methods, disables automatic queue startup, and stays
+on loopback. Stop it with Ctrl+C. Check graph statistics and Meeting tasks in
+this preview before changing a desktop launcher or integrating dirty files.
