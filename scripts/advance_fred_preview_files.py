@@ -13,8 +13,11 @@ from pathlib import Path
 ALLOWED_OLD = {
     'Dashboard/super_brain_3d.html': '743e9f79bcd8358bd4ddaa2f83d34cfeeb85a56b',
     'Dashboard/adapters/provenance_edges.py': '06bea1db1a567cb51a00fc71a19392c34ee365c0',
+    'Dashboard/adapters/document_edges.py': '9cf877cbb4f99eab94c43410ce617667ce3a6fe2',
     'ceo_dashboard.py': 'a88fe6f0fc1d57021bd7ac57da71e30400604fc0',
 }
+REQUIRED_OLD = {'Dashboard/super_brain_3d.html',
+                'Dashboard/adapters/provenance_edges.py', 'ceo_dashboard.py'}
 PATHS = (
     'Dashboard/super_brain_3d.html',
     'Dashboard/adapters/provenance_edges.py',
@@ -48,7 +51,7 @@ def advance(repo, ref, check_only=False):
         previous = git(repo, 'hash-object', '--', relative).decode().strip() if current is not None else None
         if current is not None and previous not in (wanted, ALLOWED_OLD.get(relative)):
             raise ValueError(f'Unrecognized local change; left intact: {relative}; local={previous}; draft={wanted}; accepted_old={ALLOWED_OLD.get(relative)}')
-        if current is None and relative in ALLOWED_OLD:
+        if current is None and relative in REQUIRED_OLD:
             raise ValueError(f'Expected known preview file is missing: {relative}')
         operations.append((relative, destination, current, fetched, previous, wanted))
     if check_only:
