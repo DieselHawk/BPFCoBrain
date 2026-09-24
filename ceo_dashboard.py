@@ -566,7 +566,8 @@ def activity_api():
 @app.route("/api/brain-graph")
 def brain_graph_api():
     from Dashboard.adapters.brain_graph_adapter import build_brain_graph
-    return jsonify(build_brain_graph())
+    from Dashboard.adapters.provenance_edges import add_provenance_edges
+    return jsonify(add_provenance_edges(build_brain_graph(), ROOT))
 
 @app.route("/super-3d")
 def super_brain_3d():
