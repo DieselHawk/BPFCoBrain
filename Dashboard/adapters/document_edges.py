@@ -50,9 +50,12 @@ def _docx_text(path):
             return ''
         tree = ElementTree.fromstring(archive.read(xml))
         lines = []
+        length = 0
         for paragraph in tree.iter(_W + 'p'):
-            lines.append(''.join(n.text or '' for n in paragraph.iter(_W + 't')))
-            if sum(map(len, lines)) >= MAX_TEXT:
+            line = ''.join(n.text or '' for n in paragraph.iter(_W + 't'))
+            lines.append(line)
+            length += len(line)
+            if length >= MAX_TEXT:
                 break
         return '\n'.join(lines)[:MAX_TEXT]
 
@@ -92,6 +95,9 @@ def _references(path, signature):
         refs = list(_targets(text))[:MAX_LINKS]
     except (OSError, ValueError, zipfile.BadZipFile, ElementTree.ParseError,
             subprocess.TimeoutExpired, KeyError):
+        refs = []
+    except Exception:
+        # Optional PDF readers raise their own errors for malformed or encrypted files.
         refs = []
     _target_cache[path] = (signature, refs)
     return refs
