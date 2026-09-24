@@ -206,8 +206,14 @@ class OmniRouter:
 
 
 
-        # 3. Cloud Fallback (Anthropic)
-        # ONLY execute if BPFCO_OFFLINE is not set to "1"
+        # 3. Optional hosted fallback requires a separate explicit switch.
+        # Network availability for read-only research never grants this permission.
+        if os.environ.get("BPFCO_CLOUD_FALLBACK") != "1":
+            print("[!] Hosted model fallback disabled.")
+            return None
+
+        # Cloud Fallback (Anthropic)
+        # ONLY execute when separately enabled and BPFCO_OFFLINE is not "1"
         if os.environ.get("BPFCO_OFFLINE") == "1":
             print("[!] BPFCO_OFFLINE is enabled. Cloud fallback is disabled by choice.")
             return None
