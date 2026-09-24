@@ -142,6 +142,16 @@ times cache extracted links between requests. This scan supplements existing
 index, task, report and experience links. The API reports `scanned_note_links`,
 `ambiguous_note_links` and `notes_scanned` for inspection.
 
+Set `BPFCO_DOCUMENTS_ROOT=C:\\Documents\\New All Docs` in the preview process to
+add up to 200 read-only Markdown/text document nodes (maximum 1 MB each,
+three subfolder levels). Explicit links inside those documents and exact task
+evidence/report source paths connect them to indexed notes and existing tasks.
+Files with no supported links remain unconnected. PDF and DOCX contents are
+not parsed; inspect the actual document types before adding offline parsers.
+The Windows preview refresh script checks the 855-note index and document
+inventory before changing files. Its PowerShell syntax and behavior still
+require a run on Windows; no local Windows process was restarted here.
+
 The `/super-3d` view refreshes the API every 15 seconds while visible and
 keeps positions for unchanged nodes. It displays the 350 most connected nodes
 and only real recorded edges; a new edge pulses briefly when first observed.
