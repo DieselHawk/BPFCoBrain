@@ -215,6 +215,41 @@ def _build(graph, folder):
         for alias in aliases:
             by_path[_key(alias)] = node_id
         canonical.append((path, signature, node_id))
+    # A directory is a recorded storage relationship, not a claim that
+    # its contents discuss one another. Preserve the real hierarchy only.
+    folder_ids = {}
+    folder_links = 0
+
+    def ensure_folder(path):
+        nonlocal folder_links
+        relative = path.relative_to(folder).as_posix()
+        identifier = 'document-folder:' + relative.casefold()
+        if path in folder_ids:
+            return folder_ids[path]
+        folder_ids[path] = identifier
+        nodes.append({'id': identifier,
+                      'label': path.name,
+                      'title': str(path),
+                      'path': str(path),
+                      'folder': 'Documents / Folders',
+                      'kind': 'document_folder',
+                      'word_count': 0, 'connection_count': 0,
+                      'links': [], 'content': '', 'frontmatter': {}})
+        if path != folder:
+            parent_id = ensure_folder(path.parent)
+            edges.append({'source': identifier, 'target': parent_id,
+                          'relationship': 'folder_within',
+                          'strength': 1, 'unresolved': False})
+            folder_links += 1
+        return identifier
+
+    for path, _, source_id in canonical:
+        folder_id = ensure_folder(path.parent)
+        edges.append({'source': source_id, 'target': folder_id,
+                      'relationship': 'stored_in',
+                      'strength': 1, 'unresolved': False})
+        folder_links += 1
+
     names = defaultdict(set)
     for node in nodes:
         if isinstance(node, dict) and node.get('path'):
@@ -265,6 +300,8 @@ def _build(graph, folder):
     stats['source_scan_incomplete'] = source_incomplete
     stats['source_changed_during_scan'] = changed_during_scan
     stats['document_nodes'] = new_nodes
+    stats['document_folder_nodes'] = len(folder_ids)
+    stats['document_folder_links'] = folder_links
     stats['exact_duplicate_groups'] = sum(len(members) > 1 for members in confirmed.values())
     stats['exact_duplicate_files'] = sum(len(members) for members in confirmed.values() if len(members) > 1)
     stats['document_duplicates_suppressed'] = len(files) - len(confirmed)
