@@ -11,6 +11,15 @@ $files = @(
     'run_fred_preview.py'
 )
 if (-not (Test-Path "$preview\.git")) { throw "Preview worktree unavailable: $preview" }
+$indexPath = Join-Path $preview '.vault-index.json'
+if (-not (Test-Path $indexPath)) { throw 'Preview vault index unavailable' }
+$index = Get-Content $indexPath -Raw | ConvertFrom-Json
+$actual = @($index.notes.PSObject.Properties).Count
+$reported = $index.stats.total_notes
+Write-Host "Indexed note records: $actual; index statistic: $reported"
+if ($actual -ne 855 -or ($null -ne $reported -and [int]$reported -ne $actual)) {
+    throw 'The current index is not the verified 855-note snapshot. Stop and inspect before changing the preview.'
+}
 if (-not $documents) {
     $roots = @('C:\Documents', (Join-Path $env:USERPROFILE 'Documents'),
                (Join-Path $env:USERPROFILE 'OneDrive'), $env:OneDrive,
@@ -34,15 +43,6 @@ if (-not $documents) {
 }
 if (-not (Test-Path $documents -PathType Container)) { throw "Document source unavailable: $documents" }
 $documents = (Resolve-Path $documents).Path
-$indexPath = Join-Path $preview '.vault-index.json'
-if (-not (Test-Path $indexPath)) { throw 'Preview vault index unavailable' }
-$index = Get-Content $indexPath -Raw | ConvertFrom-Json
-$actual = @($index.notes.PSObject.Properties).Count
-$reported = $index.stats.total_notes
-Write-Host "Indexed note records: $actual; index statistic: $reported"
-if ($actual -ne 855 -or ($null -ne $reported -and [int]$reported -ne $actual)) {
-    throw 'The current index is not the verified 855-note snapshot. Stop and inspect before changing the preview.'
-}
 $samples = @(Get-ChildItem $documents -Recurse -File -ErrorAction Stop | Select-Object -First 201)
 $supported = @($samples | Where-Object { $_.Extension -in @('.md', '.txt') }).Count
 Write-Host "Documents sampled: $($samples.Count) (200+ if 201); Markdown/text: $supported"
