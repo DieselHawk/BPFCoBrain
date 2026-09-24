@@ -23,3 +23,19 @@ Decisions before any live ingestion:
 3. Keep OAuth secrets outside the vault index and Git; do not include them in an unencrypted archive.
 4. Run agents sequentially on the 4 GB laptop. Online readers return evidence; they never authorize sends.
 5. Benchmark peak RAM and a restore test before replacing any component.
+
+## Dependency and network rules
+
+No added dependency is required for the Fred folder lookup or network toggle.
+The Agno trial lives outside the checkout and does not change
+`requirements.txt`. Sandbox metadata identified Agno 3.0.11 as Apache 2.0,
+SQLAlchemy 2.0.54 as MIT, and Flask 3.1.3 as BSD 3-Clause. Before any laptop
+installation, validate the complete dependency tree and keep Windows wheels
+locally so the same setup works without network access.
+
+The Super dashboard terminal has an ONLINE/OFFLINE button. Switching saves
+`Brain/Executive/network_mode.json` locally and updates the dashboard
+process. Existing separate worker processes need a restart to inherit it.
+An explicit `BPFCO_BOOT_MODE=online` or `offline` at startup overrides
+the saved preference; `auto` uses the saved preference first. Offline
+sets `BPFCO_OFFLINE=1` and disables the online intelligence gate.
