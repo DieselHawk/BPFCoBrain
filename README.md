@@ -135,3 +135,18 @@ edges describe file location only; `document_links` continues to count
 explicit references in content. Duplicate aliases still point to one verified
 content node. A crowded folder graph must not be mistaken for evidence that
 those documents discuss one another.
+## Offline Fred runtime backup
+
+Run `scripts/backup_fred_runtime.py --live <checkout> --destination
+<existing-offline-folder>` to create one ZIP archive outside the live checkout.
+The archive contains `Brain/Executive` and `.vault-index.json`, including
+uncommitted task and report records. It excludes source documents and the rest
+of the vault. No running task or source file is changed.
+
+The script streams files, rejects a changing source, writes a temporary ZIP,
+extracts it into a temporary restore folder, checks every SHA-256 digest and
+the restored index structure, removes that folder, and only then publishes the
+final ZIP. The destination must already exist and have enough space for the
+archive and restore check. This ZIP is unencrypted; keep it on trusted offline
+storage. To preserve the original documents, back up their source folder
+separately.
