@@ -115,7 +115,7 @@ repair before relying on it. Keep OAuth tokens outside commits. For a bounded, r
 `BPFCO_DOCUMENTS_ROOT` to the desired folder before startup. The retriever
 visits at most 200 entries and three subfolder levels, and reads only Markdown
 or text files smaller than 1 MB. It keeps source paths and short excerpts; it
-does not copy files into the vault. PDF and DOCX ingestion is not included. Outbound actions remain subject to the approval gate.
+does not copy files into the vault. This retriever does not ingest PDF or DOCX. The separate preview graph can inspect them locally for explicit links. Outbound actions remain subject to the approval gate.
 
 For an executive runtime state archive (queue, reports, experiences,
 shared context and index), choose a destination outside the checkout, ideally
@@ -142,15 +142,24 @@ times cache extracted links between requests. This scan supplements existing
 index, task, report and experience links. The API reports `scanned_note_links`,
 `ambiguous_note_links` and `notes_scanned` for inspection.
 
-Set `BPFCO_DOCUMENTS_ROOT=C:\\Documents\\New All Docs` in the preview process to
-add up to 200 read-only Markdown/text document nodes (maximum 1 MB each,
-three subfolder levels). Explicit links inside those documents and exact task
-evidence/report source paths connect them to indexed notes and existing tasks.
-Files with no supported links remain unconnected. PDF and DOCX contents are
-not parsed; inspect the actual document types before adding offline parsers.
-The Windows preview refresh script checks the 855-note index and document
-inventory before changing files. Its PowerShell syntax and behavior still
-require a run on Windows; no local Windows process was restarted here.
+Set `BPFCO_DOCUMENTS_ROOT` to the actual folder in the preview process.
+The graph inventories up to 1,000 Markdown, text, DOCX and PDF files (100 MB
+per file, five subfolder levels) without copying their content into the vault.
+Only an explicit link inside a document or an exact task/report source path
+creates a connection. Identical files share one node with all source paths
+retained as aliases; other files remain distinct. Hash verification is bounded
+to 300 MB per request and continues on later refreshes. The API reports
+duplicate and pending counts, which must be checked against the source
+inventory. DOCX text uses Python's standard library. PDF extraction uses an
+already installed offline `pdftotext` or `pypdf` if available; otherwise PDF
+nodes remain unlinked unless a task/report cites their path. Text extraction
+is capped at eight documents per refresh. No new dependency is installed.
+
+The Windows preview script checks the 855-note index and inventories the
+source before changing files. The user observed 780 source files and nine
+SHA-256-identical groups containing 27 files; this count covers all file
+types, while graph duplicate statistics cover only supported graph files.
+The script and real document graph still need a Windows run before merging.
 
 The `/super-3d` view refreshes the API every 15 seconds while visible and
 keeps positions for unchanged nodes. It displays the 350 most connected nodes
