@@ -159,7 +159,16 @@ The Windows preview script checks the 855-note index and inventories the
 source before changing files. The user observed 780 source files and nine
 SHA-256-identical groups containing 27 files; this count covers all file
 types, while graph duplicate statistics cover only supported graph files.
-The script and real document graph still need a Windows run before merging.
+Windows preview on 24 September 2026 reported 855 notes, 581 eligible document
+files, 13 graph duplicate groups with 24 suppressed nodes, and 549 documents
+pending extraction at startup. The earlier full-folder inventory contained
+780 files and nine exact-copy groups with 27 files. A stable 581-file subset
+cannot have more duplicate groups than the full 780-file set. The cause has
+not been established; OneDrive may have changed files between scans, or an
+inventory could have been incomplete. Do not treat the two totals as
+reconciled. The draft now reports total files seen, a source metadata
+fingerprint, scan time, and files changed during hashing; these fields need a
+Windows preview run. No document has been deleted or renamed.
 The preview reconciliation helper accepts only three verified earlier blob IDs
 (renderer, provenance adapter, and dashboard route), backs up their exact
 bytes outside the preview, then advances those files and the new modules.
