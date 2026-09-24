@@ -12,6 +12,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request, send_file
 from agent_bridge import AgentBridge
 from boot_network import set_mode
+from online_requests import ResearchRequests
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -151,6 +152,34 @@ def agent_terminal_avatar(agent):
     if name not in AGENTS:
         return jsonify({"ok": False, "error": "Unknown agent"}), 404
     return send_file(AVATAR_DIR / f"{name.lower()}.webp", mimetype="image/webp")
+
+
+@agent_terminal_bp.route("/api/agent-terminal/research-requests", methods=["GET", "POST"])
+def agent_terminal_research_requests():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify({"ok": False, "error": "Local access only"}), 403
+    requests = ResearchRequests()
+    if request.method == "GET":
+        return jsonify({"ok": True, "requests": requests.list()})
+    data = request.get_json(silent=True) or {}
+    try:
+        record = requests.create(data.get("agent"), data.get("query", ""),
+                                 data.get("task_id", ""))
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    return jsonify({"ok": True, "request": record}), 201
+
+
+@agent_terminal_bp.route("/api/agent-terminal/research-requests/<request_id>/guide", methods=["POST"])
+def agent_terminal_guide_research(request_id):
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify({"ok": False, "error": "Local access only"}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        record = ResearchRequests().guide(request_id, data.get("guidance", ""))
+    except (ValueError, FileNotFoundError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    return jsonify({"ok": True, "request": record})
 
 
 @agent_terminal_bp.route("/api/agent-terminal/network-mode", methods=["POST"])
