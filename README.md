@@ -90,3 +90,24 @@ the retrieved evidence alongside its report, add deliberate online intake
 with timestamps and source attribution, and then implement measured
 Hermes/low-VRAM routing. Preserve the existing queue, vault, and approval gate
 while doing so.
+## Fred graph and Meeting view
+
+The Super dashboard at `/super` reads active task records through
+`/api/meeting-tasks`. The Brain view at `/super-3d` reads
+`/api/brain-graph`. The graph uses the existing vault index, executive
+records, explicit local note links and exact task evidence or report source
+paths. It does not create task records or alter documents.
+
+To include a local document folder, set `BPFCO_DOCUMENTS_ROOT` to its existing
+path before starting the dashboard. The bounded scanner reads supported
+Markdown, text, DOCX and PDF files; it merges only verified byte-identical
+copies. Each graph refresh extracts a limited batch, so the pending count can
+fall over several refreshes. PDF text needs an already installed offline
+extractor. Missing or ambiguous references remain unlinked. Network mode does
+not control local document reading.
+
+Check `/api/brain-graph` for `notes`, `executive_links`,
+`provenance_links`, `document_pending` and
+`document_unverified_hashes` before integrating a changed checkout. The
+Meeting view shows queued and in-progress tasks from the existing queue and
+task files.
