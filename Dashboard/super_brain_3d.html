@@ -22,6 +22,11 @@ background:rgba(6,12,18,.86);border:1px solid #29404d;border-radius:11px;
 backdrop-filter:blur(5px)}
 #hud b{color:#78c8ef}.muted{color:#82909d;font-size:11px}
 #info{margin-top:6px}
+#scanStatus{margin-top:8px;line-height:1.5;color:#b7d5e5;font-size:12px}
+#scanStatus small{display:block;color:#8a9eab}
+.focus-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.focus-actions button{background:#102431;border:1px solid #31586d;border-radius:6px;color:#dcecf5;padding:5px 8px;cursor:pointer}
+.focus-actions button[aria-pressed="true"]{border-color:#60d8c2;color:#60d8c2}
 .panel-handle{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:grab;user-select:none;touch-action:none}
 .panel-handle:active{cursor:grabbing}.panel-toggle{width:25px;height:25px;padding:0;border:1px solid #36566a;border-radius:6px;
 background:#102431;color:#dcecf5;cursor:pointer;font-weight:800}.panel-collapsed{width:210px!important;height:42px!important;overflow:hidden!important}
@@ -59,9 +64,14 @@ background:#07121b;border:1px solid #29404d;border-radius:8px}#runtimeTask{margi
 <div id="hud">
 <div class="panel-handle" id="hudHandle"><b>BPFCo SUPER BRAIN · 3D</b><button class="panel-toggle" type="button" aria-label="Collapse Brain information">−</button></div>
 <div class="panel-body">
-  <div class="muted">Existing brain graph data · 3D renderer</div>
+  <div class="muted">Recorded links only · new edges pulse briefly</div>
   <div class="muted">Left-drag rotate · Right-drag pan · Wheel zoom</div>
   <div id="info">Loading brain…</div>
+  <div id="scanStatus" role="status" aria-live="polite">Waiting for document scan…</div>
+  <div class="focus-actions">
+    <button id="focusAll" type="button" aria-pressed="true">Connected view</button>
+    <button id="focusDocuments" type="button" aria-pressed="false">Documents</button>
+  </div>
 </div>
 </div>
 
@@ -252,15 +262,51 @@ setInterval(refreshPresence,3000);
 
 const endpoint=value=>String(value&&typeof value==="object"?value.id:value);
 const info=document.getElementById("info");
+const scanStatus=document.getElementById("scanStatus");
 let brain={nodes:[],links:[],stats:{}};
 let chosen=[],links=[],degrees=new Map(),signature="",activeFilter="",refreshing=false;
 let freshEdges=new Set(),freshTimer=null;
 const edgeKey=l=>`${endpoint(l.source)}>${endpoint(l.target)}:${l.relationship||""}:${Boolean(l.unresolved)}`;
 const score=n=>degrees.get(String(n.id))||0;
 const setInfo=(nodes,visibleLinks,filter="")=>{
-  const total=brain.stats?.notes||brain.nodes.length;
-  info.textContent=`${nodes.length}/${total} shown · ${visibleLinks.length} recorded links · ${brain.links.length} total${filter?` · filter: ${filter}`:""} · live`;
+  info.textContent=`${nodes.length}/${brain.nodes.length} nodes shown · ${visibleLinks.length}/${brain.links.length} recorded links${filter?` · ${filter}`:""}`;
 };
+function updateScanStatus(stats){
+  if(stats.document_sources===undefined){
+    scanStatus.textContent="Document source unavailable in this graph response";
+    return;
+  }
+  const pending=Number(stats.document_pending||0);
+  const total=Number(stats.document_sources||0);
+  const checked=Math.max(0,total-pending);
+  const changed=Number(stats.source_changed_during_scan||0);
+  const hashPending=Number(stats.document_unverified_hashes||0);
+  scanStatus.replaceChildren();
+  const summary=document.createElement("div");
+  summary.textContent=`${stats.notes||0} notes · ${total} supported documents · ${checked}/${total} source checks · ${stats.document_links||0} document links`;
+  scanStatus.appendChild(summary);
+  const detail=document.createElement("small");
+  detail.textContent=`${stats.exact_duplicate_groups||0} exact-copy groups · ${stats.document_duplicates_suppressed||0} copies represented by aliases · ${pending} pending`;
+  scanStatus.appendChild(detail);
+  const snapshot=document.createElement("small");
+  snapshot.textContent=stats.source_snapshot
+    ? `Source scan: ${stats.source_files_seen||0} files · snapshot ${stats.source_snapshot}${changed||hashPending?` · ${changed} changed, ${hashPending} hashes pending`:""}`
+    : "Source snapshot not checked in this preview";
+  scanStatus.appendChild(snapshot);
+  const meaning=document.createElement("small");
+  meaning.textContent=stats.document_links
+    ? "Links require explicit document references or task sources; new edges pulse when found"
+    : "Document nodes are sources; no document connections have been verified yet";
+  scanStatus.appendChild(meaning);
+  const comparison=document.createElement("small");
+  comparison.textContent="Duplicate counts describe this scan; earlier inventory comparison is unresolved";
+  scanStatus.appendChild(comparison);
+  if(stats.source_scan_incomplete||changed||hashPending){
+    const warning=document.createElement("small");
+    warning.textContent="Source scan incomplete or changing; duplicate counts are provisional";
+    scanStatus.appendChild(warning);
+  }
+}
 
 const elem=document.getElementById("graph");
 elem.addEventListener("contextmenu",event=>event.preventDefault());
@@ -288,8 +334,8 @@ const Graph=new ForceGraph3D(elem,{
   document.getElementById("selTitle").textContent=node.label||node.id;
   document.getElementById("selPath").textContent=node.path||node.folder||"";
   document.getElementById("selStats").textContent=
-    `Words: ${node.word_count||0} · Connections: ${score(node)} · `+
-    Object.entries(links.filter(link=>endpoint(link.source)===String(node.id)||endpoint(link.target)===String(node.id))
+    `Words: ${node.word_count||0} · Connections: ${score(node)}${node.duplicate_count>1?` · ${node.duplicate_count} identical source files`:""} · `+
+    Object.entries(brain.links.filter(link=>endpoint(link.source)===String(node.id)||endpoint(link.target)===String(node.id))
       .reduce((counts,link)=>{const kind=link.relationship||"note link";counts[kind]=(counts[kind]||0)+1;return counts},{}))
       .map(([kind,count])=>`${kind}: ${count}`).join(" · ");
 
@@ -340,6 +386,13 @@ const filterGraph=value=>{
   setInfo(nodes,visibleLinks,value);
   if(nodes.length) setTimeout(()=>Graph.zoomToFit(500,30),50);
 };
+function setFocus(value){
+  filterGraph(value);
+  document.getElementById("focusAll").setAttribute("aria-pressed",String(!value));
+  document.getElementById("focusDocuments").setAttribute("aria-pressed",String(Boolean(value)));
+}
+document.getElementById("focusAll").onclick=()=>setFocus("");
+document.getElementById("focusDocuments").onclick=()=>setFocus("Documents /");
 
 async function refreshGraph(){
   if(refreshing||document.hidden) return;
@@ -349,9 +402,14 @@ async function refreshGraph(){
     if(!response.ok) throw Error(`Graph HTTP ${response.status}`);
     const next=await response.json();
     if(!Array.isArray(next.nodes)||!Array.isArray(next.links)) throw Error("Invalid graph");
+    updateScanStatus(next.stats||{});
     const nextSignature=next.nodes.map(n=>String(n.id)).sort().join("\n")+"|"+
       next.links.map(edgeKey).sort().join("\n");
-    if(nextSignature===signature) return;
+    if(nextSignature===signature){
+      brain.stats=next.stats||{};
+      setInfo(Graph.graphData().nodes,Graph.graphData().links,activeFilter);
+      return;
+    }
     const previous=new Set(brain.links.map(edgeKey));
     freshEdges=new Set(signature?next.links.map(edgeKey).filter(key=>!previous.has(key)):[]);
     clearTimeout(freshTimer);
