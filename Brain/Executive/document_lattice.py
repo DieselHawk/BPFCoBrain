@@ -7,7 +7,7 @@ from pathlib import Path
 from Brain.Executive.source_registry import documents_root
 
 ROOT = Path(__file__).resolve().parents[2]
-DATABASE = ROOT / "Brain" / "cache" / "document_text.sqlite3"
+DATABASE = Path(os.environ.get("BPFCO_DOCUMENT_CATALOG", str(ROOT / "Brain" / "cache" / "document_text.sqlite3")))
 EXTENSIONS = {".md", ".txt", ".docx", ".pdf"}
 
 
