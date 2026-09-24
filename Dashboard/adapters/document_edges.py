@@ -6,6 +6,7 @@ import subprocess
 import threading
 import zipfile
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -38,6 +39,8 @@ def _digest(path, signature):
     with path.open('rb') as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b''):
             h.update(chunk)
+    if _signature(path) != signature:
+        raise OSError('Document changed during hashing')
     digest = h.hexdigest()
     _hash_cache[path] = (signature, digest)
     return digest
@@ -122,15 +125,24 @@ def add_document_edges(graph, root, documents_root=None):
 def _build(graph, folder):
     nodes, edges = graph['nodes'], graph['links']
     files = []
+    source_files_seen = 0
+    source_snapshot = hashlib.sha256()
+    source_incomplete = False
     for current, directories, names in os.walk(folder, followlinks=False):
         depth = len(Path(current).relative_to(folder).parts)
+        if depth >= MAX_DEPTH and directories:
+            source_incomplete = True
         directories[:] = sorted(d for d in directories if not (Path(current) / d).is_symlink()) if depth < MAX_DEPTH else []
         for name in sorted(names):
             if len(files) >= MAX_DOCUMENTS:
+                source_incomplete = True
                 break
             path = Path(current) / name
             try:
                 signature = _signature(path)
+                source_files_seen += 1
+                source_snapshot.update((str(path.relative_to(folder)).casefold()
+                                        + ':' + str(signature) + '\n').encode('utf-8', 'replace'))
                 if (path.suffix.lower() not in EXTENSIONS or path.is_symlink()
                         or signature[1] > MAX_FILE_BYTES or not path.resolve().is_relative_to(folder)):
                     continue
@@ -145,7 +157,19 @@ def _build(graph, folder):
     confirmed = defaultdict(list)
     hash_budget = MAX_HASH_BYTES_PER_REQUEST
     unverified = 0
+    changed_during_scan = 0
     for path, signature in files:
+        try:
+            if _signature(path) != signature:
+                changed_during_scan += 1
+                unverified += 1
+                confirmed['unverified:' + _key(path)].append((path, signature))
+                continue
+        except OSError:
+            changed_during_scan += 1
+            unverified += 1
+            confirmed['unverified:' + _key(path)].append((path, signature))
+            continue
         if len(by_size[signature[1]]) == 1:
             identity = 'single:' + _key(path)
         elif path in _hash_cache and _hash_cache[path][0] == signature:
@@ -157,6 +181,7 @@ def _build(graph, folder):
             except OSError:
                 identity = 'unverified:' + _key(path)
                 unverified += 1
+                changed_during_scan += 1
         else:
             identity = 'unverified:' + _key(path)
             unverified += 1
@@ -234,6 +259,11 @@ def _build(graph, folder):
             added += 1
     stats = graph.setdefault('stats', {})
     stats['document_sources'] = len(files)
+    stats['source_files_seen'] = source_files_seen
+    stats['source_snapshot'] = source_snapshot.hexdigest()[:16]
+    stats['source_scanned_at'] = datetime.now(timezone.utc).isoformat()
+    stats['source_scan_incomplete'] = source_incomplete
+    stats['source_changed_during_scan'] = changed_during_scan
     stats['document_nodes'] = new_nodes
     stats['exact_duplicate_groups'] = sum(len(members) > 1 for members in confirmed.values())
     stats['exact_duplicate_files'] = sum(len(members) for members in confirmed.values() if len(members) > 1)
