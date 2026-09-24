@@ -19,6 +19,7 @@
       <div class="at-presence"><div class="at-avatar" id="atAvatar"><img id="atPortrait" alt="Fred portrait" decoding="async"><span id="atInitial">F</span></div><div class="at-identity"><strong id="atName">Fred</strong><small id="atRole">CEO</small></div><div class="at-state" id="atState">READY</div></div>
       <div class="at-log" id="atLog" aria-live="polite"><p class="at-message system">Super Brain local channel ready.</p></div>
       <form class="at-compose" id="atForm"><textarea id="atInput" maxlength="4000" placeholder="Speak to the selected agent…" required></textarea><button id="atSend" type="submit">SEND</button><button id="atQueue" type="button" title="Queue an internal task for this specialist">QUEUE</button></form>
+      <details class="at-research"><summary>AGENT RESEARCH REQUESTS</summary><button type="button" id="atResearchRefresh">Refresh requests</button><div id="atResearchList"></div></details>
       <div class="at-status" id="atStatus">External actions remain approval-gated</div>
     </section>
     ${edges.map(edge=>`<i class="at-resize at-resize-${edge}" data-at-resize="${edge}"></i>`).join("")}`;
@@ -56,6 +57,49 @@
     }catch(error){message("system",error.message)}
     finally{$("atMode").disabled=false}
   });
+
+  async function refreshResearchRequests(){
+    const list=$("atResearchList");list.textContent="Loading…";
+    try{
+      const data=await api("/api/agent-terminal/research-requests");
+      list.textContent="";
+      if(!data.requests.length){list.textContent="No research requests.";return}
+      data.requests.forEach(item=>{
+        const row=document.createElement("div");
+        row.className="at-research-item";
+        const label=document.createElement("p");
+        label.textContent=`${item.agent} · ${item.status} · ${item.query}`;
+        row.appendChild(label);
+        if(item.status==="requested"){
+          const input=document.createElement("input");
+          input.placeholder="Guidance for Fred (optional)";
+          input.maxLength=1000;
+          input.value=item.guidance||"";
+          const button=document.createElement("button");
+          button.type="button";button.textContent="Guide";
+          button.onclick=async()=>{
+            button.disabled=true;
+            try{
+              await api(`/api/agent-terminal/research-requests/${item.request_id}/guide`,{
+                method:"POST",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({guidance:input.value})
+              });
+              await refreshResearchRequests();
+            }catch(error){message("system",error.message);button.disabled=false}
+          };
+          row.append(input,button);
+        }
+        if(item.result){
+          const source=document.createElement("p");
+          source.textContent=`Source: ${item.result.source_url}`;
+          row.appendChild(source);
+        }
+        list.appendChild(row);
+      });
+    }catch(error){list.textContent=error.message}
+  }
+  $("atResearchRefresh").addEventListener("click",refreshResearchRequests);
+  refreshResearchRequests();
 
   Object.entries(agents).forEach(([name,meta])=>{const button=document.createElement("button");button.type="button";button.className="at-agent";button.dataset.agent=name;button.textContent=name;button.style.setProperty("--agent",meta.color);button.onclick=()=>choose(name);$("atAgents").appendChild(button)});
   $("atForm").addEventListener("submit",async event=>{
