@@ -319,7 +319,7 @@ def meeting_tasks():
         if not task_id or any(ch not in "0123456789TZ-_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" for ch in task_id):
             continue
         record = load_json(TASK_DIR / (task_id + ".json"), {})
-        if not isinstance(record, dict):
+        if not isinstance(record, dict) or record.get("status") not in {"queued", "in_progress"}:
             continue
         tasks.append({
             "task_id": task_id,
