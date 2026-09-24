@@ -283,11 +283,14 @@ function updateScanStatus(stats){
   const hashPending=Number(stats.document_unverified_hashes||0);
   scanStatus.replaceChildren();
   const summary=document.createElement("div");
-  summary.textContent=`${stats.notes||0} notes · ${total} supported documents · ${checked}/${total} source checks · ${stats.document_links||0} document links`;
+  summary.textContent=`${stats.notes||0} notes · ${total} supported documents · ${checked}/${total} source checks · ${stats.document_links||0} explicit document references`;
   scanStatus.appendChild(summary);
   const detail=document.createElement("small");
   detail.textContent=`${stats.exact_duplicate_groups||0} exact-copy groups · ${stats.document_duplicates_suppressed||0} copies represented by aliases · ${pending} pending`;
   scanStatus.appendChild(detail);
+  const folders=document.createElement("small");
+  folders.textContent=`${stats.document_folder_nodes||0} real folders · ${stats.document_folder_links||0} file-location links (not content matches)`;
+  scanStatus.appendChild(folders);
   const snapshot=document.createElement("small");
   snapshot.textContent=stats.source_snapshot
     ? `Source scan: ${stats.source_files_seen||0} files · snapshot ${stats.source_snapshot}${changed||hashPending?` · ${changed} changed, ${hashPending} hashes pending`:""}`
