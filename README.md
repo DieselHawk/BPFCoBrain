@@ -150,3 +150,21 @@ final ZIP. The destination must already exist and have enough space for the
 archive and restore check. This ZIP is unencrypted; keep it on trusted offline
 storage. To preserve the original documents, back up their source folder
 separately.
+
+## Fred Verified Preview desktop icon
+
+Keep the verified code checkout at `C:\BPFCo\FredVerified` and the live
+records at `C:\BPFCo\BPFCoBrain-layering`. The separate **Fred Verified
+Preview** shortcut runs `scripts/Start-FredVerified.ps1` in the verified
+checkout. It opens <http://127.0.0.1:5002/super>, reads the live index and
+Executive records and the existing OneDrive `Documents\New All Docs`
+folder, and runs offline with HTTP writes disabled. It does not start the
+automatic queue, restart port 5001, or change the existing Online or Brain
+shortcuts. If port 5002 is already occupied by an unknown process, the
+launcher stops with an error instead of replacing that process.
+
+If the live checkout or document folder moves, set `BPFCO_LIVE_ROOT` or
+`BPFCO_DOCUMENTS_ROOT` in the shortcut's environment. The launcher uses
+the current user's OneDrive folder by default. It requires the Python and
+dashboard dependencies already used by the comparison preview. Logs from a
+new preview process are written under the current user's temporary folder.
