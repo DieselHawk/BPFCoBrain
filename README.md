@@ -90,3 +90,41 @@ the retrieved evidence alongside its report, add deliberate online intake
 with timestamps and source attribution, and then implement measured
 Hermes/low-VRAM routing. Preserve the existing queue, vault, and approval gate
 while doing so.
+
+## Fred's shared memory and online sources
+
+The active checkout is the canonical vault. Fred and the specialist workers use
+`Brain/Executive/` for the queue, reports and shared experiences; experience
+records live in `Brain/Executive/Experience/`. Do not copy a second Brain
+folder into this directory. `Shared_Context/integrate_vault.py` resolves its
+path from the checkout being launched.
+
+For online startup in PowerShell, from the intended checkout:
+
+```powershell
+$env:BPFCO_BOOT_MODE = 'online'
+$env:BPFCO_OLLAMA_MODEL = 'llama3.2:latest'
+py -3 .\launch_app.py
+```
+
+This enables the network gate; it does **not** authenticate Gmail or OneDrive,
+automatically ingest either account, or grant Fred live access to them.
+`gmail_hunt.py` requires a Google Desktop OAuth `credentials.json` and
+`token.json`. `ondrive_hunt.py` requires an Azure app client ID and a valid
+Microsoft login; its existing token implementation needs a refresh and search
+repair before relying on it. Keep OAuth tokens outside commits. Local
+`C:\documents` is likewise not presently an indexed source. Review that
+folder's scope before adding it to the vault index; do not copy its full contents
+into the repository. Outbound actions remain subject to the approval gate.
+
+For a verified backup of executive runtime state (queue, reports, experiences,
+shared context and index), choose a destination outside the checkout, ideally
+another drive:
+
+```powershell
+py -3 .\backup_fred.py 'D:\BPFCoBackups'
+```
+
+This state backup does not contain every vault note or external document. Keep a
+separate file-level backup of the vault and original documents. Avoid placing
+backup archives inside any indexed or synced Brain directory.
