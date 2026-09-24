@@ -46,6 +46,11 @@ def add_provenance_edges(graph, root):
     for node in nodes:
         if isinstance(node, dict) and node.get("path"):
             by_path[_path(node["path"], root)] = str(node["id"])
+            aliases = node.get("aliases", [])
+            if isinstance(aliases, list):
+                for alias in aliases[:MAX_RECORDS]:
+                    if isinstance(alias, str) and alias:
+                        by_path[_path(alias, root)] = str(node["id"])
     seen = {
         (str(edge.get("source")), str(edge.get("target")), edge.get("relationship"))
         for edge in edges if isinstance(edge, dict)
