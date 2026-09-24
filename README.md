@@ -144,6 +144,8 @@ unresolved note links, which need separate investigation. The graph renderer
 uses live link degree so the extra connections are visible. Meeting mode lists
 active tasks while omitting completed ones.
 
+Experience notes with an explicit task ID can also link to existing task and report nodes. An isolated AllNew Docs check added those two links without duplicates; the draft branch still lacks the local executive graph adapter that supplies those nodes in the preview. The compressed sandbox includes a merge comparison report, but it is a synthetic fixture rather than a full integration test.
+
 The online research request lifecycle was exercised with a simulated fetch,
 not a live Gmail, OneDrive, or public-web ingestion. Confirm live source
 behavior, visibility of agent requests, and the offline switch before calling
