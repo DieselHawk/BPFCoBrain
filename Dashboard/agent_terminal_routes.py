@@ -11,6 +11,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request, send_file
 from agent_bridge import AgentBridge
+from boot_network import set_mode
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -150,6 +151,22 @@ def agent_terminal_avatar(agent):
     if name not in AGENTS:
         return jsonify({"ok": False, "error": "Unknown agent"}), 404
     return send_file(AVATAR_DIR / f"{name.lower()}.webp", mimetype="image/webp")
+
+
+@agent_terminal_bp.route("/api/agent-terminal/network-mode", methods=["POST"])
+def agent_terminal_network_mode():
+    if request.remote_addr not in {"127.0.0.1", "::1"}:
+        return jsonify({"ok": False, "error": "Local access only"}), 403
+    data = request.get_json(silent=True) or {}
+    mode = data.get("mode")
+    if mode not in {"online", "offline"}:
+        return jsonify({"ok": False, "error": "Choose online or offline"}), 400
+    try:
+        set_mode(mode)
+    except OSError:
+        return jsonify({"ok": False, "error": "Could not save network preference"}), 500
+    return jsonify({"ok": True, "network_mode": mode,
+                    "note": "Existing child workers need restart to inherit the change."})
 
 
 @agent_terminal_bp.route("/api/agent-terminal/status")
