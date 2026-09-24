@@ -64,3 +64,4 @@ Brain/Executive/LinkRepair/link_repair_report.json
 
 # Temporary pre-repair index backup
 .vault-index.before-linkfix.json
+Brain/cache/document_text.sqlite3*

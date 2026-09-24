@@ -5,6 +5,7 @@ import os
 import re
 from pathlib import Path
 from Brain.Executive.source_registry import documents_root
+from Brain.Executive.document_lattice import search as search_documents
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -101,7 +102,16 @@ def retrieve(objective, limit=4):
         excerpt = " ".join(content[start:first + 520].split())[:650]
         candidates.append((score, str(title), normalized_path, excerpt))
 
-    candidates.extend(document_candidates(terms))
+    # The catalog is a text cache for the existing lattice, not a second graph.
+    indexed = search_documents(terms, limit=max(4, limit))
+    if indexed:
+        folder = documents_root()
+        for item in indexed:
+            path = Path(item["path"])
+            if folder and path.is_file() and path.resolve().is_relative_to(folder):
+                candidates.append((10, item["title"], item["path"], item["excerpt"]))
+    else:
+        candidates.extend(document_candidates(terms))
     candidates.sort(key=lambda item: (-item[0], item[2]))
     return [
         {"title": title, "path": path, "excerpt": excerpt}

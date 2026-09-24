@@ -114,6 +114,13 @@ PDFs) and cites matching excerpts. The graph draws task and report links to
 the exact document paths Fred used. Additional online feeds can be added as
 separate source adapters later; they are not connected by this local setting.
 
+Run `python -m Brain.Executive.document_lattice --batch 20` to add up to 20
+changed Markdown, text, DOCX or text-bearing PDF files to a resumable local
+text cache. Repeat until `updated` is zero. Original documents are untouched.
+Fred retrieves cited passages through the existing evidence lookup and the
+existing graph draws links from cited tasks and reports. The cache stays local
+and is excluded from Git.
+
 Check `/api/brain-graph` for `notes`, `executive_links`,
 `provenance_links`, `document_pending` and
 `document_unverified_hashes` before integrating a changed checkout. The
