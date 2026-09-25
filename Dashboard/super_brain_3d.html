@@ -443,7 +443,7 @@ async function predictionCandidates(graph){
       relationship:"UNVERIFIED PREDICTION",reason,origin:source});
   };
   try{
-    const response=await fetch("/api/graphify-suggestions",{cache:"no-store"});
+    const response=await fetch("/api/connection-hints",{cache:"no-store"});
     if(response.ok){
       const data=await response.json();
       for(const item of (data.suggestions||[]).slice(0,100)){

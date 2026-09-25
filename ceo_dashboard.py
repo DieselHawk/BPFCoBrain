@@ -432,6 +432,13 @@ def graphify_suggestions():
                     "suggestions": rows[:100] if isinstance(rows, list) else []})
 
 
+@app.route("/api/connection-hints")
+def connection_hints_api():
+    """Read bounded unverified leads shared by Fred and the 3D view."""
+    from Brain.Executive.graph_hints import connection_hints
+    return jsonify({"suggestions": connection_hints(limit=60), "verified": False})
+
+
 @app.route("/api/dispatch", methods=["POST"])
 def dispatch():
     data = request.get_json(silent=True) or {}
