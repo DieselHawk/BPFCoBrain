@@ -13,7 +13,7 @@ from threading import Lock
 from flask import Blueprint, jsonify, request, send_file
 from agent_bridge import AgentBridge
 from executive_controller import CEOController
-from Brain.Executive.graph_hints import hints_text
+from Brain.Executive.graph_hints import hints_text, prepare_fred_hints
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +58,8 @@ def write_presence(agent, state, event):
 
 
 def local_reply(agent, message, evidence=None):
+    if agent == "Fred":
+        prepare_fred_hints()
     persona_path = PERSONA_DIR / f"{agent.lower()}.md"
     persona = (
         persona_path.read_text(encoding="utf-8", errors="ignore")

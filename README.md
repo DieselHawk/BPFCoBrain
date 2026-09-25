@@ -166,14 +166,38 @@ to graph links or written to source files. The separate link-repair section
 still reports only unresolved explicit wikilinks.
 
 In the 3D Brain, **Show predictions** draws up to 60 of these candidates as
-amber animated links. Saved Graphify suggestions with two uniquely matching
-source files take priority; local folder/title clues fill in when none match.
+amber animated links. Shared extracted-text hints, saved Graphify suggestions,
+and local folder/title clues are considered in that order when source files
+match graph nodes uniquely.
 The toggle hides them again without changing the recorded graph. Hover an amber
 link to see its reason. Fred's local terminal and offline CEO assessment read
 the same saved Graphify or local folder/title hints as unverified leads; the model is told to confirm
 relationships from source evidence before stating them as fact. The read-only
 port 5002 comparison still blocks task submissions, so Fred's interactive
 terminal runs in the normal local dashboard after this code is promoted.
+
+### Optional offline OCR for Fred's connection hints
+
+The local document catalog can use an installed UB Mannheim Tesseract OCR
+executable to read scanned PDFs. PDF page rendering also requires a local
+`pdftoppm` executable. The catalog uses existing PDF text first and OCRs at
+most two image-only pages per PDF at bounded resolution. No installer or
+network service is started. Set `BPFCO_TESSERACT_PATH` and
+`BPFCO_PDFTOPPM_PATH` if these executables are not on PATH; the standard
+Windows Tesseract installation location is detected automatically. Run
+`py -3 -m Brain.Executive.document_lattice --batch 20` from the repository
+folder to advance the catalog deliberately. Fred advances it by one item
+before each local task when both tools are present. Installing OCR later
+causes earlier PDFs to be revisited once, even when their timestamps did not
+change. The command lists up to 50 supported files it could not parse in
+`failed`, with the total in `failed_count`. Those files are skipped until
+their content or the available OCR pipeline changes. The preview remains
+read-only and does not initiate this scan.
+
+Fred and the 3D view read the same ranked hints from this local catalog:
+two or more uncommon shared extracted terms may suggest a cross-folder pair.
+Each pair remains an unverified lead with two source paths; an OCR match does
+not establish that the documents discuss the same subject.
 
 ## Read-only live comparison
 

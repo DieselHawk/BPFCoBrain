@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import threading
+import tempfile
 import zipfile
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -63,22 +64,63 @@ def _docx_text(path):
         return '\n'.join(lines)[:MAX_TEXT]
 
 
-def _pdf_text(path):
+def _scanned_pdf_text(path):
+    """Optional offline OCR for a bounded scan, used by the resumable catalog."""
+    from Brain.Executive.ocr_runtime import installed_tools
+    tools = installed_tools()
+    if tools is None:
+        return ''
+    ocr, renderer = tools
+    with tempfile.TemporaryDirectory(prefix='bpfco-ocr-') as temp:
+        target = str(Path(temp) / 'page')
+        try:
+            rendered = subprocess.run(
+                [renderer, '-f', '1', '-l', '2', '-scale-to', '1600', '-gray', '-png', str(path), target],
+                capture_output=True, timeout=30, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return ''
+        if rendered.returncode:
+            return ''
+        lines = []
+        for image in sorted(Path(temp).glob('page-*.png'))[:2]:
+            try:
+                result = subprocess.run(
+                    [ocr, str(image), 'stdout', '--psm', '3'], capture_output=True,
+                    timeout=30, check=False,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                continue
+            if result.returncode == 0:
+                lines.append(result.stdout.decode('utf-8', errors='replace'))
+        return '\n'.join(lines)[:MAX_TEXT]
+
+
+def _pdf_text(path, ocr=False):
+    text = ''
     executable = shutil.which('pdftotext')
     if executable:
-        result = subprocess.run([executable, '-f', '1', '-l', '5', '-enc', 'UTF-8',
-                                 str(path), '-'], capture_output=True,
-                                timeout=5, check=False)
-        if result.returncode == 0:
-            return result.stdout.decode('utf-8', errors='replace')[:MAX_TEXT]
-    try:
-        from pypdf import PdfReader
-    except ImportError:
-        return None
-    with path.open('rb') as stream:
-        reader = PdfReader(stream, strict=False)
-        return '\n'.join((page.extract_text() or '')[:MAX_TEXT]
-                         for page in reader.pages[:5])[:MAX_TEXT]
+        try:
+            result = subprocess.run([executable, '-f', '1', '-l', '5', '-enc', 'UTF-8',
+                                     str(path), '-'], capture_output=True,
+                                    timeout=5, check=False)
+            if result.returncode == 0:
+                text = result.stdout.decode('utf-8', errors='replace')[:MAX_TEXT]
+        except subprocess.TimeoutExpired:
+            pass
+    if not text.strip():
+        try:
+            from pypdf import PdfReader
+            with path.open('rb') as stream:
+                reader = PdfReader(stream, strict=False)
+                text = '\n'.join((page.extract_text() or '')[:MAX_TEXT]
+                                 for page in reader.pages[:5])[:MAX_TEXT]
+        except Exception:
+            # Optional PDF readers can fail on encrypted or damaged inputs.
+            pass
+    if ocr and len(text.strip()) < 40:
+        return _scanned_pdf_text(path) or text
+    return text or None
 
 
 def _references(path, signature):
