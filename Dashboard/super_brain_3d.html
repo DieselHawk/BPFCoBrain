@@ -336,7 +336,8 @@ const Graph=new ForceGraph3D(elem,{
 )
 .nodeAutoColorBy(n=>n.folder||"BPFCo")
 .nodeVal(n=>Math.max(1,Math.log2(score(n)+2)))
-.linkDirectionalParticles(link=>link.hypothesis?1:freshEdges.has(edgeKey(link))?2:0)
+.linkVisibility(link=>!link.hypothesis||showPredictions)
+.linkDirectionalParticles(link=>link.hypothesis?(showPredictions?1:0):freshEdges.has(edgeKey(link))?2:0)
 .linkDirectionalParticleColor(link=>link.hypothesis?"#f0c26b":link.relationship?.startsWith("experience")?"#f7b267":link.relationship?.includes("source")||link.relationship?.includes("evidence")?"#68e0c1":"#73aaff")
 .linkDirectionalParticleWidth(.8)
 .linkOpacity(.35)
@@ -359,6 +360,10 @@ const Graph=new ForceGraph3D(elem,{
     1200
   );
 });
+// Hypotheses are visual annotations: they must exert no force on the layout.
+const linkForce=Graph.d3Force("link");
+const recordedStrength=linkForce.strength();
+linkForce.strength(link=>link.hypothesis?0:recordedStrength(link));
 
 const resizeGraph=()=>{
   const width=elem.clientWidth||innerWidth;
@@ -373,10 +378,10 @@ resizeGraph();
 const filterGraph=value=>{
   activeFilter=String(value||"");
   const query=String(value||"").trim().toLowerCase();
-  const displayed=showPredictions?links.concat(predictions):links;
+  const displayed=links.concat(predictions);
   if(!query){
     Graph.graphData({nodes:chosen,links:displayed.map(link=>({...link,source:endpoint(link.source),target:endpoint(link.target)}))});
-    setInfo(chosen,displayed);
+    setInfo(chosen,showPredictions?displayed:links);
     return;
   }
   const matches=brain.nodes.filter(node=>
@@ -398,7 +403,7 @@ const filterGraph=value=>{
     return ids.has(String(source))&&ids.has(String(target));
   });
   Graph.graphData({nodes,links:visibleLinks.map(link=>({...link,source:endpoint(link.source),target:endpoint(link.target)}))});
-  setInfo(nodes,visibleLinks,value);
+  setInfo(nodes,showPredictions?visibleLinks:visibleLinks.filter(link=>!link.hypothesis),value);
   if(nodes.length) setTimeout(()=>Graph.zoomToFit(500,30),50);
 };
 function setFocus(value){
@@ -416,12 +421,17 @@ document.getElementById("showPredictions").onclick=()=>{
   document.getElementById("hypothesisStatus").textContent=showPredictions
     ? `${predictions.length} amber links = unverified suggestions. Review sources before treating any link as fact.`
     : "Predictions are hidden until enabled for review.";
-  filterGraph(activeFilter);
+  Graph.linkVisibility(link=>!link.hypothesis||showPredictions);
+  Graph.linkDirectionalParticles(link=>link.hypothesis?(showPredictions?1:0):freshEdges.has(edgeKey(link))?2:0);
+  const current=Graph.graphData();
+  setInfo(current.nodes,current.links.filter(link=>showPredictions||!link.hypothesis),activeFilter);
 };
 
 async function predictionCandidates(graph){
   const nodes=graph.nodes.filter(n=>n.path&&!n.unresolved&&!/^(agent|task|report|experience):/.test(String(n.id))
-    && !/^(03-References|00-Inbox\/workspace\/\.graphify-venv)\//i.test(String(n.path))).slice(0,1200);
+    && !/^(03-References|00-Inbox\/workspace\/\.graphify-venv)\//i.test(String(n.path)))
+    .sort((a,b)=>Number(String(b.id).startsWith("document:"))-Number(String(a.id).startsWith("document:")))
+    .slice(0,1200);
   const pathKey=p=>String(p||"").replace(/\\/g,"/").toLowerCase();
   const existing=new Set(graph.links.map(l=>[endpoint(l.source),endpoint(l.target)].sort().join("|")));
   const found=new Map();
@@ -505,7 +515,7 @@ async function refreshGraph(){
     const previous=new Set(brain.links.map(edgeKey));
     freshEdges=new Set(signature?next.links.map(edgeKey).filter(key=>!previous.has(key)):[]);
     clearTimeout(freshTimer);
-    freshTimer=setTimeout(()=>{freshEdges.clear();Graph.linkDirectionalParticles(link=>link.hypothesis?1:0)},8000);
+    freshTimer=setTimeout(()=>{freshEdges.clear();Graph.linkDirectionalParticles(link=>link.hypothesis?(showPredictions?1:0):0)},8000);
     signature=nextSignature;brain=next;
     predictions=await predictionCandidates(next);
     degrees=new Map();
@@ -527,7 +537,7 @@ async function refreshGraph(){
       .map(l=>({...l,source:endpoint(l.source),target:endpoint(l.target)}));
     predictions=predictions.filter(l=>ids.has(l.source)&&ids.has(l.target));
     filterGraph(activeFilter);
-    Graph.linkDirectionalParticles(link=>link.hypothesis?1:freshEdges.has(edgeKey(link))?2:0);
+    Graph.linkDirectionalParticles(link=>link.hypothesis?(showPredictions?1:0):freshEdges.has(edgeKey(link))?2:0);
     window.bpfcoBrain3D.domains=[...new Set(chosen.map(n=>n.folder).filter(Boolean))].sort();
   }catch(error){info.textContent=`Graph refresh unavailable: ${error.message}`}
   finally{refreshing=false}
