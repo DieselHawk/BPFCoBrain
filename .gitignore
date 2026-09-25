@@ -41,6 +41,7 @@ Fred/Avatar/.git/
 # Runtime state
 Brain/Executive/queue.json
 Brain/Executive/presence_state.json
+Brain/Executive/action_journal.jsonl
 Brain/Executive/tasks/*.json
 Brain/Security/security_state.json
 
@@ -64,3 +65,4 @@ Brain/Executive/LinkRepair/link_repair_report.json
 
 # Temporary pre-repair index backup
 .vault-index.before-linkfix.json
+Brain/cache/document_text.sqlite3*

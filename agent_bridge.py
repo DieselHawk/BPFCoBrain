@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from Brain.Executive.local_evidence import retrieve
+from Brain.Executive.action_journal import record as audit_record
 
 ROOT = Path(__file__).resolve().parent
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -56,6 +57,7 @@ class AgentBridge:
     def dispatch(self, agent, objective, priority="normal", approval_required=True):
         if agent not in AGENTS:
             raise ValueError(f"Unknown specialist agent: {agent}")
+        audit_record("task_dispatch_intent", agent=agent)
 
         # Defense-in-depth: never create a second active task for
         # the same agent and objective. Task records are authoritative.
@@ -97,9 +99,11 @@ class AgentBridge:
             "status": "queued",
         })
         self._save_queue(queue)
+        audit_record("task_queued", task_id=task_id, agent=agent)
         return task
 
     def claim(self, task_id, agent):
+        audit_record("task_claim_intent", task_id=task_id, agent=agent)
         path = TASK_DIR / f"{task_id}.json"
 
         if not path.exists():
@@ -120,9 +124,11 @@ class AgentBridge:
             json.dumps(task, indent=2),
             encoding="utf-8",
         )
+        audit_record("task_claimed", task_id=task_id, agent=agent)
         return task
 
     def complete(self, task_id, agent, summary, status="complete", sources=None):
+        audit_record("task_complete_intent", task_id=task_id, agent=agent, status=status)
         path = TASK_DIR / f"{task_id}.json"
 
         if not path.exists():
@@ -168,6 +174,8 @@ class AgentBridge:
             if item["task_id"] != task_id
         ]
         self._save_queue(queue)
+
+        audit_record("task_completed", task_id=task_id, agent=agent, status=status)
 
         return report
 

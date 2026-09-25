@@ -68,9 +68,11 @@ background:#07121b;border:1px solid #29404d;border-radius:8px}#runtimeTask{margi
   <div class="muted">Left-drag rotate · Right-drag pan · Wheel zoom</div>
   <div id="info">Loading brain…</div>
   <div id="scanStatus" role="status" aria-live="polite">Waiting for document scan…</div>
+  <div id="hypothesisStatus" class="muted">Hypotheses are hidden until selected for review.</div>
   <div class="focus-actions">
     <button id="focusAll" type="button" aria-pressed="true">Connected view</button>
     <button id="focusDocuments" type="button" aria-pressed="false">Documents</button>
+    <button id="viewProposals" type="button">Review proposed links</button>
   </div>
 </div>
 </div>
@@ -168,6 +170,11 @@ function setupFloatingPanel(panelId,handleId){
 setupFloatingPanel("hud","hudHandle");
 setupFloatingPanel("selected","selectedHandle");
 setupFloatingPanel("presence","presenceHandle");
+document.getElementById("viewProposals").onclick=()=>{
+  if(window.parent!==window && typeof window.parent.show==="function") {
+    window.parent.show("connections", window.parent.document.querySelector('.nav[onclick*="connections"]'));
+  }
+};
 
 const fsBtn=document.getElementById("fsBtn");
 const isFullscreen=()=>document.fullscreenElement||document.webkitFullscreenElement;
@@ -331,7 +338,8 @@ const Graph=new ForceGraph3D(elem,{
 .linkDirectionalParticleColor(link=>link.relationship?.startsWith("experience")?"#f7b267":link.relationship?.includes("source")||link.relationship?.includes("evidence")?"#68e0c1":"#73aaff")
 .linkDirectionalParticleWidth(.8)
 .linkOpacity(.35)
-.linkColor(link=>link.unresolved?"#e36666":link.relationship?.startsWith("experience")?"#f7b267":"#4baac0")
+.linkColor(link=>link.hypothesis?"#f0c26b":link.unresolved?"#e36666":link.relationship?.startsWith("experience")?"#f7b267":"#4baac0")
+.linkWidth(link=>link.hypothesis?3:1)
 .onNodeClick(node=>{
   document.getElementById("selected").style.display="block";
   document.getElementById("selTitle").textContent=node.label||node.id;
@@ -397,6 +405,24 @@ function setFocus(value){
 document.getElementById("focusAll").onclick=()=>setFocus("");
 document.getElementById("focusDocuments").onclick=()=>setFocus("Documents /");
 
+function focusHypothesis(sourceId,targetId,reason){
+  const a=brain.nodes.find(n=>String(n.id)===String(sourceId));
+  const b=brain.nodes.find(n=>String(n.id)===String(targetId));
+  if(!a||!b) return false;
+  const pair=new Set([String(a.id),String(b.id)]);
+  const recorded=brain.links.filter(l=>pair.has(endpoint(l.source))&&pair.has(endpoint(l.target)))
+    .map(l=>({...l,source:endpoint(l.source),target:endpoint(l.target)}));
+  const alreadyLinked=recorded.some(l=>endpoint(l.source)!==endpoint(l.target));
+  const linksToShow=alreadyLinked?recorded:[...recorded,{source:String(a.id),target:String(b.id),hypothesis:true,relationship:"UNVERIFIED HYPOTHESIS"}];
+  Graph.graphData({nodes:[a,b],links:linksToShow});
+  document.getElementById("hypothesisStatus").textContent=alreadyLinked
+    ? `These nodes already have a recorded link. ${reason}`
+    : `AMBER LINK = UNVERIFIED HYPOTHESIS · ${reason}. Review only; nothing was saved.`;
+  setInfo([a,b],recorded,"candidate review");
+  setTimeout(()=>Graph.zoomToFit(500,80),50);
+  return true;
+}
+
 async function refreshGraph(){
   if(refreshing||document.hidden) return;
   refreshing=true;
@@ -439,7 +465,7 @@ async function refreshGraph(){
   }catch(error){info.textContent=`Graph refresh unavailable: ${error.message}`}
   finally{refreshing=false}
 }
-window.bpfcoBrain3D={domains:[],filter:filterGraph,reset:()=>filterGraph(""),graph:Graph,refresh:refreshGraph};
+window.bpfcoBrain3D={domains:[],filter:filterGraph,reset:()=>filterGraph(""),focusHypothesis,graph:Graph,refresh:refreshGraph};
 await refreshGraph();
 setInterval(refreshGraph,15000);
 

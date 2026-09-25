@@ -97,6 +97,12 @@ def build_brain_graph():
     task_ids = set()
     report_count = 0
     executive_links = 0
+    source_links = 0
+    note_by_path = {}
+    for node in nodes:
+        path = node.get("path")
+        if path:
+            note_by_path.setdefault(str(path).replace("\\", "/").casefold(), []).append(node["id"])
 
     def connect(source, target, relationship):
         nonlocal executive_links
@@ -104,6 +110,22 @@ def build_brain_graph():
                       "strength": 1, "relationship": relationship,
                       "unresolved": False})
         executive_links += 1
+
+    def connect_sources(record, record_id):
+        nonlocal source_links
+        sources = record.get("evidence", []) if record_id.startswith("task:") else record.get("sources", [])
+        if not isinstance(sources, list):
+            return
+        seen = set()
+        for item in sources[:100]:
+            path = item.get("path") if isinstance(item, dict) else item
+            if not isinstance(path, str):
+                continue
+            matches = note_by_path.get(path.replace("\\", "/").casefold(), [])
+            if len(matches) == 1 and matches[0] not in seen:
+                seen.add(matches[0])
+                connect(record_id, matches[0], "evidence" if record_id.startswith("task:") else "cites")
+                source_links += 1
 
     def agent_node(name):
         if not name or name in agent_ids:
@@ -146,6 +168,7 @@ def build_brain_graph():
                 connect(f"task:{task_id}", node_id, "reported")
             else:
                 connect(f"agent:{agent}", node_id, "reported")
+            connect_sources(record, node_id)
 
     # If report files sort before their task files on a future refactor,
     # the task loop above still runs first by design.
@@ -169,6 +192,7 @@ def build_brain_graph():
             "resolved_links": sum(1 for x in links if not x["unresolved"]),
             "unresolved_links": sum(1 for x in links if x["unresolved"]),
             "executive_reports": report_count,
-            "executive_links": executive_links
+            "executive_links": executive_links,
+            "source_links": source_links
         }
     }

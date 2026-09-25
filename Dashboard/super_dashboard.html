@@ -129,6 +129,7 @@
         <button class="nav" onclick="show('brain',this)">✦ Brain</button>
         <button class="nav" onclick="show('agents',this)">◎ Agents</button>
         <button class="nav" onclick="show('work',this)">▣ Work</button>
+        <button class="nav" onclick="show('connections',this)">◇ Proposed links</button>
         <button class="nav" onclick="show('security',this)">⚿ Security</button>
         <button class="nav" onclick="show('meeting',this)">◌ Meeting</button>
     </nav>
@@ -190,6 +191,9 @@
         </div>
 
         <div id="work" class="view">
+            <div class="panel"><div class="head"><b>Fred's pipeline</b><button class="btn" onclick="loadQueueHealth()">Refresh</button></div>
+                <div id="queueHealth" aria-live="polite">Checking saved tasks…</div>
+            </div>
             <div class="grid g2">
                 <div class="panel"><div class="head"><b>Task Queue</b></div><pre id="q2">Loading...</pre></div>
                 <div class="panel"><div class="head"><b>Agent Reports</b></div><pre id="r2">Loading...</pre></div>
@@ -197,6 +201,16 @@
             <div class="panel" style="margin-top:12px">
                 <div class="head"><b>Execution State</b></div>
                 <div class="muted">External execution remains approval-gated.</div>
+            </div>
+        </div>
+
+        <div id="connections" class="view">
+            <div class="panel"><div class="head"><b>Connection suggestions · review only</b><button class="btn" onclick="loadConnectionSuggestions()">Refresh</button></div>
+                <p class="muted">Graphify analysis first; title and folder clues second. These are hypotheses, never verified links. No notes or graph edges are changed.</p>
+                <div id="graphifySuggestions" aria-live="polite">Checking saved analysis…</div>
+                <div id="titleSuggestions" aria-live="polite">Checking file clues…</div>
+                <h3>Unresolved wikilink repairs</h3>
+                <div id="proposalList" aria-live="polite">Loading…</div>
             </div>
         </div>
 
@@ -241,6 +255,15 @@
 <script>
     const $ = id => document.getElementById(id);
     let currentAgent = 'fred';
+    function speaker(name) {
+        currentAgent = name;
+        $('presenceName').textContent = name[0].toUpperCase() + name.slice(1);
+        $('presenceFace').textContent = name[0].toUpperCase();
+        $('presenceRole').textContent = ({fred:'CEO',bob:'Finance',cindy:'Secretary',kai:'Legal',neo:'Sales'})[name] || 'Agent';
+    }
+    function presenceCall() { document.querySelector('#bpfcoAgentTerminal .at-agent[data-agent="' + currentAgent[0].toUpperCase() + currentAgent.slice(1) + '"]')?.click(); }
+    function presenceSpeak() { if ('speechSynthesis' in window) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance($('presenceName').textContent + ' is ready.')); } }
+    function presenceClear() { speaker('fred'); presenceCall(); }
     function show(id, btn) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.nav').forEach(n => n.classList.remove('active'));
@@ -331,6 +354,122 @@
         const r = await fetch(u, opt);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
+    }
+
+    async function loadProposals() {
+        const target = $('proposalList');
+        try {
+            const data = await get('/api/link-proposals');
+            target.replaceChildren();
+            if (!data.available) { target.textContent = 'No link repair report has been generated on this machine yet.'; return; }
+            for (const [key, title] of [['high_confidence','High confidence'],['medium_confidence','Medium confidence'],['review','Needs review'],['planned','Missing target']]) {
+                const heading = document.createElement('h3');
+                const rows = data.proposals[key] || [];
+                heading.textContent = `${title} · ${data.totals[key] ?? rows.length}`;
+                target.appendChild(heading);
+                for (const row of rows) {
+                    const item = document.createElement('div'); item.className = 'row';
+                    const suggestion = row.candidates?.[0];
+                    item.textContent = `${row.source} → [[${row.target}]]${suggestion ? `  ⇢  ${suggestion.note_key} (score ${suggestion.score})` : ' · no candidate'}`;
+                    target.appendChild(item);
+                }
+            }
+        } catch (error) { target.textContent = `Proposals unavailable: ${error.message}`; }
+    }
+
+    async function loadConnectionSuggestions() {
+        loadProposals();
+        const graphify = $('graphifySuggestions'), fallback = $('titleSuggestions');
+        let graphifyCandidates = [];
+        try {
+            const data = await get('/api/graphify-suggestions');
+            graphify.replaceChildren();
+            const title = document.createElement('h3'); title.textContent = 'Saved Graphify analysis'; graphify.appendChild(title);
+            if (!data.available) graphify.append('No saved Graphify analysis found in this checkout.');
+            else if (!data.suggestions.length) graphify.append(`No surprising connections in ${data.source}.`);
+            else {
+                graphifyCandidates = data.suggestions;
+                graphify.append(`${data.suggestions.length} ranked suggestions from ${data.source}.`);
+                for (const item of data.suggestions) {
+                    const row = document.createElement('div'); row.className = 'row';
+                    row.textContent = `${item.source} → ${item.target} · ${item.relation || 'relationship'} · ${item.confidence || 'unrated'} · ${item.why || 'Review sources'} · ${(item.source_files || []).join(' / ')}`;
+                    graphify.appendChild(row);
+                }
+            }
+        } catch (error) { graphify.textContent = `Graphify analysis unavailable: ${error.message}`; }
+        try {
+            const graph = await get('/api/brain-graph');
+            fallback.replaceChildren();
+            const heading = document.createElement('h3'); heading.textContent = 'Title and folder clues'; fallback.appendChild(heading);
+            const ignore = new Set(['document','documents','file','files','report','notes','copy','final','draft','the','and','for','with']);
+            const tokens = node => new Set(String(node.label || node.title || '').toLowerCase().match(/[a-z0-9]{4,}/g)?.filter(t => !ignore.has(t)) || []);
+            const nodes = (graph.nodes || []).filter(n => n.path && !n.unresolved && !/^(agent|task|report|experience):/.test(String(n.id)) && !/^(03-References|00-Inbox\/workspace\/\.graphify-venv)\//i.test(n.path)).slice(0, 1200);
+            const pathKey = path => String(path || '').replace(/\\/g,'/').toLowerCase();
+            graphifyCandidates.forEach((candidate,index) => {
+                const files=candidate.source_files || [];
+                if(files.length!==2) return;
+                const matching=files.map(file=>nodes.filter(n=>pathKey(n.path)===pathKey(file) || pathKey(n.path).endsWith('/'+pathKey(file))));
+                if(matching.some(matches=>matches.length!==1)) return;
+                const row=graphify.querySelectorAll('.row')[index];
+                if(!row) return;
+                const inspect=document.createElement('button'); inspect.className='btn'; inspect.textContent='Inspect in Brain';
+                inspect.onclick=()=>inspectHypothesis(matching[0][0].id,matching[1][0].id,candidate.why || 'Graphify suggestion');
+                row.appendChild(inspect);
+            });
+            const linked = new Set((graph.links || []).map(e => [String(e.source?.id ?? e.source), String(e.target?.id ?? e.target)].sort().join('|')));
+            const groups = new Map();
+            for (const n of nodes) {
+                const folder = String(n.path).replace(/\\/g,'/').split('/').slice(0,-1).join('/');
+                if (!folder) continue;
+                if (!groups.has(folder)) groups.set(folder, []);
+                groups.get(folder).push(n);
+            }
+            const proposed = [];
+            for (const [folder, members] of groups) {
+                for (let i=0;i<Math.min(members.length,80);i++) for (let j=i+1;j<Math.min(members.length,80);j++) {
+                    const a=members[i], b=members[j], key=[String(a.id),String(b.id)].sort().join('|');
+                    if (linked.has(key)) continue;
+                    const shared=[...tokens(a)].filter(t=>tokens(b).has(t));
+                    if (!shared.length && members.length > 12) continue;
+                    proposed.push({a,b,score:shared.length*3+1,why:`Same folder: ${folder}${shared.length ? `; shared title words: ${shared.join(', ')}` : ''}`});
+                }
+            }
+            proposed.sort((a,b)=>b.score-a.score || String(a.a.path).localeCompare(String(b.a.path)));
+            fallback.append(`${proposed.length} unverified folder/title pairs found; showing strongest 60.`);
+            for (const item of proposed.slice(0,60)) {
+                const row=document.createElement('div'); row.className='row';
+                const description=document.createElement('span');
+                description.textContent=`POSSIBLE · ${item.a.path} ↔ ${item.b.path} · ${item.why}`;
+                const inspect=document.createElement('button'); inspect.className='btn'; inspect.textContent='Inspect in Brain';
+                inspect.onclick=()=>inspectHypothesis(item.a.id,item.b.id,item.why);
+                row.append(description,inspect);
+                fallback.appendChild(row);
+            }
+        } catch(error) { fallback.textContent=`File clues unavailable: ${error.message}`; }
+    }
+
+    function inspectHypothesis(source,target,why) {
+        const nav=document.querySelector('.nav[onclick*="brain"]');
+        show('brain',nav);
+        const frame=$('brainGraphFrame');
+        const inspect=()=>frame.contentWindow?.bpfcoBrain3D?.focusHypothesis(source,target,why);
+        if (!inspect()) frame.addEventListener('load',inspect,{once:true});
+    }
+
+    async function loadQueueHealth() {
+        const target = $('queueHealth');
+        try {
+            const data = await get('/api/queue-health');
+            target.replaceChildren();
+            const summary = document.createElement('p');
+            summary.textContent = `${data.ready} ready · ${data.needs_review} missing or inconsistent records. Review flagged IDs before running the queue.`;
+            target.appendChild(summary);
+            for (const task of data.tasks) {
+                const row = document.createElement('div'); row.className = 'row';
+                row.textContent = `${task.health === 'ready' ? 'READY' : 'REVIEW'} · ${task.agent} · ${task.objective || task.task_id}`;
+                target.appendChild(row);
+            }
+        } catch(error) { target.textContent = `Queue check unavailable: ${error.message}`; }
     }
 
     async function load() {
@@ -468,6 +607,8 @@
 
     setInterval(() => { if($('clock')) $('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
     load();
+    loadConnectionSuggestions();
+    loadQueueHealth();
     setInterval(load, 10000);
 </script>
 </body>

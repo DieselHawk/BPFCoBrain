@@ -106,6 +106,21 @@ fall over several refreshes. PDF text needs an already installed offline
 extractor. Missing or ambiguous references remain unlinked. Network mode does
 not control local document reading.
 
+Without an explicit setting, local source selection checks
+`C:\Documents\New All Docs`, then the current user's OneDrive
+`Documents\New All Docs`; only the first available folder is used. Fred's
+task evidence lookup reads up to 100 supported files per task (at most eight
+PDFs) and cites matching excerpts. The graph draws task and report links to
+the exact document paths Fred used. Additional online feeds can be added as
+separate source adapters later; they are not connected by this local setting.
+
+Run `python -m Brain.Executive.document_lattice --batch 20` to add up to 20
+changed Markdown, text, DOCX or text-bearing PDF files to a resumable local
+text cache. Repeat until `updated` is zero. Original documents are untouched.
+Fred retrieves cited passages through the existing evidence lookup and the
+existing graph draws links from cited tasks and reports. The cache stays local
+and is excluded from Git.
+
 Check `/api/brain-graph` for `notes`, `executive_links`,
 `provenance_links`, `document_pending` and
 `document_unverified_hashes` before integrating a changed checkout. The
@@ -121,6 +136,35 @@ The queue pauses on worker failure for review. Preview launchers that import
 only the Flask app do not start automatic dispatch. The workers' existing
 approval checks still govern external actions. Task and report records stay
 under the existing Executive directories.
+## Local action journal
+
+The live dashboard on port 5001 appends metadata-only actions to
+`Brain/Executive/action_journal.jsonl` in its checkout. Entries include UTC time,
+request route and result, task IDs and agent names; message text, document content,
+and secrets are not logged. Mutating dashboard requests stop if their intent
+cannot be logged. Internal task queue and worker transitions also record their
+IDs and outcomes. The read-only comparison on port 5002 writes startup and
+blocked-request records in its separate verified checkout; its startup entry
+identifies the live checkout it reads. The existing offline Fred runtime backup
+includes the live Executive journal. These records begin only after this code
+is installed and the relevant process is restarted; they cannot reconstruct
+earlier browser sessions or shell commands.
+
+To inspect the last entries locally in PowerShell, run:
+`Get-Content C:\BPFCo\BPFCoBrain-layering\Brain\Executive\action_journal.jsonl -Tail 30`.
+For the verified preview, replace `BPFCoBrain-layering` with `FredVerified`.
+
+The earlier graph trial remains in `Dashboard/server.py` on port 47900 and
+serves **BPFCo Command Center**. It is distinct from the live 5001 dashboard,
+the verified 5002 preview, and the hosted Graph Explorer snapshot.
+
+The **Connection suggestions** tab reads an existing Graphify
+`.graphify_analysis.json` when available and shows its ranked, sourced
+"surprises". If absent, it shows bounded title/folder proximity pairs from
+the current graph response. Both are labelled as hypotheses; neither is added
+to graph links or written to source files. The separate link-repair section
+still reports only unresolved explicit wikilinks.
+
 ## Read-only live comparison
 
 Use `scripts/run_fred_compare.py --live <running-checkout> --documents

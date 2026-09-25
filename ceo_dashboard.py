@@ -1,10 +1,12 @@
 ﻿import json
 from pathlib import Path
+import os
 from threading import Event, Thread
 from flask import Flask, jsonify, request, render_template_string, send_file
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent
+GRAPHIFY_ROOT = ROOT
 load_dotenv(ROOT / ".env")
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
 TASK_DIR = EXECUTIVE_DIR / "tasks"
@@ -15,9 +17,32 @@ PLAN_FILE = EXECUTIVE_DIR / "CEO_Work_Plan.md"
 MORNING_FILE = EXECUTIVE_DIR / "CEO_Morning_Report.md"
 
 from agent_bridge import AgentBridge
+from Brain.Executive.action_journal import record as audit_record
 
 app = Flask(__name__)
 bridge = AgentBridge()
+
+
+@app.before_request
+def audit_write_intent():
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        try:
+            audit_record("http_intent", route=request.path, method=request.method,
+                         mode="preview" if os.environ.get("BPFCO_PREVIEW_READ_ONLY") == "1" else "live")
+        except OSError:
+            return jsonify({"ok": False, "error": "Local action journal unavailable; action blocked"}), 503
+
+
+@app.after_request
+def audit_write_result(response):
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        try:
+            audit_record("http_result", route=request.path, method=request.method,
+                         status=response.status_code)
+        except OSError:
+            # Intent already exists. Keep the response; the missing result is visible in the journal.
+            pass
+    return response
 
 from Dashboard.agent_terminal_routes import agent_terminal_bp, worker_lock
 from executive_controller import CEOController
@@ -338,6 +363,28 @@ def queue():
     return jsonify(load_json(QUEUE_FILE, []))
 
 
+@app.route("/api/queue-health")
+def queue_health():
+    """Read-only reconciliation of queued IDs with their saved task records."""
+    entries = load_json(QUEUE_FILE, [])
+    if not isinstance(entries, list):
+        return jsonify({"ok": False, "error": "Queue is not a list"}), 503
+    tasks = []
+    for entry in entries:
+        task_id = entry.get("task_id", "") if isinstance(entry, dict) else ""
+        valid = isinstance(task_id, str) and bool(task_id) and all(
+            ch in "0123456789TZ-_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" for ch in task_id
+        )
+        record = load_json(TASK_DIR / f"{task_id}.json", {}) if valid else {}
+        health = "ready" if (isinstance(record, dict) and record.get("task_id") == task_id
+                             and record.get("agent") == entry.get("agent")
+                             and record.get("status") == "queued") else "missing_or_inconsistent"
+        tasks.append({"task_id": task_id, "agent": entry.get("agent", "") if isinstance(entry, dict) else "",
+                      "health": health, "objective": str(record.get("objective", ""))[:200] if isinstance(record, dict) else ""})
+    return jsonify({"tasks": tasks, "ready": sum(t["health"] == "ready" for t in tasks),
+                    "needs_review": sum(t["health"] != "ready" for t in tasks)})
+
+
 @app.route("/api/reports")
 def reports():
     result = []
@@ -352,6 +399,37 @@ def reports():
 def plan():
     content = PLAN_FILE.read_text(encoding="utf-8") if PLAN_FILE.exists() else "No CEO work plan yet."
     return jsonify({"content": content})
+
+
+@app.route("/api/link-proposals")
+def link_proposals():
+    """Read the compiler's suggestions without promoting them to graph edges."""
+    path = ROOT / "Brain" / "Executive" / "LinkRepair" / "link_repair_report.json"
+    report = load_json(path, {})
+    groups = report.get("proposals", {}) if isinstance(report, dict) else {}
+    return jsonify({
+        "available": path.exists(),
+        "generated_at": report.get("generated_at", "") if isinstance(report, dict) else "",
+        "totals": report.get("totals", {}) if isinstance(report, dict) else {},
+        "proposals": {key: groups.get(key, [])[:100] for key in
+                      ("high_confidence", "medium_confidence", "review", "planned")},
+    })
+
+
+@app.route("/api/graphify-suggestions")
+def graphify_suggestions():
+    """Read a saved Graphify analysis; never run extraction on a dashboard request."""
+    candidates = [GRAPHIFY_ROOT / "graphify-out" / ".graphify_analysis.json",
+                  GRAPHIFY_ROOT / ".graphify" / ".graphify_analysis.json",
+                  GRAPHIFY_ROOT / "00-Inbox" / "workspace" / "obsidian-brain" / "graphify-out" / ".graphify_analysis.json",
+                  GRAPHIFY_ROOT / "00-Inbox" / "workspace" / "graphify-out" / ".graphify_analysis.json"]
+    path = next((p for p in candidates if p.is_file()), None)
+    if path is None:
+        return jsonify({"available": False, "suggestions": []})
+    data = load_json(path, {})
+    rows = data.get("surprises", []) if isinstance(data, dict) else []
+    return jsonify({"available": True, "source": str(path.relative_to(GRAPHIFY_ROOT)),
+                    "suggestions": rows[:100] if isinstance(rows, list) else []})
 
 
 @app.route("/api/dispatch", methods=["POST"])
@@ -571,8 +649,10 @@ def brain_graph_api():
     from Dashboard.adapters.provenance_edges import add_provenance_edges
     from Dashboard.adapters.note_edges import add_note_edges
     from Dashboard.adapters.document_edges import add_document_edges
+    from Dashboard.adapters.source_edges import add_source_edges
     graph = add_note_edges(build_brain_graph(), ROOT)
     graph = add_document_edges(graph, ROOT)
+    graph = add_source_edges(graph, ROOT)
     return jsonify(add_provenance_edges(graph, ROOT))
 
 @app.route("/super-3d")
@@ -609,14 +689,11 @@ if __name__ == "__main__":
     # Bind before starting the worker. A second dashboard must not dispatch
     # queued tasks when another process already owns port 5001.
     server = make_server("127.0.0.1", 5001, app, threaded=True)
+    audit_record("dashboard_started", mode="live", port=5001, checkout=str(ROOT))
     print("[BPFCoBrain] Starting CEO Executive Dashboard...", flush=True)
     Thread(target=run_queued_specialists, name="bpfco-queue", daemon=True).start()
     try:
         server.serve_forever()
     finally:
+        audit_record("dashboard_stopped", mode="live", port=5001)
         server.server_close()
-
-
-
-
-
