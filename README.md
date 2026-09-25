@@ -136,6 +136,45 @@ The queue pauses on worker failure for review. Preview launchers that import
 only the Flask app do not start automatic dispatch. The workers' existing
 approval checks still govern external actions. Task and report records stay
 under the existing Executive directories.
+## Local action journal
+
+The live dashboard on port 5001 appends metadata-only actions to
+`Brain/Executive/action_journal.jsonl` in its checkout. Entries include UTC time,
+request route and result, task IDs and agent names; message text, document content,
+and secrets are not logged. Mutating dashboard requests stop if their intent
+cannot be logged. Internal task queue and worker transitions also record their
+IDs and outcomes. The read-only comparison on port 5002 writes startup and
+blocked-request records in its separate verified checkout; its startup entry
+identifies the live checkout it reads. The existing offline Fred runtime backup
+includes the live Executive journal. These records begin only after this code
+is installed and the relevant process is restarted; they cannot reconstruct
+earlier browser sessions or shell commands.
+
+To inspect the last entries locally in PowerShell, run:
+`Get-Content C:\BPFCo\BPFCoBrain-layering\Brain\Executive\action_journal.jsonl -Tail 30`.
+For the verified preview, replace `BPFCoBrain-layering` with `FredVerified`.
+
+The earlier graph trial remains in `Dashboard/server.py` on port 47900 and
+serves **BPFCo Command Center**. It is distinct from the live 5001 dashboard,
+the verified 5002 preview, and the hosted Graph Explorer snapshot.
+
+The **Connection suggestions** tab reads an existing Graphify
+`.graphify_analysis.json` when available and shows its ranked, sourced
+"surprises". If absent, it shows bounded title/folder proximity pairs from
+the current graph response. Both are labelled as hypotheses; neither is added
+to graph links or written to source files. The separate link-repair section
+still reports only unresolved explicit wikilinks.
+
+In the 3D Brain, **Show predictions** draws up to 60 of these candidates as
+amber animated links. Saved Graphify suggestions with two uniquely matching
+source files take priority; local folder/title clues fill in when none match.
+The toggle hides them again without changing the recorded graph. Hover an amber
+link to see its reason. Fred's local terminal and offline CEO assessment read
+the same saved Graphify or local folder/title hints as unverified leads; the model is told to confirm
+relationships from source evidence before stating them as fact. The read-only
+port 5002 comparison still blocks task submissions, so Fred's interactive
+terminal runs in the normal local dashboard after this code is promoted.
+
 ## Read-only live comparison
 
 Use `scripts/run_fred_compare.py --live <running-checkout> --documents

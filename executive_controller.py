@@ -3,6 +3,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from Brain.Executive.action_journal import record as audit_record
 
 ROOT = Path(__file__).resolve().parent
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -90,6 +91,22 @@ class CEOController:
         agent = item.get("agent")
         task_id = item.get("task_id")
 
+        # Queue entries alone carry no objective. Never execute an orphaned ID.
+        if not isinstance(task_id, str) or not task_id or any(ch not in "0123456789TZ-_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" for ch in task_id):
+            audit_record("worker_blocked", agent=agent, reason="invalid_task_id")
+            return {"status": "error", "message": "Invalid queued task ID", "task_id": task_id, "agent": agent}
+        task_path = EXECUTIVE_DIR / "tasks" / f"{task_id}.json"
+        try:
+            task = json.loads(task_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            audit_record("worker_blocked", task_id=task_id, agent=agent, reason="missing_or_unreadable_record")
+            return {"status": "error", "message": "Queued task record missing or unreadable; review queue before dispatch", "task_id": task_id, "agent": agent}
+        if task.get("task_id") != task_id or task.get("agent") != agent or task.get("status") != "queued":
+            audit_record("worker_blocked", task_id=task_id, agent=agent, reason="record_mismatch")
+            return {"status": "error", "message": "Queued task disagrees with its task record; review before dispatch", "task_id": task_id, "agent": agent}
+
+        audit_record("worker_dispatch_intent", task_id=task_id, agent=agent)
+
         worker = WORKERS.get(agent)
 
         if not worker:
@@ -117,6 +134,7 @@ class CEOController:
             capture_output=True,
             text=True,
         )
+        audit_record("worker_result", task_id=task_id, agent=agent, returncode=result.returncode)
 
         if result.returncode == 0:
             print(result.stdout.rstrip())

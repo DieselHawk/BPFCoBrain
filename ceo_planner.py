@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from agent_bridge import AgentBridge
 from omniroute import OmniRouter
+from Brain.Executive.graph_hints import hints_text
 
 ROOT = Path(__file__).resolve().parent
 EXECUTIVE_DIR = ROOT / "Brain" / "Executive"
@@ -115,6 +116,8 @@ def local_ceo_reasoning(reports, active_objectives, queue):
         + ("\n".join(objective_lines) or "None")
         + "\n\nQUEUE:\n"
         + ("\n".join(queue_lines) or "None")
+        + "\n\nUNVERIFIED CONNECTION HINTS (investigate; do not state as fact):\n"
+        + hints_text(limit=3)
     )
 
     router = OmniRouter(str(ROOT))

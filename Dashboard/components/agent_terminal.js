@@ -20,6 +20,7 @@
       <div class="at-log" id="atLog" aria-live="polite"><p class="at-message system">Super Brain local channel ready.</p></div>
       <form class="at-compose" id="atForm"><textarea id="atInput" maxlength="4000" placeholder="Speak to the selected agent…" required></textarea><button id="atSend" type="submit">SEND</button><button id="atQueue" type="button" title="Queue an internal task for this specialist">QUEUE</button><button id="atRunNext" type="button" title="Run the next queued internal specialist">RUN NEXT</button></form>
       <div class="at-status" id="atStatus">External actions remain approval-gated</div>
+      <label class="at-status"><input id="atVoice" type="checkbox"> Read replies aloud on this device</label>
     </section>
     ${edges.map(edge=>`<i class="at-resize at-resize-${edge}" data-at-resize="${edge}"></i>`).join("")}`;
   document.body.appendChild(panel);
@@ -31,6 +32,7 @@
   function state(value){$("atState").textContent=value;$("atAvatar").className=`at-avatar ${value.toLowerCase()}`}
   function choose(name){selected=name;panel.style.setProperty("--at-accent",agents[name].color);document.querySelectorAll(".at-agent").forEach(b=>b.classList.toggle("active",b.dataset.agent===name));$("atName").textContent=name;$("atRole").textContent=agents[name].role;$("atInitial").textContent=name[0];$("atPortrait").src=agents[name].avatar;$("atPortrait").alt=`${name} portrait`;$("atSend").textContent=name==="Fred"?"TASK FRED":"SEND";$("atQueue").hidden=name==="Fred";$("atRunNext").hidden=name!=="Fred";$("atForm").classList.toggle("at-fred",name==="Fred");$("atInput").placeholder=name==="Fred"?"Give Fred an internal objective…":"Speak to the selected agent…";state("READY")}
   function message(kind,text){const p=document.createElement("p");p.className=`at-message ${kind}`;p.textContent=text;$("atLog").appendChild(p);$("atLog").scrollTop=$("atLog").scrollHeight}
+  function speakReply(text){if(!$("atVoice").checked)return;if(!("speechSynthesis" in window)){message("system","Speech is unavailable in this browser.");return}speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.95;speechSynthesis.speak(utterance)}
   async function api(url,options={}){const response=await fetch(url,options),data=await response.json();if(!response.ok)throw new Error(data.error||`HTTP ${response.status}`);return data}
 
   Object.entries(agents).forEach(([name,meta])=>{const button=document.createElement("button");button.type="button";button.className="at-agent";button.dataset.agent=name;button.textContent=name;button.style.setProperty("--agent",meta.color);button.onclick=()=>choose(name);$("atAgents").appendChild(button)});
@@ -44,6 +46,7 @@
       const body=isFred?{objective}:{agent,message:objective};
       const result=await api(route,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       message("reply",`${agent}: ${result.response}`);
+      speakReply(result.response);
       if(isFred){
         const paths=(result.sources||[]).map(source=>source.path);
         message("system",`Task ${result.task_id} · Evidence: ${paths.length?paths.join(", "):"no matching local notes"}`);

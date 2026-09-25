@@ -28,7 +28,9 @@ def main():
     os.environ["BPFCO_OFFLINE"] = "1"
     os.environ["BPFCO_ONLINE_INTELLIGENCE"] = "0"
     os.environ["BPFCO_CLOUD_FALLBACK"] = "0"
+    os.environ["BPFCO_PREVIEW_READ_ONLY"] = "1"
     os.environ["BPFCO_DOCUMENTS_ROOT"] = str(documents)
+    os.environ["BPFCO_GRAPHIFY_ROOT"] = str(live)
 
     from flask import abort, jsonify, request
     from werkzeug.serving import make_server
@@ -48,6 +50,7 @@ def main():
     dashboard.STATE_FILE = executive / "state.json"
     dashboard.PLAN_FILE = executive / "CEO_Work_Plan.md"
     dashboard.MORNING_FILE = executive / "CEO_Morning_Report.md"
+    dashboard.GRAPHIFY_ROOT = live
     adapter.ROOT = live
     adapter.INDEX = live / ".vault-index.json"
     local_evidence.ROOT = live
@@ -78,6 +81,9 @@ def main():
     if not 1024 <= args.port <= 65535:
         parser.error("Choose an unprivileged TCP port")
     server = make_server("127.0.0.1", args.port, dashboard.app, threaded=True)
+    from Brain.Executive.action_journal import record as audit_record
+    audit_record("dashboard_started", mode="preview_read_only", port=args.port,
+                 checkout=str(ROOT), live_source=str(live))
     url = f"http://127.0.0.1:{args.port}/super"
     print("Fred comparison: read-only; automatic queue disabled", flush=True)
     print("Live vault and records: " + str(live), flush=True)
@@ -88,6 +94,7 @@ def main():
     try:
         server.serve_forever()
     finally:
+        audit_record("dashboard_stopped", mode="preview_read_only", port=args.port)
         server.server_close()
 
 
