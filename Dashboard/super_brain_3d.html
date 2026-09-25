@@ -449,7 +449,8 @@ async function predictionCandidates(graph){
     const ignore=new Set(["document","documents","file","files","report","notes","copy","final","draft","the","and","for","with"]);
     const tokens=n=>new Set(String(n.label||n.title||"").toLowerCase().match(/[a-z0-9]{4,}/g)?.filter(t=>!ignore.has(t))||[]);
     const groups=new Map();
-    for(const n of nodes.slice(0,500)){
+    const documentNodes=nodes.filter(n=>String(n.id).startsWith("document:"));
+    for(const n of (documentNodes.length?documentNodes:nodes).slice(0,500)){
       const folder=pathKey(n.path).split("/").slice(0,-1).join("/");
       if(folder){if(!groups.has(folder)) groups.set(folder,[]);groups.get(folder).push(n)}
     }
@@ -458,8 +459,7 @@ async function predictionCandidates(graph){
       const subset=members.slice(0,80);
       for(let i=0;i<subset.length;i++) for(let j=i+1;j<subset.length;j++){
         const a=subset[i],b=subset[j],shared=[...tokens(a)].filter(word=>tokens(b).has(word));
-        if(!shared.length&&members.length>12) continue;
-        candidates.push({a,b,score:shared.length*3+1,reason:`Same folder: ${folder}${shared.length?`; shared title words: ${shared.join(", ")}`:""}`});
+        candidates.push({a,b,score:shared.length*3+1,reason:`Same folder: ${folder}${shared.length?`; shared title words: ${shared.join(", ")}`:"; folder proximity only"}`});
       }
     }
     candidates.sort((a,b)=>b.score-a.score||String(a.a.path).localeCompare(String(b.a.path)));
