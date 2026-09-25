@@ -64,14 +64,15 @@ background:#07121b;border:1px solid #29404d;border-radius:8px}#runtimeTask{margi
 <div id="hud">
 <div class="panel-handle" id="hudHandle"><b>BPFCo SUPER BRAIN · 3D</b><button class="panel-toggle" type="button" aria-label="Collapse Brain information">−</button></div>
 <div class="panel-body">
-  <div class="muted">Recorded links only · new edges pulse briefly</div>
+  <div class="muted">Recorded links · optional amber predictions · new edges pulse briefly</div>
   <div class="muted">Left-drag rotate · Right-drag pan · Wheel zoom</div>
   <div id="info">Loading brain…</div>
   <div id="scanStatus" role="status" aria-live="polite">Waiting for document scan…</div>
-  <div id="hypothesisStatus" class="muted">Hypotheses are hidden until selected for review.</div>
+  <div id="hypothesisStatus" class="muted">Predictions are hidden until enabled for review.</div>
   <div class="focus-actions">
     <button id="focusAll" type="button" aria-pressed="true">Connected view</button>
     <button id="focusDocuments" type="button" aria-pressed="false">Documents</button>
+    <button id="showPredictions" type="button" aria-pressed="false">Show predictions</button>
     <button id="viewProposals" type="button">Review proposed links</button>
   </div>
 </div>
@@ -271,12 +272,13 @@ const endpoint=value=>String(value&&typeof value==="object"?value.id:value);
 const info=document.getElementById("info");
 const scanStatus=document.getElementById("scanStatus");
 let brain={nodes:[],links:[],stats:{}};
-let chosen=[],links=[],degrees=new Map(),signature="",activeFilter="",refreshing=false;
+let chosen=[],links=[],predictions=[],showPredictions=false,degrees=new Map(),signature="",activeFilter="",refreshing=false;
 let freshEdges=new Set(),freshTimer=null;
 const edgeKey=l=>`${endpoint(l.source)}>${endpoint(l.target)}:${l.relationship||""}:${Boolean(l.unresolved)}`;
 const score=n=>degrees.get(String(n.id))||0;
 const setInfo=(nodes,visibleLinks,filter="")=>{
-  info.textContent=`${nodes.length}/${brain.nodes.length} nodes shown · ${visibleLinks.length}/${brain.links.length} recorded links${filter?` · ${filter}`:""}`;
+  const predicted=visibleLinks.filter(link=>link.hypothesis).length;
+  info.textContent=`${nodes.length}/${brain.nodes.length} nodes shown · ${visibleLinks.length-predicted}/${brain.links.length} recorded links${showPredictions?` · ${predicted}/${predictions.length} unverified predictions`:""}${filter?` · ${filter}`:""}`;
 };
 function updateScanStatus(stats){
   if(stats.document_sources===undefined){
@@ -334,12 +336,13 @@ const Graph=new ForceGraph3D(elem,{
 )
 .nodeAutoColorBy(n=>n.folder||"BPFCo")
 .nodeVal(n=>Math.max(1,Math.log2(score(n)+2)))
-.linkDirectionalParticles(link=>freshEdges.has(edgeKey(link))?2:0)
-.linkDirectionalParticleColor(link=>link.relationship?.startsWith("experience")?"#f7b267":link.relationship?.includes("source")||link.relationship?.includes("evidence")?"#68e0c1":"#73aaff")
+.linkDirectionalParticles(link=>link.hypothesis?1:freshEdges.has(edgeKey(link))?2:0)
+.linkDirectionalParticleColor(link=>link.hypothesis?"#f0c26b":link.relationship?.startsWith("experience")?"#f7b267":link.relationship?.includes("source")||link.relationship?.includes("evidence")?"#68e0c1":"#73aaff")
 .linkDirectionalParticleWidth(.8)
 .linkOpacity(.35)
 .linkColor(link=>link.hypothesis?"#f0c26b":link.unresolved?"#e36666":link.relationship?.startsWith("experience")?"#f7b267":"#4baac0")
-.linkWidth(link=>link.hypothesis?3:1)
+.linkWidth(link=>link.hypothesis?2:1)
+.linkLabel(link=>link.hypothesis?`UNVERIFIED PREDICTION · ${String(link.reason||"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]))}`:String(link.relationship||"recorded link"))
 .onNodeClick(node=>{
   document.getElementById("selected").style.display="block";
   document.getElementById("selTitle").textContent=node.label||node.id;
@@ -370,9 +373,10 @@ resizeGraph();
 const filterGraph=value=>{
   activeFilter=String(value||"");
   const query=String(value||"").trim().toLowerCase();
+  const displayed=showPredictions?links.concat(predictions):links;
   if(!query){
-    Graph.graphData({nodes:chosen,links});
-    setInfo(chosen,links);
+    Graph.graphData({nodes:chosen,links:displayed.map(link=>({...link,source:endpoint(link.source),target:endpoint(link.target)}))});
+    setInfo(chosen,displayed);
     return;
   }
   const matches=brain.nodes.filter(node=>
@@ -380,7 +384,7 @@ const filterGraph=value=>{
   ).slice(0,250);
   const matchedIds=new Set(matches.map(node=>String(node.id)));
   const neighbors=new Set();
-  brain.links.forEach(link=>{
+  displayed.forEach(link=>{
     const source=endpoint(link.source),target=endpoint(link.target);
     if(matchedIds.has(source)) neighbors.add(target);
     if(matchedIds.has(target)) neighbors.add(source);
@@ -388,7 +392,7 @@ const filterGraph=value=>{
   const nodes=matches.concat(brain.nodes.filter(node=>
     neighbors.has(String(node.id))&&!matchedIds.has(String(node.id))).slice(0,350-matches.length));
   const ids=new Set(nodes.map(node=>String(node.id)));
-  const visibleLinks=brain.links.filter(link=>{
+  const visibleLinks=displayed.filter(link=>{
     const source=typeof link.source==="object"?link.source.id:link.source;
     const target=typeof link.target==="object"?link.target.id:link.target;
     return ids.has(String(source))&&ids.has(String(target));
@@ -404,6 +408,65 @@ function setFocus(value){
 }
 document.getElementById("focusAll").onclick=()=>setFocus("");
 document.getElementById("focusDocuments").onclick=()=>setFocus("Documents /");
+document.getElementById("showPredictions").onclick=()=>{
+  showPredictions=!showPredictions;
+  const button=document.getElementById("showPredictions");
+  button.setAttribute("aria-pressed",String(showPredictions));
+  button.textContent=showPredictions?"Hide predictions":"Show predictions";
+  document.getElementById("hypothesisStatus").textContent=showPredictions
+    ? `${predictions.length} amber links = unverified suggestions. Review sources before treating any link as fact.`
+    : "Predictions are hidden until enabled for review.";
+  filterGraph(activeFilter);
+};
+
+async function predictionCandidates(graph){
+  const nodes=graph.nodes.filter(n=>n.path&&!n.unresolved&&!/^(agent|task|report|experience):/.test(String(n.id))
+    && !/^(03-References|00-Inbox\/workspace\/\.graphify-venv)\//i.test(String(n.path))).slice(0,1200);
+  const pathKey=p=>String(p||"").replace(/\\/g,"/").toLowerCase();
+  const existing=new Set(graph.links.map(l=>[endpoint(l.source),endpoint(l.target)].sort().join("|")));
+  const found=new Map();
+  const add=(a,b,reason,source)=>{
+    if(!a||!b||a.id===b.id) return;
+    const key=[String(a.id),String(b.id)].sort().join("|");
+    if(existing.has(key)||found.has(key)) return;
+    found.set(key,{source:String(a.id),target:String(b.id),hypothesis:true,
+      relationship:"UNVERIFIED PREDICTION",reason,origin:source});
+  };
+  try{
+    const response=await fetch("/api/graphify-suggestions",{cache:"no-store"});
+    if(response.ok){
+      const data=await response.json();
+      for(const item of (data.suggestions||[]).slice(0,100)){
+        if(!Array.isArray(item.source_files)||item.source_files.length!==2) continue;
+        const matches=item.source_files.map(file=>nodes.filter(n=>pathKey(n.path)===pathKey(file)
+          ||pathKey(n.path).endsWith("/"+pathKey(file))));
+        if(matches.every(group=>group.length===1)) add(matches[0][0],matches[1][0],
+          `${item.why||"Graphify suggestion"} · ${item.confidence||"unrated"}`,"saved Graphify analysis");
+      }
+    }
+  }catch(error){ /* Fall back to local title and folder clues. */ }
+  if(!found.size){
+    const ignore=new Set(["document","documents","file","files","report","notes","copy","final","draft","the","and","for","with"]);
+    const tokens=n=>new Set(String(n.label||n.title||"").toLowerCase().match(/[a-z0-9]{4,}/g)?.filter(t=>!ignore.has(t))||[]);
+    const groups=new Map();
+    for(const n of nodes.slice(0,500)){
+      const folder=pathKey(n.path).split("/").slice(0,-1).join("/");
+      if(folder){if(!groups.has(folder)) groups.set(folder,[]);groups.get(folder).push(n)}
+    }
+    const candidates=[];
+    for(const [folder,members] of groups){
+      const subset=members.slice(0,80);
+      for(let i=0;i<subset.length;i++) for(let j=i+1;j<subset.length;j++){
+        const a=subset[i],b=subset[j],shared=[...tokens(a)].filter(word=>tokens(b).has(word));
+        if(!shared.length&&members.length>12) continue;
+        candidates.push({a,b,score:shared.length*3+1,reason:`Same folder: ${folder}${shared.length?`; shared title words: ${shared.join(", ")}`:""}`});
+      }
+    }
+    candidates.sort((a,b)=>b.score-a.score||String(a.a.path).localeCompare(String(b.a.path)));
+    for(const item of candidates){if(found.size>=60) break;add(item.a,item.b,item.reason,"title/folder clue")}
+  }
+  return [...found.values()];
+}
 
 function focusHypothesis(sourceId,targetId,reason){
   const a=brain.nodes.find(n=>String(n.id)===String(sourceId));
@@ -442,8 +505,9 @@ async function refreshGraph(){
     const previous=new Set(brain.links.map(edgeKey));
     freshEdges=new Set(signature?next.links.map(edgeKey).filter(key=>!previous.has(key)):[]);
     clearTimeout(freshTimer);
-    freshTimer=setTimeout(()=>{freshEdges.clear();Graph.linkDirectionalParticles(link=>0)},8000);
+    freshTimer=setTimeout(()=>{freshEdges.clear();Graph.linkDirectionalParticles(link=>link.hypothesis?1:0)},8000);
     signature=nextSignature;brain=next;
+    predictions=await predictionCandidates(next);
     degrees=new Map();
     next.links.forEach(link=>{
       const source=endpoint(link.source),target=endpoint(link.target);
@@ -451,7 +515,9 @@ async function refreshGraph(){
       degrees.set(target,(degrees.get(target)||0)+1);
     });
     const positions=new Map(Graph.graphData().nodes.map(n=>[String(n.id),n]));
-    chosen=[...next.nodes].sort((a,b)=>score(b)-score(a)||String(a.id).localeCompare(String(b.id)))
+    const predictedIds=new Set(predictions.flatMap(l=>[l.source,l.target]));
+    chosen=[...next.nodes].sort((a,b)=>Number(predictedIds.has(String(b.id)))-Number(predictedIds.has(String(a.id)))
+      ||score(b)-score(a)||String(a.id).localeCompare(String(b.id)))
       .slice(0,350).map(n=>{
         const old=positions.get(String(n.id));
         return old?{...n,x:old.x,y:old.y,z:old.z,vx:old.vx,vy:old.vy,vz:old.vz}:n;
@@ -459,8 +525,9 @@ async function refreshGraph(){
     const ids=new Set(chosen.map(n=>String(n.id)));
     links=next.links.filter(l=>ids.has(endpoint(l.source))&&ids.has(endpoint(l.target)))
       .map(l=>({...l,source:endpoint(l.source),target:endpoint(l.target)}));
+    predictions=predictions.filter(l=>ids.has(l.source)&&ids.has(l.target));
     filterGraph(activeFilter);
-    Graph.linkDirectionalParticles(link=>freshEdges.has(edgeKey(link))?2:0);
+    Graph.linkDirectionalParticles(link=>link.hypothesis?1:freshEdges.has(edgeKey(link))?2:0);
     window.bpfcoBrain3D.domains=[...new Set(chosen.map(n=>n.folder).filter(Boolean))].sort();
   }catch(error){info.textContent=`Graph refresh unavailable: ${error.message}`}
   finally{refreshing=false}

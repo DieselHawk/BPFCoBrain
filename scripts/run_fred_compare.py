@@ -30,6 +30,7 @@ def main():
     os.environ["BPFCO_CLOUD_FALLBACK"] = "0"
     os.environ["BPFCO_PREVIEW_READ_ONLY"] = "1"
     os.environ["BPFCO_DOCUMENTS_ROOT"] = str(documents)
+    os.environ["BPFCO_GRAPHIFY_ROOT"] = str(live)
 
     from flask import abort, jsonify, request
     from werkzeug.serving import make_server

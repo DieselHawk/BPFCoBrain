@@ -165,6 +165,16 @@ the current graph response. Both are labelled as hypotheses; neither is added
 to graph links or written to source files. The separate link-repair section
 still reports only unresolved explicit wikilinks.
 
+In the 3D Brain, **Show predictions** draws up to 60 of these candidates as
+amber animated links. Saved Graphify suggestions with two uniquely matching
+source files take priority; local folder/title clues fill in when none match.
+The toggle hides them again without changing the recorded graph. Hover an amber
+link to see its reason. Fred's local terminal and offline CEO assessment read
+the saved Graphify hints as unverified leads; the model is told to confirm
+relationships from source evidence before stating them as fact. The read-only
+port 5002 comparison still blocks task submissions, so Fred's interactive
+terminal runs in the normal local dashboard after this code is promoted.
+
 ## Read-only live comparison
 
 Use `scripts/run_fred_compare.py --live <running-checkout> --documents
