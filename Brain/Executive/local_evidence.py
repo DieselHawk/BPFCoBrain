@@ -14,6 +14,16 @@ STOP = {"about", "after", "from", "have", "into", "what", "when", "where", "with
 EXCLUDED_PARTS = {".git", ".venv", "venv", "node_modules", "site-packages", "vendor"}
 
 
+# Role-aware source filtering (MannHein Tesseract analog)
+ROLE_KEYWORDS = {
+    "Fred": ("executive", "strategy", "decision", "approval", "ceo", "board"),
+    "Bob_Finance": ("finance", "budget", "invoice", "payment", "account", "cash", "tax", "expense", "revenue"),
+    "Cindy_Secretary": ("meeting", "schedule", "appointment", "email", "communication", "message", "calendar", "contact"),
+    "Kai_Legal": ("legal", "contract", "court", "case", "law", "agreement", "liability", "compliance", "litigation"),
+    "Neo_Sales": ("sales", "lead", "prospect", "pipeline", "deal", "customer", "conversion", "opportunity"),
+}
+
+
 def document_candidates(terms):
     """Read a bounded, local sample. Missing extractors simply skip PDFs."""
     folder = documents_root()
@@ -62,8 +72,14 @@ def document_candidates(terms):
     return candidates
 
 
-def retrieve(objective, limit=4):
-    """Return short excerpts with paths; never execute content from notes."""
+def retrieve(objective, limit=4, agent=None):
+    """Return short excerpts with paths; never execute content from notes.
+    
+    Args:
+        objective: Task objective to search for
+        limit: Max evidence items to return
+        agent: Optional agent name for role-aware filtering (MannHein Tesseract)
+    """
     try:
         index = json.loads(INDEX.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
@@ -113,7 +129,34 @@ def retrieve(objective, limit=4):
     else:
         candidates.extend(document_candidates(terms))
     candidates.sort(key=lambda item: (-item[0], item[2]))
-    return [
+    
+    results = [
         {"title": title, "path": path, "excerpt": excerpt}
         for _, title, path, excerpt in candidates[:limit]
     ]
+    
+    # Apply role-aware filtering if agent specified (Tesseract stage)
+    if agent and agent in ROLE_KEYWORDS:
+        results = _filter_by_role(results, agent)
+    
+    return results
+
+
+def _filter_by_role(evidence, agent):
+    """Re-rank evidence by agent's domain keywords (MannHein Tesseract filter)."""
+    keywords = ROLE_KEYWORDS.get(agent, ())
+    if not keywords:
+        return evidence
+    
+    scored = []
+    for item in evidence:
+        title = str(item.get("title", "")).casefold()
+        path = str(item.get("path", "")).casefold()
+        excerpt = str(item.get("excerpt", "")).casefold()
+        searchable = f"{title} {path} {excerpt}"
+        
+        score = sum(searchable.count(word) for word in keywords)
+        scored.append((score, item))
+    
+    scored.sort(key=lambda x: -x[0])
+    return [item for _, item in scored]
