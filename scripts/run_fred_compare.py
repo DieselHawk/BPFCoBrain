@@ -40,6 +40,7 @@ def main():
     from Dashboard.adapters.document_edges import add_document_edges
     from Dashboard.adapters.provenance_edges import add_provenance_edges
     from Dashboard.adapters.source_edges import add_source_edges
+    from Dashboard.adapters.role_edges import add_role_edges
     from Brain.Executive import local_evidence
 
     executive = live / "Brain" / "Executive"
@@ -60,7 +61,8 @@ def main():
         graph = add_note_edges(adapter.build_brain_graph(), live)
         graph = add_document_edges(graph, live, documents)
         graph = add_source_edges(graph, live)
-        return jsonify(add_provenance_edges(graph, live))
+        graph = add_provenance_edges(graph, live)
+        return jsonify(add_role_edges(graph, live))
 
     dashboard.app.view_functions["brain_graph_api"] = live_graph
 
